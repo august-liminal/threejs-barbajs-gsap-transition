@@ -8,5 +8,10 @@
 	},
 	"devDependencies": {
 		"vite": "^6.1.0"
+	},
+	"dependencies": {
+		"@barba/core": "^2.10.3",
+		"gsap": "^3.13.0",
+		"three": "^0.180.0"
 	}
 }

@@ -1,3 +1,20 @@
-import './styles/style.css'
+import './styles/style.css';
+import barba from '@barba/core';
+import webgl from './webgl'
+import { transition } from 'three/examples/jsm/tsl/display/TransitionNode.js';
 
-console.log('Hello from VS Code')
+// Barba JS
+barba.init({
+    transitions: [{
+        name: 'default-transition',
+        once() {
+            webgl()
+        },
+        leave() {
+
+        },
+        enter() {
+
+        }
+    }]
+})
