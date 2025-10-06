@@ -1,5 +1,5 @@
 import './styles/style.css';
-import barba from '@barba/core';
+//import barba from '@barba/core';
 import gsap from 'gsap';
 // import webgl from './webgl';
 import * as THREE from 'three';
