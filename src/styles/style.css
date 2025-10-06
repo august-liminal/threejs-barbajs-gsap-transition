@@ -1,0 +1,71 @@
+:root {
+    --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1748926717051---font--body-font: 'Space Mono';
+    --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1748926717051---font--heading-font: 'Space Grostesk';
+    --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1748926717051---font--button-font: 'Space Mono';
+}
+
+.grid-container {
+    position:absolute; 
+    inset:0; 
+    width: var(--grid-dimension); 
+    height: var(--grid-dimension);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#grid-bg {
+    position:absolute; 
+    inset:0;     
+    width: 100%; 
+    height: 100%;
+    background-image: 
+        linear-gradient(to right, rgb(255 255 255 / 50%) 0 1px, #ffffff00 1px), 
+        linear-gradient(to bottom, rgb(255 255 255 / 50%) 0 1px, #ffffff00 1px);
+    background-size: var(--cell-size) var(--cell-size);
+    pointer-events:none;
+    clip-path: polygon(
+        0 var(--y), 
+        var(--x) var(--y), 
+        calc(var(--x) + var(--y)) 0, 
+        100% 0, 
+        100% calc(100% - var(--y)), 
+        calc(100% - var(--x)) calc(100% - var(--y)), 
+        calc(100% - var(--x) - var(--y)) 100%, 
+        0 100%);
+}
+
+#outline {
+    position:absolute; 
+    inset:0; 
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.copyright-text{
+    font-size: clamp(1rem,1.6vmax,4vmin);
+    position: absolute;
+    padding: 0 0.5em;
+    line-height: var(--cell-size);
+}
+
+.tagline {
+    font-size: clamp(2rem,4.8vmax,10vmin);
+    position: absolute;
+    text-align: right;
+    padding: 0 0.25em;
+    text-shadow: 0 0 calc(0.6em * var(--e)) #ffffff, 0 0 0.05em #ffffff;
+}
+
+.window {
+    position: absolute;
+    background: #000;
+    z-index: 1;
+    clip-path: polygon(
+        calc(50% - var(--w) / 2 * var(--cell-size)) calc(50% - var(--h) / 2 * var(--cell-size)),
+        calc(50% + var(--w) / 2 * var(--cell-size)) calc(50% - var(--h) / 2 * var(--cell-size)),
+        calc(50% + var(--w) / 2 * var(--cell-size)) calc(50% + var(--h) / 2 * var(--cell-size)),
+        calc(50% - var(--w) / 2 * var(--cell-size)) calc(50% + var(--h) / 2 * var(--cell-size))
+    );
+}
