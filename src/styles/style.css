@@ -4,6 +4,10 @@
     --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1748926717051---font--button-font: 'Space Mono';
 }
 
+body {
+    background-color: #000;
+}
+
 .grid-container {
     position:absolute; 
     inset:0; 
@@ -41,6 +45,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    z-index: -1;
 }
 
 .copyright-text{
@@ -55,7 +60,7 @@
     position: absolute;
     text-align: right;
     padding: 0 0.25em;
-    text-shadow: 0 0 calc(0.6em * var(--e)) #ffffff, 0 0 0.05em #ffffff;
+    text-shadow: 0 0 calc(0.6em * var(--e)) #ffffff, 0 0 calc(0.05em * var(--e)) #ffffff;
 }
 
 .window {

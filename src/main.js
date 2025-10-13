@@ -1,31 +1,26 @@
 import './styles/style.css';
-//import barba from '@barba/core';
+import barba from '@barba/core';
 import gsap from 'gsap';
 // import webgl from './webgl';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-// Barba JS
-// barba.init({
-//     transitions: [{
-//         name: 'default-transition',
-//         once() {
-//             webgl()
-//         },
-//         leave() {
+//Barba JS
+barba.init({
+    transitions: [{
+        name: 'transition',
+        leave(data) {
 
-//         },
-//         enter() {
+        },
+        enter(data) {
 
-//         }
-//     }]
-// });
+        }
+    }]
+});
 
 //=====Landing Page Layout
 let gridDimension, gridSize, cellSize, x, y, deltaW, deltaH;
-let windowW = 2;
-let windowH = 2;
 
 function landing(){
     //===== DECLARATIONS
@@ -104,14 +99,17 @@ function landing(){
     document.querySelector('.copyright-text').style.left = textHorizontalOffset + 'px';
     document.querySelector('.copyright-text').style.top = copyrightOffset + 'px'; 
     
-    //========== THREEJS
+    //=============== THREEJS
     // Canvas
     const canvas = Object.assign(document.querySelector('.window').appendChild(document.createElement('canvas')), { className: 'webgl' });
 
     // Scene
     const scene = new THREE.Scene()
+    let object;
 
-    // Geometries    
+    //Keep track of the mouse position to animate the scene
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
 
     // Size
     const size = {
@@ -120,15 +118,91 @@ function landing(){
     }
 
     // Camera
-    const camera = new THREE.PerspectiveCamera(75, size.width / size.height, 0.1, 100);
-    camera.position.set(0,0,0)
-    scene.add(camera)
+    const camera = new THREE.PerspectiveCamera(75, size.width / size.height, 0.1, 1000);
+    camera.position.set(0,0,0);
+    scene.add(camera);
 
     // GLTF Loader
-    const loader = new GLTFLoader();
-    loader.load('./src/point_cloud.glb', (gltf) => {
-        console.log('gltf')
+    const loader = new GLTFLoader();    
+    //Load the file
+    loader.load(
+    'http://localhost:3000/src/point_cloud.glb',
+    function (gltf) {
+        //If the file is loaded, add it to the scene
+        object = gltf.scene;
+        const material = new THREE.PointsMaterial({
+            size: 3,
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.7,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+        object.traverse((child) => {
+            if (child.isPoints) {
+                // child.material = material;
+                // child.material.size = 3; // increase this value to make points bigger
+                // child.material.color.set('#ffffff');
+            }
+        });
+        const boundingBox = new THREE.Box3().setFromObject(object);
+        const center = new THREE.Vector3();
+        boundingBox.getCenter(center);
+        object.position.sub(center);
+        object.position.z = 1;
+        scene.add(object);
+    },
+    function (xhr) {
+        //While it is loading, log the progress
+        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    },
+    function (error) {
+        //If there is an error, log it
+        console.error(error);
+    }
+    );
+
+    //Instantiate a new renderer and set its size
+    const renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true
     })
+    renderer.setSize(size.width, size.height)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))
+
+    //Add the renderer to the DOM
+    document.querySelector('.window').appendChild(renderer.domElement);
+
+    // //Set how far the camera will be from the 3D model
+    // camera.position.z = 1.5;
+
+    //Render the scene
+    function animate() {
+        requestAnimationFrame(animate);
+        //Here we could add some code to update the scene, adding some automatic movement
+
+        //Make the scene move
+        object.rotation.y = ((mouseX / window.innerWidth) * 20 - 10) * Math.PI / 180;
+        object.rotation.x = ((mouseY / window.innerHeight) * 20 - 10) * Math.PI / 180;
+        renderer.render(scene, camera);
+    }
+
+    //Resize event listener to resize the window and the camera
+    window.addEventListener("resize", function () {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    //Mouse position listener
+    document.onmousemove = (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    }
+
+    //Start the 3D rendering
+    animate();
 
     // Resize Event Listener
     window.addEventListener('resize', () => {
@@ -143,42 +217,49 @@ function landing(){
         // Update renderer
         renderer.setSize(size.width, size.height),
         renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))        
-    })
-
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({
-        canvas: canvas,
-        antialias: true
-    })
-    renderer.setSize(size.width, size.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))
+    })    
 }
 
 //===== Landing page window resizing & flickering effect
 function updateLanding(e) {
-  const windowBox = document.querySelector('.window');
-  
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const windowBox = document.querySelector('.window');
 
-  // --- Get mouse/touch pos relative to viewport center ---
-  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
-  const p = e?.touches?.[0] || e || { clientX: cx, clientY: cy };
-  const pos = { x: p.clientX - cx, y: p.clientY - cy };
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-  // --- Multiplier for effect ---
-  const multiplier = Math.abs(Math.sin(pos.x + pos.y % Math.PI));
-  document.documentElement.style.setProperty('--e', String(multiplier));
+    // --- Get mouse/touch pos relative to viewport center ---
+    const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+    const p = e?.touches?.[0] || e || { clientX: innerWidth, clientY: 0 };
+    const pos = { x: p.clientX - innerWidth / 2, y: p.clientY - innerHeight / 2 };
 
-  // --- Size in cells ---
-  const windowW = clamp(Math.round(Math.abs(pos.x) / cellSize) * 2, 2, gridSize - 2);
-  const windowH = clamp(Math.round(Math.abs(pos.y) / cellSize) * 2, 2, gridSize - 2 * (y / cellSize) - 4);
 
-  // Passing value
-  windowBox.style.inset =
-  (window.innerHeight < gridDimension ? deltaH / 2 + 'px' : '0') + ' ' +
-  (window.innerWidth < gridDimension ? deltaW / 2 + 'px' : '0');
-  windowBox.style.setProperty('--w', windowW);
-  windowBox.style.setProperty('--h', windowH);
+
+    // --- Multiplier for effect ---
+    const multiplier = Math.abs(pos.x < pos.y ? pos.x / pos.y : pos.y / pos.x);
+    document.documentElement.style.setProperty('--e', String(multiplier));
+
+    // --- Size in cells ---
+    const windowW = clamp(Math.round(Math.abs(pos.x) / cellSize) * 2, 2, gridSize - 2);
+    const windowH = clamp(Math.round(Math.abs(pos.y) / cellSize) * 2, 2, gridSize - 2 * (y / cellSize) - 4);
+
+    // Passing value
+    windowBox.style.inset =
+    (window.innerHeight < gridDimension ? deltaH / 2 + 'px' : '0') + ' ' +
+    (window.innerWidth < gridDimension ? deltaW / 2 + 'px' : '0');
+    windowBox.style.setProperty('--w', windowW);
+    windowBox.style.setProperty('--h', windowH);
+
+
+    // Drawing Entrance
+    const entrance = document.querySelector('#entrance') || document.querySelector('.grid-container').appendChild(Object.assign(document.createElement('a'), { id: 'entrance' }));
+    Object.assign(entrance.style,{position:'absolute', zIndex: '999', top: '50%', left: '50%', transform:'translate(-50%,-50%)', width: windowW * cellSize + 'px', height: windowH * cellSize + 'px', border: '1px solid #fff', transition: 'background 0.2s ease-out, box-shadow 0.2s ease-out'});
+    if(windowH == 2 && windowW == 2) {
+        Object.assign(entrance.style,{background:'#fff', boxShadow: '0 0 2rem #fff'});
+        entrance.setAttribute('href','/unlock');          
+        document.documentElement.style.setProperty('--e', '1');      
+    } else {
+        Object.assign(entrance.style,{background:'transparent', boxShadow: 'none'});
+        entrance.removeAttribute('href');
+    }
 }
 
 
