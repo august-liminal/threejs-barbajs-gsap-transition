@@ -1,53 +1,98 @@
 import './styles/style.css';
-import barba from '@barba/core';
-import gsap from 'gsap';
-// import webgl from './webgl';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+// import barba from '@barba/core';
+import gsap from 'gsap';
 
-//Barba JS
-barba.init({
-    transitions: [{
-        name: 'transition',
-        leave(data) {
 
-        },
-        enter(data) {
+// const animationLeave = () => {
+//     let tl = gsap.timeline();    
+//     tl.to(".window", {
+//         height: "100vh",
+//         width: "100vw",
+//         duration: 1000
+//     });
+//     tl.to(".tagline", {
+//         opacity: 0,
+//         duration: 500
+//     });
+//     return tl;
+// }
 
-        }
-    }]
-});
+// const animationEnter = () => {
+//     let tl = gsap.timeline();
+//     tl.from("#unlock-module", {
+//         opacity: 0
+//     })
+// }
 
-//=====Landing Page Layout
+// barba.init({
+//   transitions: [{
+//       name: 'landing→unlock',
+//       sync: true,
+//       from: { namespace: ['landing'] },
+//       to:   { namespace: ['unlock'] },
+//       async leave() {
+//         animationLeave()     
+        
+//       },
+//       async enter() {
+//         // optional: any setup code after the new page is ready
+//       }
+//     }]
+// });
+
+// ================================================================
+// ====================== LANDING PAGE LAYOUT =====================
+// ================================================================
+
 let gridDimension, gridSize, cellSize, x, y, deltaW, deltaH;
 
 function landing(){
+    if (!location.pathname.endsWith('/landing')) return;    
     //===== DECLARATIONS
     // Grid dimension in pixel
     gridDimension = Math.max(window.innerHeight, window.innerWidth)
     document.documentElement.style.setProperty('--grid-dimension', `${gridDimension}px`)
-    // Minimum cell size being 1.2x tagline font size
-    document.querySelector('.tagline').style.removeProperty('line-height');
-    const minCellSize = parseFloat(getComputedStyle(document.querySelector('.tagline')).fontSize);
-    // Largest number of cells in grid, minimum 20
-    gridSize = Math.max(Math.floor(gridDimension / minCellSize / 4) * 4, 12)
-    //Calculate actual possible cell size
-    cellSize = gridDimension / gridSize
-    document.documentElement.style.setProperty('--cell-size', `${cellSize}px`)
-    document.querySelector('.tagline').style.setProperty('line-height', `${cellSize}px`);
-    // Difference between viewport and grid dimension
+    // Calculate difference between viewport and grid dimension
     deltaW = Math.abs(window.innerWidth - gridDimension);
-    deltaH = Math.abs(window.innerHeight - gridDimension);
-    // Size of tagline and copyright text
-    const taglineWidth = document.querySelector('.tagline').getBoundingClientRect().width;
+    deltaH = Math.abs(window.innerHeight - gridDimension);    
+    // Calculate tagline-dependent variables
+    let taglineFontsize, copyrightFontsize, taglineWidth;
+    if (document.querySelector('.tagline')) {
+        const t = document.querySelector('.tagline');
+        // Measure zize of tagline
+        taglineWidth = t.getBoundingClientRect().width;
+        // remove line-height inline style if exist
+        t?.style.lineHeight && t.style.removeProperty('line-height');
+        //Set minCellSize to be half of font size
+        const minCellSize = 0.5 * parseFloat(getComputedStyle(t).fontSize);
+        // Largest number of cells in grid, minimum 20
+        gridSize = Math.max(Math.floor(gridDimension / minCellSize / 4) * 4, 12)
+        //Calculate actual possible cell size
+        cellSize = gridDimension / gridSize
+        document.documentElement.style.setProperty('--cell-size', `${cellSize}px`)
+        //Set tagline actual line height as 2x cell size
+        t.style.setProperty('line-height', `${cellSize * 2}px`);
+        //===== SHAPE
+        // X being tagline width starting from viewport edge or 25% side whichever greater, round up to nearest cell
+        x = Math.ceil(Math.max(gridDimension * 0.25, deltaW / 2 + taglineWidth) / cellSize) * cellSize;
+        // Y at least 3 cells away from viewport edge and never project diagonally into the vertical edge of screen, round up to nearest cell
+        y = Math.ceil(Math.min(deltaH / 2 + 2 * cellSize, gridDimension - x) / cellSize) * cellSize;
+        //===== Text Layout
+        taglineFontsize = parseFloat(getComputedStyle(document.querySelector('.tagline')).fontSize)
+        copyrightFontsize = parseFloat(getComputedStyle(document.querySelector('.copyright-text')).fontSize)
+        const textHorizontalOffset = window.innerWidth < gridDimension ? deltaW / 2 : 0        
+        const taglineOffset = y - cellSize * 0.26;
+        const copyrightOffset = y - cellSize * 0.8;
+        document.querySelector('.tagline').style.right = textHorizontalOffset + 'px';
+        document.querySelector('.tagline').style.bottom = taglineOffset + 'px';
+        document.querySelector('.copyright-text').style.left = textHorizontalOffset + 'px';
+        document.querySelector('.copyright-text').style.top = copyrightOffset + 'px'; 
+    }   
 
-
-    //===== SHAPE
-    // X being tagline width starting from viewport edge or 25% side whichever greater, round up to nearest cell
-    x = Math.ceil(Math.max(gridDimension * 0.25, deltaW / 2 + taglineWidth) / cellSize) * cellSize;
-    // Y at least 2 cells away from viewport edge and never project diagonally into the vertical edge of screen, round up to nearest cell
-    y = Math.ceil(Math.min(deltaH / 2 + cellSize, gridDimension - x) / cellSize) * cellSize;
+    
 
     //===== Injecting point values into CSS
     document.documentElement.style.setProperty('--x', `${x}px`);
@@ -86,22 +131,11 @@ function landing(){
     document.querySelector('#outline')?.remove();
     svg.appendChild(poly);
     document.querySelector('.grid-viewport').appendChild(svg);
-
-    //===== Text Layout
-    const taglineFontsize = parseFloat(getComputedStyle(document.querySelector('.tagline')).fontSize)
-    const copyrightFontsize = parseFloat(getComputedStyle(document.querySelector('.copyright-text')).fontSize)
-    const textHorizontalOffset = window.innerWidth < gridDimension ? deltaW / 2 : 0
-    const taglineOffset = y - cellSize * 0.15;
-    const copyrightOffset = y - cellSize * 0.65;
-
-    document.querySelector('.tagline').style.right = textHorizontalOffset + 'px';
-    document.querySelector('.tagline').style.bottom = taglineOffset + 'px';
-    document.querySelector('.copyright-text').style.left = textHorizontalOffset + 'px';
-    document.querySelector('.copyright-text').style.top = copyrightOffset + 'px'; 
+        
     
     //=============== THREEJS
     // Canvas
-    const canvas = Object.assign(document.querySelector('.window').appendChild(document.createElement('canvas')), { className: 'webgl' });
+    const canvas = document.querySelector('.webgl');
 
     // Scene
     const scene = new THREE.Scene()
@@ -181,10 +215,11 @@ function landing(){
     function animate() {
         requestAnimationFrame(animate);
         //Here we could add some code to update the scene, adding some automatic movement
-
         //Make the scene move
-        object.rotation.y = ((mouseX / window.innerWidth) * 20 - 10) * Math.PI / 180;
-        object.rotation.x = ((mouseY / window.innerHeight) * 20 - 10) * Math.PI / 180;
+        if (object) {
+            object.rotation.y = ((mouseX / window.innerWidth) * 20 - 10) * Math.PI / 180;
+            object.rotation.x = ((mouseY / window.innerHeight) * 20 - 10) * Math.PI / 180;
+        }
         renderer.render(scene, camera);
     }
 
@@ -218,10 +253,15 @@ function landing(){
         renderer.setSize(size.width, size.height),
         renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))        
     })    
+    
+    window.addEventListener('resize', landing);
+    document.documentElement.style.visibility = 'visible';
 }
 
 //===== Landing page window resizing & flickering effect
+
 function updateLanding(e) {
+    if (!location.pathname.endsWith('/landing')) return;
     const windowBox = document.querySelector('.window');
 
     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -242,9 +282,7 @@ function updateLanding(e) {
     const windowH = clamp(Math.round(Math.abs(pos.y) / cellSize) * 2, 2, gridSize - 2 * (y / cellSize) - 4);
 
     // Passing value
-    windowBox.style.inset =
-    (window.innerHeight < gridDimension ? deltaH / 2 + 'px' : '0') + ' ' +
-    (window.innerWidth < gridDimension ? deltaW / 2 + 'px' : '0');
+    windowBox.style.inset = (window.innerHeight < gridDimension ? deltaH / 2 + 'px' : '0') + ' ' +     (window.innerWidth < gridDimension ? deltaW / 2 + 'px' : '0');
     windowBox.style.setProperty('--w', windowW);
     windowBox.style.setProperty('--h', windowH);
 
@@ -260,14 +298,464 @@ function updateLanding(e) {
         Object.assign(entrance.style,{background:'transparent', boxShadow: 'none'});
         entrance.removeAttribute('href');
     }
+
+    window.addEventListener('load',       updateLanding);
+    window.addEventListener('mousemove',  updateLanding, { passive: true });
+    window.addEventListener('touchstart', updateLanding, { passive: true });
+    window.addEventListener('touchmove',  updateLanding, { passive: true });
 }
 
+// ================================================================
+// ========================== UNLOCK PAGE =========================
+// ================================================================
 
+function unlock() {
+    if (!location.pathname.endsWith('/unlock')) return;
+    //===== DECLARATIONS
+    const t = document.querySelector('#unlock-title');
+    if (t?.style.lineHeight) t.style.removeProperty('line-height');
 
-addEventListener('resize', landing);
-addEventListener('DOMContentLoaded', landing);
+    const mincellSize = 0.5 * parseFloat(getComputedStyle(t).fontSize);
+    let dimensionH = Math.max(12, Math.floor(window.innerHeight / mincellSize));
+    let dimensionW = Math.max(12, Math.floor(window.innerWidth  / mincellSize / 2) * 2);
+    let cellSize    = window.innerHeight / dimensionH;
 
-window.addEventListener('load',       updateLanding);
-window.addEventListener('mousemove',  updateLanding, { passive: true });
-window.addEventListener('touchstart', updateLanding, { passive: true });
-window.addEventListener('touchmove',  updateLanding, { passive: true });
+    const inner = document.querySelector('#unlock-module-inner');
+    inner?.style.setProperty('--cell-size', `${cellSize}px`);
+    t.style.lineHeight = (cellSize * 2) + 'px';
+
+    // ===== Create Grid (inner grid sizes) =====
+    const unlockModule = document.querySelector('#unlock-module');
+    const innerH = dimensionH - 8;
+    const innerW = dimensionW - 2;
+    const total  = innerH * innerW;
+
+    //===== Styling Unlock Module Parent
+    const container = document.querySelector('#unlock-module').parentNode;
+    const paddingY = (window.innerHeight - innerH * cellSize) / 2;
+    const paddingX = (window.innerWidth - innerW * cellSize) / 2;
+    container.style.padding = paddingY + 'px' + ' ' + paddingX + 'px';
+
+    // Vertical lines
+    container.append(Object.assign(document.createElement('div'), {
+        className: 'line-solid line-vertical',
+        style: `left: ${paddingX - 8}px;`
+    }));
+    container.append(Object.assign(document.createElement('div'), {
+        className: 'line-solid line-vertical',
+        style: `left: ${paddingX}px;`
+    }));
+    container.append(Object.assign(document.createElement('div'), {
+        className: 'line-dashed line-vertical',
+        style: `left: ${Math.round(window.innerWidth / 2 - cellSize * 4)}px;`
+    }));
+    container.append(Object.assign(document.createElement('div'), {
+        className: 'line-dashed line-vertical',
+        style: `right: ${Math.round(window.innerWidth / 2 - cellSize * 4)}px;`
+    }));
+    container.append(Object.assign(document.createElement('div'), {
+        className: 'line-solid line-vertical',
+        style: `right: ${paddingX}px;`
+    }));
+    container.append(Object.assign(document.createElement('div'), {
+        className: 'line-solid line-vertical',
+        style: `right: ${paddingX - 8}px;`
+    }));
+
+    // Horizontal Lines
+    container.append(Object.assign(document.createElement('div'), {
+        className: 'line-solid line-horizontal',
+        style: `top: ${paddingY}px;`
+    }));
+    container.append(Object.assign(document.createElement('div'), {
+        className: 'line-dashed line-horizontal',
+        style: `top: ${window.innerHeight / 2 - cellSize}px;`
+    }));
+    container.append(Object.assign(document.createElement('div'), {
+        className: 'line-dashed line-horizontal',
+        style: `bottom: ${window.innerHeight / 2 - cellSize}px;`
+    }));
+    container.append(Object.assign(document.createElement('div'), {
+        className: 'line-solid line-horizontal',
+        style: `bottom: ${paddingY}px;`
+    }));
+
+    // Placing code input
+    document.querySelector('.code').style.top = (innerH / 2 - 1) * cellSize + 'px';
+
+    // pixel columns so they match cellSize exactly
+    unlockModule.style.display = 'grid';
+    unlockModule.style.gridTemplateColumns = `repeat(${innerW}, ${cellSize}px)`;
+    unlockModule.style.gap = '0';
+    unlockModule.style.width  = (innerW * cellSize) + 'px';
+    unlockModule.style.height = (innerH * cellSize) + 'px';
+
+    // clear previous children if re-running
+    unlockModule.querySelectorAll('.cell').forEach(el => el.remove());
+
+    const frag  = document.createDocumentFragment();
+    const cells = new Array(total);
+
+    for (let i = 0; i < total; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.textContent = '•';
+        cell.style.width  = cellSize + 'px';
+        cell.style.height = cellSize + 'px';
+        cell.style.lineHeight = `${cellSize}px`;
+        cell.style.textAlign  = 'center';
+        cell.style.userSelect = 'none';
+        cell.style.pointerEvents = 'none';
+        cells[i] = cell;
+        frag.appendChild(cell);
+    }
+    unlockModule.appendChild(frag);
+
+    
+    // =========== Text Matrix: Fast + Modular
+    (() => {
+    // ===== Config =====
+    const RAMP = Array.from(" .:-=+*#%@");
+    const MIN_SCALE = 0.1, MAX_SCALE = 3;
+    const RIPPLE_DECAY = 0.01;
+    const POINTER_SIGMA_FACTOR = 0.25; // pointer influence ~ 15% of min(modW, modH)
+    const NOISE_SCALE = 3.0;
+    const FRAME_SKIP = 0; // set to 1 or 2 to skip every N frames under load
+
+    // ===== State (typed, no objects per cell) =====
+    const centersX = new Float32Array(total);
+    const centersY = new Float32Array(total);
+    const jitter    = new Float32Array(total);
+    const lastChar  = new Int16Array(total); lastChar.fill(-1);
+
+    // Precompute centers & jitter (stable, no Math.random)
+    for (let j = 0; j < innerH; j++) {
+        for (let i = 0; i < innerW; i++) {
+        const idx = j * innerW + i;
+        centersX[idx] = (i + 0.5) * cellSize;
+        centersY[idx] = (j + 0.5) * cellSize;
+        const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
+        jitter[idx] = h * 0.03;
+        }
+    }
+
+    // Track module rect for pointer offset (ResizeObserver > scroll/resize)
+    let modRect = unlockModule.getBoundingClientRect();
+    const ro = new ResizeObserver(() => { modRect = unlockModule.getBoundingClientRect(); });
+    ro.observe(unlockModule);
+    addEventListener('scroll', () => { modRect = unlockModule.getBoundingClientRect(); }, { passive: true });
+
+    // Pointer tracking (smoothed)
+    let mx = modRect.width / 2, my = modRect.height / 2;
+    let vx = 0, vy = 0, lastX = mx, lastY = my;
+
+    function onPointer(e) {
+        const p = e.touches ? e.touches[0] : e;
+        const x = p.clientX - modRect.left;
+        const y = p.clientY - modRect.top;
+        vx = 0.7 * vx + 0.3 * (x - lastX);
+        vy = 0.7 * vy + 0.3 * (y - lastY);
+        mx = x; my = y; lastX = x; lastY = y;
+    }
+    unlockModule.addEventListener('pointermove', onPointer, { passive: true });
+    unlockModule.addEventListener('touchmove',  onPointer, { passive: true });
+
+    // Prefers reduced motion: render once
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+
+    // Utility
+    const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+    const mix = (a,b,t) => a + (b - a) * t;
+
+    // Cheap 2D noise (sum of sines)
+    function noise2(x, y, t){
+        return (Math.sin(1.7*x + 1.3*y + 0.9*t) * 0.6 +
+                Math.sin(2.1*x - 0.8*y + 1.7*t) * 0.4) * 0.5 + 0.5;
+    }
+
+    // ===== Motion Models (switchable) =====
+    // mode can be: 'ripple', 'vortex', 'curl', 'noiseFlow', 'gravity', 'scanline', 'lissajous'
+    let mode = 'vortex';
+
+    function makeField(modW, modH) {
+        const invW = 1 / modW, invH = 1 / modH;
+        const minSide = Math.min(modW, modH);
+        const sigma = Math.max(80, minSide * POINTER_SIGMA_FACTOR);
+        const inv2Sig2 = 1 / (2 * sigma * sigma);
+
+        return function field(x, y, t) {
+        const xn = x * invW, yn = y * invH;
+        const dx = x - mx,   dy = y - my;
+        const dist2 = dx*dx + dy*dy;
+        const dist  = Math.sqrt(dist2);
+        const speed = Math.hypot(vx, vy);
+
+        // building blocks
+        const Grad  = clamp01(0.6 * xn + 0.4 * yn);
+        const Noise = noise2(xn * NOISE_SCALE, yn * NOISE_SCALE, t * 0.5);
+        const Cursor= Math.exp(-dist2 * inv2Sig2);
+        const Ripple= Math.sin(dist * 0.15 - t * (2.5 + speed * 0.02)) * Math.exp(-dist * RIPPLE_DECAY) * 0.5 + 0.5;
+
+        switch (mode) {
+            case 'ripple':
+            return clamp01( mix(Grad, Noise, 0.25) * 0.45 + Cursor * 0.25 + Ripple * 0.3 );
+
+            case 'vortex': {
+            // angular wave around pointer
+            const ang = Math.atan2(dy, dx);
+            const swirl = Math.sin(ang * 3.0 + t * 1.5) * Math.exp(-dist * 0.008) * 0.5 + 0.5;
+            return clamp01( swirl * 0.5 + Noise * 0.3 + Cursor * 0.2 );
+            }
+
+            case 'curl': {
+            // fake curl-noise (phase-shifted sines)
+            const n1 = noise2(xn*2.3 + 0.1*t, yn*2.1 - 0.07*t, t*0.6);
+            const n2 = noise2(xn*2.0 - 0.08*t, yn*2.6 + 0.12*t, t*0.6);
+            const curlish = 0.5 + 0.5 * Math.sin(6.283*(n1 - n2));
+            return clamp01( 0.5*curlish + 0.3*Noise + 0.2*Cursor );
+            }
+
+            case 'noiseFlow': {
+            const dir = (noise2(xn*4.0, yn*4.0, t*0.3) - 0.5) * Math.PI * 2;
+            const flow = (Math.cos(dir) * dx + Math.sin(dir) * dy);
+            const f = 0.5 + 0.5 * Math.sin(flow * 0.02 - t * 2.0);
+            return clamp01( f * 0.5 + Noise * 0.3 + Cursor * 0.2 );
+            }
+
+            case 'gravity': {
+            // bright near pointer, dark far; scanline shimmer
+            const falloff = Math.exp(-dist * 0.01);
+            const scan = 0.5 + 0.5 * Math.sin((yn*200 - t*8));
+            return clamp01( 0.6*falloff + 0.25*Noise + 0.15*scan );
+            }
+
+            case 'scanline': {
+            const horiz = 0.5 + 0.5 * Math.sin((y*0.2) - t*6);
+            const vert  = 0.5 + 0.5 * Math.sin((x*0.2) + t*5);
+            return clamp01( 0.5*(horiz*vert) + 0.3*Noise + 0.2*Cursor );
+            }
+
+            case 'lissajous': {
+            const li = 0.5 + 0.5 * Math.sin( (xn*3.1 + 0.2) * Math.PI + Math.sin(t*0.7) )
+                            * Math.sin( (yn*4.2 - 0.1) * Math.PI + Math.cos(t*0.9) );
+            return clamp01( 0.5*li + 0.3*Noise + 0.2*Cursor );
+            }
+
+            default:
+            return clamp01(0.45*Grad + 0.25*Noise + 0.25*Cursor + 0.15*Ripple);
+        }
+        };
+    }
+
+    // ===== Render (only update changed cells; transform-scale instead of font-size) =====
+    let start = performance.now();
+    let frame = 0;
+    let running = true;
+
+    // Pause rendering if offscreen
+    const io = new IntersectionObserver((entries) => {
+        running = entries.some(e => e.isIntersecting);
+    }, { root: null, threshold: 0.01 });
+    io.observe(unlockModule);
+
+    // Ensure stable cell layout: style once (you can move this to CSS)
+    // .cell { display:inline-block; line-height:1; transform-origin:center; will-change:transform; }
+    for (let i = 0; i < total; i++) {
+        const el = cells[i];
+        el.style.willChange = 'transform';
+        el.style.transform = 'scale(1)';
+    }
+
+    function renderFrame(tSec, staticOnce) {
+        const modW = modRect.width  || (innerW * cellSize);
+        const modH = modRect.height || (innerH * cellSize);
+        const field = makeField(modW, modH);
+
+        // Batch transform writes to reduce style recalc cost
+        for (let idx = 0; idx < total; idx++) {
+        let F = field(centersX[idx], centersY[idx], tSec) + jitter[idx];
+        F = clamp01(F);
+
+        const ci = (F * (RAMP.length - 1)) | 0;
+        if (ci !== lastChar[idx]) {
+            cells[idx].textContent = RAMP[ci];
+            lastChar[idx] = ci;
+        }
+
+        // transform scale instead of font-size (no reflow)
+        const s = mix(MIN_SCALE, MAX_SCALE, F);
+        cells[idx].style.transform = `scale(${s})`;
+        }
+        if (staticOnce) return;
+    }
+
+    function tick() {
+        if (reduce?.matches) { renderFrame(0, true); return; }
+        if (!running) { requestAnimationFrame(tick); return; } // sleep offscreen
+        if (FRAME_SKIP && (frame++ % (FRAME_SKIP+1)) !== 0) { requestAnimationFrame(tick); return; }
+
+        const t = (performance.now() - start) / 1000;
+        renderFrame(t, false);
+        requestAnimationFrame(tick);
+    }
+
+    // ===== Public: quick mode switch helpers (optional) =====
+    // call setMode('vortex') from your code / devtools to try
+    window.setTextMatrixMode = (m) => { mode = m; };
+    window.getTextMatrixMode = () => mode;
+
+    // Initial draw
+    if (reduce?.matches) {
+        renderFrame(0, true);
+    } else {
+        tick();
+    }
+    })();
+
+    // ========== VALIDATION MODULE ==========
+
+    document.getElementById('submit-btn')?.addEventListener('click', validateCode);
+
+    const API_URL = 'https://liminal-webflow-auth.vercel.app/api/validate-code';
+    const ENTRY_PAGE = './unlock';
+    const PROTECTED_PAGE = './space';
+
+    const inputs = document.querySelectorAll('.digit');
+
+    inputs.forEach((input, i) => {
+        input.addEventListener('input', () => {
+            if (input.value && i < inputs.length - 1) {
+            inputs[i + 1].focus();
+            }
+        });
+
+        input.addEventListener('keydown', (e) => {
+            // backspace on empty → go back
+            if (e.key === 'Backspace' && !input.value && i > 0) {
+            inputs[i - 1].focus();
+            }
+        });
+    });
+
+    async function validateCode() {
+    const code = Array.from(document.querySelectorAll('.digit')).map(i => i.value).join('');
+    const button = document.getElementById('submit-btn');
+    const message = document.getElementById('message');
+    
+    if (!code || code.length !== 4) {
+        message.innerHTML = '<span style="color: red;">Please enter a 4-digit code</span>';
+        return;
+    }
+    
+    button.textContent = 'Validating';
+    button.disabled = true;
+    message.innerHTML = '';
+    
+    try {
+        const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code })
+        });
+        
+        const result = await response.json();
+        
+        if (result.valid) {
+            document.querySelector('#submit-btn').style.opacity = '0';
+            // Store session data
+            sessionStorage.setItem('userName', result.name);
+            sessionStorage.setItem('sessionToken', result.token);
+            sessionStorage.setItem('accessTime', Date.now());
+            
+            // Success message
+            message.innerHTML = `<span style="color: green;">Welcome ${result.name}! Redirecting...</span>`;
+            dissolveTextMatrix({ from: 'center', duration: 800, spread: 500, driftPx: 18 });
+            
+            
+            // Redirect to protected page using variable
+            setTimeout(() => {
+                window.location.href = PROTECTED_PAGE; // ← Uses variable
+            }, 800);
+        
+        } else {
+            message.innerHTML = '<span style="color: red;">Invalid code. Try again.</span>';
+        }
+    } catch (error) {
+        message.innerHTML = '<span style="color: red;">Connection error. Try again.</span>';
+    }
+    
+    button.textContent = 'Enter';
+    button.disabled = false;
+    }    
+
+    //===== Dissolve Matrix function
+    function dissolveTextMatrix(opts = {}) {
+        const {
+            from = 'center',
+            duration = 700,
+            spread = 500,
+            easing = 'cubic-bezier(0.16,1,0.3,1)',
+            removeOnDone = false
+        } = opts;
+
+        const rect = unlockModule.getBoundingClientRect();
+        let ox, oy;
+        if (Array.isArray(from)) [ox, oy] = from;
+        else { ox = rect.width / 2; oy = rect.height / 2; }
+
+        unlockModule.classList.add('is-dissolving');
+        unlockModule.style.pointerEvents = 'none';
+
+        const diag = Math.hypot(rect.width, rect.height) || 1;
+        let done = 0;
+
+        return new Promise((resolve) => {
+            for (let idx = 0; idx < total; idx++) {
+            const j = (idx / innerW) | 0, i = idx % innerW;
+            const cx = (i + 0.5) * cellSize;
+            const cy = (j + 0.5) * cellSize;
+            const dx = cx - ox, dy = cy - oy;
+            const dist = Math.hypot(dx, dy);
+            const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
+
+            const delay = Math.max(0, (dist / diag) * spread + h * 90);
+
+            // IMPORTANT: opacity only, no transform, default composite (replace)
+            const anim = cells[idx].animate(
+                [{ opacity: 1 }, { opacity: 0 }],
+                { duration, delay, easing, fill: 'forwards' }
+            );
+
+            anim.onfinish = () => {
+                if (++done === total) {
+                if (removeOnDone) unlockModule.remove();
+                unlockModule.dispatchEvent(new CustomEvent('matrix:dissolved'));
+                resolve();
+                }
+            };
+            }
+        });
+    }
+    document.documentElement.style.visibility = 'visible';
+}
+
+// ================================================================
+// =========================== MAIN PAGE ==========================
+// ================================================================
+
+function space() {
+    if (!location.pathname.endsWith('/space')) return;
+    
+    document.documentElement.style.visibility = 'visible';
+}
+
+// ================================================================
+// ========================= EVENT LISTENER =======================
+// ================================================================
+window.addEventListener('DOMContentLoaded', () => {
+  landing();
+  updateLanding();
+  unlock();
+  space();
+});
+

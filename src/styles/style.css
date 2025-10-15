@@ -60,6 +60,7 @@ body {
     position: absolute;
     text-align: right;
     padding: 0 0.25em;
+    z-index: 999;
     text-shadow: 0 0 calc(0.6em * var(--e)) #ffffff, 0 0 calc(0.05em * var(--e)) #ffffff;
 }
 
@@ -74,3 +75,141 @@ body {
         calc(50% - var(--w) / 2 * var(--cell-size)) calc(50% + var(--h) / 2 * var(--cell-size))
     );
 }
+
+/* Unlock */
+
+div:has(#unlock-module) {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#unlock-module {
+    display: grid;
+    position: relative;
+}
+
+#unlock-module-inner {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#unlock-module #unlock-title {
+    font-family: var(--ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1748926717051---font--body-font);
+    font-size: clamp(2rem, 4.8vmax, 10vmin);    
+    background: #000;
+    text-shadow: 0 0 2em #ffffff99, 0 0 0.1em #ffffffaa;
+}
+
+#unlock-module .cell {
+    display:flex;
+    flex-direction: column;
+    justify-content: center;      
+    text-align: center;
+    font-size: 1em;
+    transition: transform 0.2s;
+}
+
+#unlock-module #submit-btn {
+    width: calc(var(--cell-size) * 6);
+    height: var(--cell-size);
+    border: 2px solid #fff;
+    background: #000;
+    font-size: 2rem;
+    position: absolute;
+    bottom: var(--cell-size);
+    left: 50%;
+    transform: translateX(-50%);
+    transition: box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+#unlock-module #submit-btn:hover {
+    text-shadow: 0 0 4px #fff;
+    box-shadow: 0 2px 64px -8px #fff, 0 1px 2px #fff;
+}
+
+#unlock-module #submit-btn[disabled] {
+    border: none;
+}
+
+#unlock-module #submit-btn[disabled]:hover {
+    text-shadow: none;
+    box-shadow: none;
+}
+
+.text-line {
+    position: absolute;
+}
+
+.text-1 {
+    right: 0.25em;
+    top: -1.25em;
+    font-size: 1.5rem;
+}
+
+.text-2 {
+    left: -1.25em;
+    top: calc(50% + var(--cell-size) * 0.85);
+    transform-origin: 100% 50%;
+    transform: translateX(-100%) rotate(-90deg);
+}
+
+.code {
+    display: flex;
+    gap: 0;
+    position: absolute;
+}
+
+.digit {
+    width: calc(var(--cell-size) * 2);
+    height: calc(var(--cell-size) * 2);
+    border: 1px solid #000;
+    color: #000;
+    font-size: var(--cell-size);
+    text-align: center;
+    outline: none;
+}
+
+.line-vertical {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 100%;
+}
+
+.line-horizontal {
+    position: absolute;
+    left: 0;
+    height: 1px;
+    width: 100%;
+}
+
+.line-solid {
+    background: #fff8;
+}
+
+.line-dashed.line-horizontal {
+    background: repeating-linear-gradient(
+        to right,
+        currentColor 0 8px,
+        transparent 8px 16px
+    );
+}
+
+.line-dashed.line-vertical {
+    background: repeating-linear-gradient(
+        to bottom,
+        currentColor 0 8px,
+        transparent 8px 16px
+    );
+}
+
+
