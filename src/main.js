@@ -745,7 +745,186 @@ function unlock() {
 
 function space() {
     if (!location.pathname.endsWith('/space')) return;
+    document.getElementById('logout-btn')?.addEventListener('click', logout);
+    // SET URLS HERE
+    const ENTRY_PAGE = './landing';
+    const PROTECTED_PAGE = './space';
+
+    // Protect this page
+    (function() {
+    const userName = sessionStorage.userName;
+    const sessionToken = sessionStorage.getItem('sessionToken');
+    const accessTime = parseInt(sessionStorage.getItem('accessTime'));
     
+    const validDuration = 2 * 60 * 60 * 1000; // 2 hours
+    
+    // Check if session is valid
+    if (!userName || !sessionToken || !accessTime || (Date.now() - accessTime) > validDuration) {
+        // Invalid session - redirect to entry page using variable
+        sessionStorage.clear();
+        window.location.replace(ENTRY_PAGE);
+        return;
+    }
+
+    // Logo
+    document.querySelector('#logo-svg').setAttribute('fill', 'white');
+    
+    // Append user's name into span
+    document.querySelector('#user-name').textContent = sessionStorage.getItem('userName') || '';
+    })();    
+
+    function logout() {
+    sessionStorage.clear();
+    window.location.href = ENTRY_PAGE; 
+    }
+
+    // Scroll cue
+    const host=document.querySelector('#welcome .scroll-cue');
+    const easeCirc = 'cubic-bezier(0,0.55,0.45,1)';
+    
+    function animateCueInner(cueInner) {
+      // Animation sequence:
+      // 0-0.75s: transform-origin 50% 0%, scale 0% -> 100%
+      // 0.75s: instant switch to transform-origin 50% 100%, scale 100%
+      // 0.75-1.5s: transform-origin 50% 100%, scale 100% -> 0%
+      return cueInner.animate([
+        { transformOrigin: '50% 0%', transform: 'scaleY(0)', offset: 0 },        // 0s
+        { transformOrigin: '50% 0%', transform: 'scaleY(1)', offset: 0.75 },      // 0.75s
+        { transformOrigin: '50% 100%', transform: 'scaleY(1)', offset: 0.8 },    // 0.75s (instant)
+        { transformOrigin: '50% 100%', transform: 'scaleY(0)', offset: 1 }       // 1.5s
+      ], {
+        duration: 3000, // Total duration
+        easing: easeCirc
+      });
+    }
+
+    async function runCueAnimation() {
+        const scrollCue = document.querySelector('#welcome .scroll-cue');        
+        while (true) {
+            // Create and append a new cueInner
+            const cueInner = document.createElement('div');
+            cueInner.className = 'inner';
+            scrollCue.appendChild(cueInner);
+            
+            // Start the animation
+            const animation = animateCueInner(cueInner);
+            
+            // Remove element after animation completes
+            setTimeout(() => {
+            cueInner.remove();
+            }, 3000);
+            
+            // Wait 1.0s before starting next
+            await new Promise(resolve => setTimeout(resolve, 2100));
+        }
+    }
+
+    runCueAnimation();
+    
+
+    
+    //=============== THREEJS
+    // Canvas
+    const canvas = document.querySelector('#space');
+
+    // Scene
+    const scene = new THREE.Scene()
+    let object;
+    
+    // Size
+    const size = {
+        width: window.innerWidth,
+        height: window.innerHeight
+    }
+
+    // Camera
+    const camera = new THREE.PerspectiveCamera(75, size.width / size.height, 0.1, 1000);
+    camera.position.set(-2, 0, 3); // Moved camera back further
+    scene.add(camera);
+
+    // Add lighting BEFORE loading model
+    const light = new THREE.AmbientLight(0xffffff, 1);
+    scene.add(light);
+
+    // Add a directional light for better visibility
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 5, 5);
+    scene.add(directionalLight);
+
+    // GLTF Loader
+    const loader = new GLTFLoader();    
+    
+    // Load the file
+    loader.load(
+        'http://localhost:3000/src/point_cloud.glb',
+        function (gltf) {
+            object = gltf.scene; 
+            object.scale.set(8,8,8);
+            
+            // Calculate bounding box and center
+            const boundingBox = new THREE.Box3().setFromObject(object);
+            const center = new THREE.Vector3();
+            boundingBox.getCenter(center);
+            
+            // Move the object so its center is at the origin (0,0,0)
+            // This makes it rotate around its center
+            object.position.set(-center.x, -center.y, -center.z);
+            
+            // Create a group to hold the object
+            // This allows proper rotation around center
+            const group = new THREE.Group();
+            group.add(object);
+            scene.add(group);
+            
+            // Update the object reference to the group
+            // so the animation rotates the group (which rotates around origin)
+            object = group;
+        },
+        function (xhr) {
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        },
+        function (error) {
+            console.error('An error occurred loading the GLB:', error);
+        }
+    );
+
+    // Instantiate renderer
+    const renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true
+    })
+    renderer.setSize(window.innerWidth, window.innerHeight)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+
+    // Animation loop - this renders continuously
+    function animate() {
+        requestAnimationFrame(animate);
+        
+        // Optional: rotate the object if it exists
+        if (object) {
+            object.rotation.y += 0.001;
+        }
+        
+        renderer.render(scene, camera);
+    }
+    animate(); // Start the animation loop
+
+    // Resize Event Listener
+    window.addEventListener('resize', () => {
+        // Update Size
+        size.width = window.innerWidth,
+        size.height = window.innerHeight,
+
+        // Update camera
+        camera.aspect = size.width / size.height,
+        camera.updateProjectionMatrix(),
+
+        // Update renderer
+        renderer.setSize(size.width, size.height),
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))        
+    })    
+
     document.documentElement.style.visibility = 'visible';
 }
 

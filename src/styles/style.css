@@ -8,6 +8,8 @@ body {
     background-color: #000;
 }
 
+/*------------------ LANDING ------------------*/
+
 .grid-container {
     position:absolute; 
     inset:0; 
@@ -76,7 +78,7 @@ body {
     );
 }
 
-/* Unlock */
+/*------------------ UNLOCK ------------------*/
 
 div:has(#unlock-module) {
     width: 100vw;
@@ -210,6 +212,88 @@ div:has(#unlock-module) {
         currentColor 0 8px,
         transparent 8px 16px
     );
+}
+
+/*------------------ MAIN ------------------*/
+main#liminalspace {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+#liminalspace #logo-holder {
+    width: 4rem;
+    height: 4rem;
+    padding: 0;
+    inset: 5rem;
+}
+
+#liminalspace>div {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    padding: 5rem;
+}
+
+#liminalspace .scroll-hint {
+    font-size: 0.75rem;
+    color: #fffa;
+    text-transform: uppercase;
+}
+
+#logout-btn {
+    display: none;
+}
+
+#welcome .inner-content {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    bottom: 0;
+}
+
+#welcome p {
+    max-width: 64em;
+}
+
+#welcome h1 {
+    font-family: "Space Grotesk";
+    font-size: 8rem;
+    flex: 1 0 0;
+    align-content: flex-end;
+}
+
+canvas#space {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+}
+
+#welcome .scroll-hint {
+    margin-bottom: 3rem;
+}
+
+#welcome .scroll-cue-container{
+    flex: 1 0 0;
+    position:relative;
+    padding: 2rem 0;
+    width:1px;
+    overflow:hidden;
+    color:#fff
+}
+
+#welcome .scroll-cue {
+    height: 100%;
+    position: relative;
+}
+
+#welcome .scroll-cue .inner{
+  position:absolute;left:0;top:0;width:100%;height:100%;
+  background:#fffa;transform-origin:50% 0%;transform:scaleY(0);
+  transition:transform .3s cubic-bezier(0,0.55,0.45,1)
 }
 
 
