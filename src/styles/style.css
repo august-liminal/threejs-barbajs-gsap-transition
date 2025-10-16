@@ -252,6 +252,7 @@ main#liminalspace {
     flex-direction: column;
     height: 100%;
     bottom: 0;
+    text-shadow: 0 0 64px #000, 0 0 24px #000;
 }
 
 #welcome p {
@@ -270,6 +271,7 @@ canvas#space {
     width: 100vw;
     height: 100vh;
     z-index: -1;
+    inset: 0;
 }
 
 #welcome .scroll-hint {

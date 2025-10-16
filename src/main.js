@@ -2,6 +2,11 @@ import './styles/style.css';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 // import barba from '@barba/core';
 import gsap from 'gsap';
 
@@ -160,7 +165,7 @@ function landing(){
     const loader = new GLTFLoader();    
     //Load the file
     loader.load(
-    'http://localhost:3000/src/point_cloud.glb',
+    'http://localhost:3000/src/cloud.glb',
     function (gltf) {
         //If the file is loaded, add it to the scene
         object = gltf.scene;
@@ -823,14 +828,26 @@ function space() {
     
 
     
-    //=============== THREEJS
+    // =============== THREEJS ===============
+
     // Canvas
     const canvas = document.querySelector('#space');
 
     // Scene
     const scene = new THREE.Scene()
     let object;
-    
+    const BLOOM_SCENE = 1;
+    const bloomLayer = new THREE.Layers();
+    bloomLayer.set(BLOOM_SCENE);
+
+    // 🎛️ BLOOM KNOBS - Adjust these values!
+    const params = {
+        threshold: 0.5,      // 🎛️ 0-1: Lower = more objects bloom
+        strength: 0.3,     // 🎛️ 0-3: Bloom intensity
+        radius: 0.3,       // 🎛️ 0-1: Bloom spread
+        exposure: 0.5        // 🎛️ 0.1-2: Overall brightness
+    };
+
     // Size
     const size = {
         width: window.innerWidth,
@@ -839,45 +856,103 @@ function space() {
 
     // Camera
     const camera = new THREE.PerspectiveCamera(75, size.width / size.height, 0.1, 1000);
-    camera.position.set(-2, 0, 3); // Moved camera back further
+    camera.position.set(-2, 0, 3);
     scene.add(camera);
 
-    // Add lighting BEFORE loading model
+    // Lighting
     const light = new THREE.AmbientLight(0xffffff, 1);
     scene.add(light);
 
-    // Add a directional light for better visibility
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(5, 5, 5);
     scene.add(directionalLight);
 
     // GLTF Loader
-    const loader = new GLTFLoader();    
+    const loader = new GLTFLoader();   
     
-    // Load the file
+    const shaderMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            uColor: { value: new THREE.Color(0xffffff) },
+            // tweak this size constant as needed
+            uSize: { value: 200.0 },
+            cameraNear: { value: camera.near },
+            cameraFar: { value: camera.far }
+        },
+        vertexShader: `
+            uniform float uSize;
+            uniform float cameraNear;
+            uniform float cameraFar;
+            varying float vDepth;
+
+            void main() {
+                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                vDepth = -mvPosition.z;
+
+                // You can experiment with scaling formula
+                // Here: point size falls off with depth
+                float size = uSize * (1.2 / vDepth);
+                gl_PointSize = size;
+
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+        uniform vec3 uColor;
+        varying float vDepth;
+
+        void main() {
+            // compute distance from center of point
+            vec2 uv = gl_PointCoord.xy - vec2(0.5);
+            float dist = length(uv);
+
+            // discard fragments outside radius
+            if (dist > 0.5) {
+            discard;
+            }
+
+            // simple shading: fade by distance from center
+            float t = 1.0 - smoothstep(0.4, 0.5, dist);
+            vec3 color = uColor * t;
+
+            gl_FragColor = vec4(color, t);
+        }
+        `,
+        transparent: true,
+        depthWrite: false
+    });
+
     loader.load(
-        'http://localhost:3000/src/point_cloud.glb',
+        'http://localhost:3000/src/cloud.glb',
         function (gltf) {
             object = gltf.scene; 
-            object.scale.set(8,8,8);
+            object.scale.set(1, 1, 1);            
             
-            // Calculate bounding box and center
+            gltf.scene.traverse((object) => {
+                if (object.isPoints) {
+                    const geometry = object.geometry;
+                    object.material.dispose();             
+                    object.material = shaderMaterial;
+                    const newPoints = new THREE.Points(geometry, shaderMaterial);
+                    newPoints.position.copy(object.position);
+                    newPoints.rotation.copy(object.rotation);
+                    newPoints.scale.copy(object.scale);
+
+                    // replace in scene
+                    object.parent.add(newPoints);
+                    object.parent.remove(object);
+                }
+            });  
+            
             const boundingBox = new THREE.Box3().setFromObject(object);
             const center = new THREE.Vector3();
             boundingBox.getCenter(center);
             
-            // Move the object so its center is at the origin (0,0,0)
-            // This makes it rotate around its center
             object.position.set(-center.x, -center.y, -center.z);
             
-            // Create a group to hold the object
-            // This allows proper rotation around center
             const group = new THREE.Group();
             group.add(object);
             scene.add(group);
             
-            // Update the object reference to the group
-            // so the animation rotates the group (which rotates around origin)
             object = group;
         },
         function (xhr) {
@@ -888,7 +963,7 @@ function space() {
         }
     );
 
-    // Instantiate renderer
+    // Renderer
     const renderer = new THREE.WebGLRenderer({
         canvas: canvas,
         antialias: true,
@@ -896,34 +971,107 @@ function space() {
     })
     renderer.setSize(window.innerWidth, window.innerHeight)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.toneMapping = THREE.ReinhardToneMapping;
 
-    // Animation loop - this renders continuously
+    // Render passes
+    const renderScene = new RenderPass(scene, camera);
+
+    const bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        params.strength,  // strength
+        params.radius,    // radius
+        params.threshold  // threshold
+    );
+
+    const bloomComposer = new EffectComposer(renderer);
+    bloomComposer.renderToScreen = false;
+    bloomComposer.addPass(renderScene);
+    bloomComposer.addPass(bloomPass);
+
+    // Shader to mix bloom with scene
+    const mixPass = new ShaderPass(
+        new THREE.ShaderMaterial({
+            uniforms: {
+                baseTexture: { value: null },
+                bloomTexture: { value: bloomComposer.renderTarget2.texture }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D baseTexture;
+                uniform sampler2D bloomTexture;
+                varying vec2 vUv;
+                void main() {
+                    gl_FragColor = texture2D(baseTexture, vUv) + vec4(1.0) * texture2D(bloomTexture, vUv);
+                }
+            `,
+            defines: {}
+        }), 'baseTexture'
+    );
+    mixPass.needsSwap = true;
+
+    const outputPass = new OutputPass();
+
+    const finalComposer = new EffectComposer(renderer);
+    finalComposer.addPass(renderScene);
+    finalComposer.addPass(mixPass);
+    finalComposer.addPass(outputPass);
+
+    // 🎛️ ROTATION SPEED
+    const rotationSpeed = 0.0006; // Adjust rotation speed
+
+    // Animation loop
     function animate() {
         requestAnimationFrame(animate);
         
-        // Optional: rotate the object if it exists
         if (object) {
-            object.rotation.y += 0.001;
+            object.rotation.y += rotationSpeed;
         }
         
-        renderer.render(scene, camera);
+        // 🎛️ USE COMPOSERS INSTEAD OF DIRECT RENDER
+        scene.traverse(darkenNonBloomed);
+        bloomComposer.render();
+        scene.traverse(restoreMaterial);
+        finalComposer.render();
     }
-    animate(); // Start the animation loop
+
+    // Helper to isolate bloom objects
+    const materials = {};
+    function darkenNonBloomed(obj) {
+        if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
+            materials[obj.uuid] = obj.material;
+            obj.material = new THREE.MeshBasicMaterial({ color: 'black' });
+        }
+    }
+
+    function restoreMaterial(obj) {
+        if (materials[obj.uuid]) {
+            obj.material = materials[obj.uuid];
+            delete materials[obj.uuid];
+        }
+    }
+
+    animate();
 
     // Resize Event Listener
     window.addEventListener('resize', () => {
-        // Update Size
-        size.width = window.innerWidth,
-        size.height = window.innerHeight,
+        size.width = window.innerWidth;
+        size.height = window.innerHeight;
 
-        // Update camera
-        camera.aspect = size.width / size.height,
-        camera.updateProjectionMatrix(),
+        camera.aspect = size.width / size.height;
+        camera.updateProjectionMatrix();
 
-        // Update renderer
-        renderer.setSize(size.width, size.height),
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))        
-    })    
+        renderer.setSize(size.width, size.height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
+        bloomComposer.setSize(size.width, size.height);
+        finalComposer.setSize(size.width, size.height);
+    });
 
     document.documentElement.style.visibility = 'visible';
 }
