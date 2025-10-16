@@ -162,10 +162,11 @@ function landing(){
     scene.add(camera);
 
     // GLTF Loader
-    const loader = new GLTFLoader();    
+    const loader = new GLTFLoader();
+    const modelURL = new URL('./cloud.glb', import.meta.url);
     //Load the file
     loader.load(
-    'http://localhost:3000/src/cloud.glb',
+    modelURL.href,
     function (gltf) {
         //If the file is loaded, add it to the scene
         object = gltf.scene;
@@ -191,10 +192,6 @@ function landing(){
         object.position.z = 1;
         scene.add(object);
     },
-    function (xhr) {
-        //While it is loading, log the progress
-        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-    },
     function (error) {
         //If there is an error, log it
         console.error(error);
@@ -208,13 +205,7 @@ function landing(){
         alpha: true
     })
     renderer.setSize(size.width, size.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))
-
-    //Add the renderer to the DOM
-    document.querySelector('.window').appendChild(renderer.domElement);
-
-    // //Set how far the camera will be from the 3D model
-    // camera.position.z = 1.5;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))     
 
     //Render the scene
     function animate() {
@@ -236,10 +227,17 @@ function landing(){
     });
 
     //Mouse position listener
-    document.onmousemove = (e) => {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-    }
+    let lastMouseUpdate = 0;
+    const MOUSE_UPDATE_INTERVAL = 16; // ~60fps, adjust as needed
+
+    document.addEventListener('mousemove', (e) => {
+        const now = Date.now();
+        if (now - lastMouseUpdate > MOUSE_UPDATE_INTERVAL) {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            lastMouseUpdate = now;
+        }
+    }, { passive: true });
 
     //Start the 3D rendering
     animate();
@@ -256,11 +254,16 @@ function landing(){
 
         // Update renderer
         renderer.setSize(size.width, size.height),
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))        
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5))        
     })    
     
     window.addEventListener('resize', landing);
     document.documentElement.style.visibility = 'visible';
+
+    window.addEventListener('load',       updateLanding);
+    window.addEventListener('mousemove',  updateLanding, { passive: true });
+    window.addEventListener('touchstart', updateLanding, { passive: true });
+    window.addEventListener('touchmove',  updateLanding, { passive: true });
 }
 
 //===== Landing page window resizing & flickering effect
@@ -278,9 +281,13 @@ function updateLanding(e) {
 
 
 
-    // --- Multiplier for effect ---
-    const multiplier = Math.abs(pos.x < pos.y ? pos.x / pos.y : pos.y / pos.x);
+    // --- Multiplier for effect (safe & bounded 0..1) ---
+    const EPS = 0.0001;
+    const ax = Math.abs(pos.x), ay = Math.abs(pos.y);
+    const ratio = (ax < ay) ? ax / Math.max(ay, EPS) : ay / Math.max(ax, EPS);
+    const multiplier = Math.min(1, ratio);
     document.documentElement.style.setProperty('--e', String(multiplier));
+
 
     // --- Size in cells ---
     const windowW = clamp(Math.round(Math.abs(pos.x) / cellSize) * 2, 2, gridSize - 2);
@@ -303,446 +310,316 @@ function updateLanding(e) {
         Object.assign(entrance.style,{background:'transparent', boxShadow: 'none'});
         entrance.removeAttribute('href');
     }
-
-    window.addEventListener('load',       updateLanding);
-    window.addEventListener('mousemove',  updateLanding, { passive: true });
-    window.addEventListener('touchstart', updateLanding, { passive: true });
-    window.addEventListener('touchmove',  updateLanding, { passive: true });
 }
 
 // ================================================================
 // ========================== UNLOCK PAGE =========================
 // ================================================================
 
+let unlockInit = false;
+
 function unlock() {
-    if (!location.pathname.endsWith('/unlock')) return;
-    //===== DECLARATIONS
-    const t = document.querySelector('#unlock-title');
-    if (t?.style.lineHeight) t.style.removeProperty('line-height');
+  if (!location.pathname.endsWith('/unlock') || unlockInit) return;
+  unlockInit = true;
 
-    const mincellSize = 0.5 * parseFloat(getComputedStyle(t).fontSize);
-    let dimensionH = Math.max(12, Math.floor(window.innerHeight / mincellSize));
-    let dimensionW = Math.max(12, Math.floor(window.innerWidth  / mincellSize / 2) * 2);
-    let cellSize    = window.innerHeight / dimensionH;
+  // ---- CONSTANTS
+  const ENTRY_PAGE     = '/landing';
+  const PROTECTED_PAGE = '/space';
+  const API_URL        = 'https://liminal-webflow-auth.vercel.app/api/validate-code';
 
-    const inner = document.querySelector('#unlock-module-inner');
-    inner?.style.setProperty('--cell-size', `${cellSize}px`);
-    t.style.lineHeight = (cellSize * 2) + 'px';
+  // ---- ELEMENTS
+  const t            = document.querySelector('#unlock-title');
+  const unlockModule = document.querySelector('#unlock-module');
+  const inner        = document.querySelector('#unlock-module-inner');
+  const container    = unlockModule?.parentNode;
 
-    // ===== Create Grid (inner grid sizes) =====
-    const unlockModule = document.querySelector('#unlock-module');
-    const innerH = dimensionH - 8;
-    const innerW = dimensionW - 2;
-    const total  = innerH * innerW;
+  if (!t || !unlockModule || !container) return; // basic guard
 
-    //===== Styling Unlock Module Parent
-    const container = document.querySelector('#unlock-module').parentNode;
-    const paddingY = (window.innerHeight - innerH * cellSize) / 2;
-    const paddingX = (window.innerWidth - innerW * cellSize) / 2;
-    container.style.padding = paddingY + 'px' + ' ' + paddingX + 'px';
+  // ---- TYPOGRAPHY / GRID SIZING
+  if (t?.style.lineHeight) t.style.removeProperty('line-height');
 
-    // Vertical lines
-    container.append(Object.assign(document.createElement('div'), {
-        className: 'line-solid line-vertical',
-        style: `left: ${paddingX - 8}px;`
-    }));
-    container.append(Object.assign(document.createElement('div'), {
-        className: 'line-solid line-vertical',
-        style: `left: ${paddingX}px;`
-    }));
-    container.append(Object.assign(document.createElement('div'), {
-        className: 'line-dashed line-vertical',
-        style: `left: ${Math.round(window.innerWidth / 2 - cellSize * 4)}px;`
-    }));
-    container.append(Object.assign(document.createElement('div'), {
-        className: 'line-dashed line-vertical',
-        style: `right: ${Math.round(window.innerWidth / 2 - cellSize * 4)}px;`
-    }));
-    container.append(Object.assign(document.createElement('div'), {
-        className: 'line-solid line-vertical',
-        style: `right: ${paddingX}px;`
-    }));
-    container.append(Object.assign(document.createElement('div'), {
-        className: 'line-solid line-vertical',
-        style: `right: ${paddingX - 8}px;`
-    }));
+  const mincellSize = 0.5 * parseFloat(getComputedStyle(t).fontSize);
+  const dimensionH  = Math.max(12, Math.floor(window.innerHeight / mincellSize));
+  const dimensionW  = Math.max(12, Math.floor(window.innerWidth  / mincellSize / 2) * 2);
+  const cellSize    = window.innerHeight / dimensionH;
 
-    // Horizontal Lines
-    container.append(Object.assign(document.createElement('div'), {
-        className: 'line-solid line-horizontal',
-        style: `top: ${paddingY}px;`
-    }));
-    container.append(Object.assign(document.createElement('div'), {
-        className: 'line-dashed line-horizontal',
-        style: `top: ${window.innerHeight / 2 - cellSize}px;`
-    }));
-    container.append(Object.assign(document.createElement('div'), {
-        className: 'line-dashed line-horizontal',
-        style: `bottom: ${window.innerHeight / 2 - cellSize}px;`
-    }));
-    container.append(Object.assign(document.createElement('div'), {
-        className: 'line-solid line-horizontal',
-        style: `bottom: ${paddingY}px;`
-    }));
+  inner?.style.setProperty('--cell-size', `${cellSize}px`);
+  t.style.lineHeight = (cellSize * 2) + 'px';
 
-    // Placing code input
-    document.querySelector('.code').style.top = (innerH / 2 - 1) * cellSize + 'px';
+  const innerH = dimensionH - 8;
+  const innerW = dimensionW - 2;
+  const total  = innerH * innerW;
 
-    // pixel columns so they match cellSize exactly
-    unlockModule.style.display = 'grid';
-    unlockModule.style.gridTemplateColumns = `repeat(${innerW}, ${cellSize}px)`;
-    unlockModule.style.gap = '0';
-    unlockModule.style.width  = (innerW * cellSize) + 'px';
-    unlockModule.style.height = (innerH * cellSize) + 'px';
+  // ---- LINES: clear previous then place fresh
+  container.querySelectorAll('.line-solid, .line-dashed').forEach(n => n.remove());
 
-    // clear previous children if re-running
-    unlockModule.querySelectorAll('.cell').forEach(el => el.remove());
+  const paddingY = (window.innerHeight - innerH * cellSize) / 2;
+  const paddingX = (window.innerWidth  - innerW * cellSize) / 2;
+  container.style.padding = `${paddingY}px ${paddingX}px`;
 
-    const frag  = document.createDocumentFragment();
-    const cells = new Array(total);
+  // verticals
+  container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical',  style: `left:${paddingX - 8}px;` }));
+  container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical',  style: `left:${paddingX}px;` }));
+  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `left:${Math.round(window.innerWidth / 2 - cellSize * 4)}px;` }));
+  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `right:${Math.round(window.innerWidth / 2 - cellSize * 4)}px;` }));
+  container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical',  style: `right:${paddingX}px;` }));
+  container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical',  style: `right:${paddingX - 8}px;` }));
+  // horizontals
+  container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal',  style: `top:${paddingY}px;` }));
+  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `top:${window.innerHeight / 2 - cellSize}px;` }));
+  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `bottom:${window.innerHeight / 2 - cellSize}px;` }));
+  container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal',  style: `bottom:${paddingY}px;` }));
 
-    for (let i = 0; i < total; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.textContent = '•';
-        cell.style.width  = cellSize + 'px';
-        cell.style.height = cellSize + 'px';
-        cell.style.lineHeight = `${cellSize}px`;
-        cell.style.textAlign  = 'center';
-        cell.style.userSelect = 'none';
-        cell.style.pointerEvents = 'none';
-        cells[i] = cell;
-        frag.appendChild(cell);
+  // ---- GRID SETUP
+  document.querySelector('.code')?.style && (document.querySelector('.code').style.top = (innerH / 2 - 1) * cellSize + 'px');
+
+  unlockModule.style.display = 'grid';
+  unlockModule.style.gridTemplateColumns = `repeat(${innerW}, ${cellSize}px)`;
+  unlockModule.style.gap    = '0';
+  unlockModule.style.width  = (innerW * cellSize) + 'px';
+  unlockModule.style.height = (innerH * cellSize) + 'px';
+
+  // clear previous cells if re-running
+  unlockModule.querySelectorAll('.cell').forEach(el => el.remove());
+
+  const frag  = document.createDocumentFragment();
+  const cells = new Array(total);
+  for (let i = 0; i < total; i++) {
+    const cell = document.createElement('div');
+    cell.className         = 'cell';
+    cell.textContent       = '•';
+    cell.style.width       = cellSize + 'px';
+    cell.style.height      = cellSize + 'px';
+    cell.style.lineHeight  = `${cellSize}px`;
+    cell.style.textAlign   = 'center';
+    cell.style.userSelect  = 'none';
+    cell.style.pointerEvents = 'none';
+    cell.style.willChange  = 'transform';
+    frag.appendChild(cell);
+    cells[i] = cell;
+  }
+  unlockModule.appendChild(frag);
+
+  // =============== TEXT MATRIX (single mode) ===============
+  
+  const RAMP = Array.from(" .:-=+*#%@");
+  const MIN_SCALE = 0.1, MAX_SCALE = 3;
+  const RIPPLE_DECAY = 0.01;
+  const POINTER_SIGMA_FACTOR = 0.25;
+  const NOISE_SCALE = 3.0;
+
+  // centers & jitter
+  const centersX = new Float32Array(total);
+  const centersY = new Float32Array(total);
+  const jitter   = new Float32Array(total);
+  const lastChar = new Int16Array(total); lastChar.fill(-1);
+
+  for (let j = 0; j < innerH; j++) {
+    for (let i = 0; i < innerW; i++) {
+      const idx = j * innerW + i;
+      centersX[idx] = (i + 0.5) * cellSize;
+      centersY[idx] = (j + 0.5) * cellSize;
+      const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
+      jitter[idx] = h * 0.03;
     }
-    unlockModule.appendChild(frag);
+  }
 
-    
-    // =========== Text Matrix: Fast + Modular
-    (() => {
-    // ===== Config =====
-    const RAMP = Array.from(" .:-=+*#%@");
-    const MIN_SCALE = 0.1, MAX_SCALE = 3;
-    const RIPPLE_DECAY = 0.01;
-    const POINTER_SIGMA_FACTOR = 0.25; // pointer influence ~ 15% of min(modW, modH)
-    const NOISE_SCALE = 3.0;
-    const FRAME_SKIP = 0; // set to 1 or 2 to skip every N frames under load
+  // module rect / pointer
+  let modRect = unlockModule.getBoundingClientRect();
+  const ro = new ResizeObserver(() => { modRect = unlockModule.getBoundingClientRect(); });
+  ro.observe(unlockModule);
+  addEventListener('scroll', () => { modRect = unlockModule.getBoundingClientRect(); }, { passive: true });
 
-    // ===== State (typed, no objects per cell) =====
-    const centersX = new Float32Array(total);
-    const centersY = new Float32Array(total);
-    const jitter    = new Float32Array(total);
-    const lastChar  = new Int16Array(total); lastChar.fill(-1);
+  let mx = modRect.width / 2, my = modRect.height / 2;
+  let vx = 0, vy = 0, lastX = mx, lastY = my;
 
-    // Precompute centers & jitter (stable, no Math.random)
-    for (let j = 0; j < innerH; j++) {
-        for (let i = 0; i < innerW; i++) {
-        const idx = j * innerW + i;
-        centersX[idx] = (i + 0.5) * cellSize;
-        centersY[idx] = (j + 0.5) * cellSize;
-        const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
-        jitter[idx] = h * 0.03;
+  function onPointer(e) {
+    const p = e.touches ? e.touches[0] : e;
+    const x = p.clientX - modRect.left;
+    const y = p.clientY - modRect.top;
+    vx = 0.7 * vx + 0.3 * (x - lastX);
+    vy = 0.7 * vy + 0.3 * (y - lastY);
+    mx = x; my = y; lastX = x; lastY = y;
+  }
+  unlockModule.addEventListener('pointermove', onPointer, { passive: true });
+  unlockModule.addEventListener('touchmove',  onPointer, { passive: true });
+
+  // helpers
+  const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+  const mix = (a,b,t) => a + (b - a) * t;
+  function noise2(x, y, t){
+    return (Math.sin(1.7*x + 1.3*y + 0.9*t) * 0.6 +
+            Math.sin(2.1*x - 0.8*y + 1.7*t) * 0.4) * 0.5 + 0.5;
+  }
+
+  function makeField(modW, modH) {
+    const invW = 1 / modW, invH = 1 / modH;
+    const minSide = Math.min(modW, modH);
+    const sigma = Math.max(80, minSide * POINTER_SIGMA_FACTOR);
+    const inv2Sig2 = 1 / (2 * sigma * sigma);
+
+    return function field(x, y, t) {
+      const xn = x * invW, yn = y * invH;
+      const dx = x - mx,   dy = y - my;
+      const dist = Math.hypot(dx, dy);
+
+      const ang   = Math.atan2(dy, dx);
+      const swirl = Math.sin(ang * 3.0 + t * 1.5) * Math.exp(-dist * 0.008) * 0.5 + 0.5;
+      const Noise = noise2(xn * NOISE_SCALE, yn * NOISE_SCALE, t * 0.5);
+      const Cursor= Math.exp(-(dx*dx + dy*dy) * inv2Sig2);
+
+      return clamp01( swirl * 0.5 + Noise * 0.3 + Cursor * 0.2 );
+    };
+  }
+
+  let start = performance.now();
+  let running = true;
+
+  const io = new IntersectionObserver((entries) => {
+    running = entries.some(e => e.isIntersecting);
+  }, { root: null, threshold: 0.01 });
+  io.observe(unlockModule);
+
+  function renderFrame(tSec, staticOnce) {
+    const modW = modRect.width  || (innerW * cellSize);
+    const modH = modRect.height || (innerH * cellSize);
+    const field = makeField(modW, modH);
+
+    for (let idx = 0; idx < total; idx++) {
+      let F = field(centersX[idx], centersY[idx], tSec) + jitter[idx];
+      F = clamp01(F);
+
+      const ci = (F * (RAMP.length - 1)) | 0;
+      if (ci !== lastChar[idx]) {
+        cells[idx].textContent = RAMP[ci];
+        lastChar[idx] = ci;
+      }
+      const s = mix(MIN_SCALE, MAX_SCALE, F);
+      cells[idx].style.transform = `scale(${s})`;
+    }
+    if (staticOnce) return;
+  }
+
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+  function tick() {
+    if (reduce?.matches) { renderFrame(0, true); return; }
+    if (!running) { requestAnimationFrame(tick); return; }
+    const t = (performance.now() - start) / 1000;
+    renderFrame(t, false);
+    requestAnimationFrame(tick);
+  }
+  if (reduce?.matches) renderFrame(0, true); else tick();
+
+  // ---- DISSOLVE 
+  function dissolveTextMatrix({ from = 'center', duration = 700, spread = 400, easing = 'cubic-bezier(0.16,1,0.3,1)' } = {}) {
+    const rect = unlockModule.getBoundingClientRect();
+    let ox, oy;
+    if (Array.isArray(from)) [ox, oy] = from; else { ox = rect.width / 2; oy = rect.height / 2; }
+
+    unlockModule.classList.add('is-dissolving');
+    unlockModule.style.pointerEvents = 'none';
+
+    const diag = Math.hypot(rect.width, rect.height) || 1;
+    let done = 0;
+
+    return new Promise((resolve) => {
+      // schedule in chunks to reduce main-thread spike
+      const CHUNK = 500;
+      const startAnim = (startIdx) => {
+        const end = Math.min(startIdx + CHUNK, total);
+        for (let idx = startIdx; idx < end; idx++) {
+          const j = (idx / innerW) | 0, i = idx % innerW;
+          const cx = (i + 0.5) * cellSize;
+          const cy = (j + 0.5) * cellSize;
+          const dx = cx - ox, dy = cy - oy;
+          const dist = Math.hypot(dx, dy);
+          const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
+
+          const delay = Math.max(0, (dist / diag) * spread + h * 90);
+
+          const anim = cells[idx].animate(
+            [{ opacity: 1 }, { opacity: 0 }],
+            { duration, delay, easing, fill: 'forwards' }
+          );
+          anim.onfinish = () => { if (++done === total) resolve(); };
         }
-    }
-
-    // Track module rect for pointer offset (ResizeObserver > scroll/resize)
-    let modRect = unlockModule.getBoundingClientRect();
-    const ro = new ResizeObserver(() => { modRect = unlockModule.getBoundingClientRect(); });
-    ro.observe(unlockModule);
-    addEventListener('scroll', () => { modRect = unlockModule.getBoundingClientRect(); }, { passive: true });
-
-    // Pointer tracking (smoothed)
-    let mx = modRect.width / 2, my = modRect.height / 2;
-    let vx = 0, vy = 0, lastX = mx, lastY = my;
-
-    function onPointer(e) {
-        const p = e.touches ? e.touches[0] : e;
-        const x = p.clientX - modRect.left;
-        const y = p.clientY - modRect.top;
-        vx = 0.7 * vx + 0.3 * (x - lastX);
-        vy = 0.7 * vy + 0.3 * (y - lastY);
-        mx = x; my = y; lastX = x; lastY = y;
-    }
-    unlockModule.addEventListener('pointermove', onPointer, { passive: true });
-    unlockModule.addEventListener('touchmove',  onPointer, { passive: true });
-
-    // Prefers reduced motion: render once
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-
-    // Utility
-    const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
-    const mix = (a,b,t) => a + (b - a) * t;
-
-    // Cheap 2D noise (sum of sines)
-    function noise2(x, y, t){
-        return (Math.sin(1.7*x + 1.3*y + 0.9*t) * 0.6 +
-                Math.sin(2.1*x - 0.8*y + 1.7*t) * 0.4) * 0.5 + 0.5;
-    }
-
-    // ===== Motion Models (switchable) =====
-    // mode can be: 'ripple', 'vortex', 'curl', 'noiseFlow', 'gravity', 'scanline', 'lissajous'
-    let mode = 'vortex';
-
-    function makeField(modW, modH) {
-        const invW = 1 / modW, invH = 1 / modH;
-        const minSide = Math.min(modW, modH);
-        const sigma = Math.max(80, minSide * POINTER_SIGMA_FACTOR);
-        const inv2Sig2 = 1 / (2 * sigma * sigma);
-
-        return function field(x, y, t) {
-        const xn = x * invW, yn = y * invH;
-        const dx = x - mx,   dy = y - my;
-        const dist2 = dx*dx + dy*dy;
-        const dist  = Math.sqrt(dist2);
-        const speed = Math.hypot(vx, vy);
-
-        // building blocks
-        const Grad  = clamp01(0.6 * xn + 0.4 * yn);
-        const Noise = noise2(xn * NOISE_SCALE, yn * NOISE_SCALE, t * 0.5);
-        const Cursor= Math.exp(-dist2 * inv2Sig2);
-        const Ripple= Math.sin(dist * 0.15 - t * (2.5 + speed * 0.02)) * Math.exp(-dist * RIPPLE_DECAY) * 0.5 + 0.5;
-
-        switch (mode) {
-            case 'ripple':
-            return clamp01( mix(Grad, Noise, 0.25) * 0.45 + Cursor * 0.25 + Ripple * 0.3 );
-
-            case 'vortex': {
-            // angular wave around pointer
-            const ang = Math.atan2(dy, dx);
-            const swirl = Math.sin(ang * 3.0 + t * 1.5) * Math.exp(-dist * 0.008) * 0.5 + 0.5;
-            return clamp01( swirl * 0.5 + Noise * 0.3 + Cursor * 0.2 );
-            }
-
-            case 'curl': {
-            // fake curl-noise (phase-shifted sines)
-            const n1 = noise2(xn*2.3 + 0.1*t, yn*2.1 - 0.07*t, t*0.6);
-            const n2 = noise2(xn*2.0 - 0.08*t, yn*2.6 + 0.12*t, t*0.6);
-            const curlish = 0.5 + 0.5 * Math.sin(6.283*(n1 - n2));
-            return clamp01( 0.5*curlish + 0.3*Noise + 0.2*Cursor );
-            }
-
-            case 'noiseFlow': {
-            const dir = (noise2(xn*4.0, yn*4.0, t*0.3) - 0.5) * Math.PI * 2;
-            const flow = (Math.cos(dir) * dx + Math.sin(dir) * dy);
-            const f = 0.5 + 0.5 * Math.sin(flow * 0.02 - t * 2.0);
-            return clamp01( f * 0.5 + Noise * 0.3 + Cursor * 0.2 );
-            }
-
-            case 'gravity': {
-            // bright near pointer, dark far; scanline shimmer
-            const falloff = Math.exp(-dist * 0.01);
-            const scan = 0.5 + 0.5 * Math.sin((yn*200 - t*8));
-            return clamp01( 0.6*falloff + 0.25*Noise + 0.15*scan );
-            }
-
-            case 'scanline': {
-            const horiz = 0.5 + 0.5 * Math.sin((y*0.2) - t*6);
-            const vert  = 0.5 + 0.5 * Math.sin((x*0.2) + t*5);
-            return clamp01( 0.5*(horiz*vert) + 0.3*Noise + 0.2*Cursor );
-            }
-
-            case 'lissajous': {
-            const li = 0.5 + 0.5 * Math.sin( (xn*3.1 + 0.2) * Math.PI + Math.sin(t*0.7) )
-                            * Math.sin( (yn*4.2 - 0.1) * Math.PI + Math.cos(t*0.9) );
-            return clamp01( 0.5*li + 0.3*Noise + 0.2*Cursor );
-            }
-
-            default:
-            return clamp01(0.45*Grad + 0.25*Noise + 0.25*Cursor + 0.15*Ripple);
-        }
-        };
-    }
-
-    // ===== Render (only update changed cells; transform-scale instead of font-size) =====
-    let start = performance.now();
-    let frame = 0;
-    let running = true;
-
-    // Pause rendering if offscreen
-    const io = new IntersectionObserver((entries) => {
-        running = entries.some(e => e.isIntersecting);
-    }, { root: null, threshold: 0.01 });
-    io.observe(unlockModule);
-
-    // Ensure stable cell layout: style once (you can move this to CSS)
-    // .cell { display:inline-block; line-height:1; transform-origin:center; will-change:transform; }
-    for (let i = 0; i < total; i++) {
-        const el = cells[i];
-        el.style.willChange = 'transform';
-        el.style.transform = 'scale(1)';
-    }
-
-    function renderFrame(tSec, staticOnce) {
-        const modW = modRect.width  || (innerW * cellSize);
-        const modH = modRect.height || (innerH * cellSize);
-        const field = makeField(modW, modH);
-
-        // Batch transform writes to reduce style recalc cost
-        for (let idx = 0; idx < total; idx++) {
-        let F = field(centersX[idx], centersY[idx], tSec) + jitter[idx];
-        F = clamp01(F);
-
-        const ci = (F * (RAMP.length - 1)) | 0;
-        if (ci !== lastChar[idx]) {
-            cells[idx].textContent = RAMP[ci];
-            lastChar[idx] = ci;
-        }
-
-        // transform scale instead of font-size (no reflow)
-        const s = mix(MIN_SCALE, MAX_SCALE, F);
-        cells[idx].style.transform = `scale(${s})`;
-        }
-        if (staticOnce) return;
-    }
-
-    function tick() {
-        if (reduce?.matches) { renderFrame(0, true); return; }
-        if (!running) { requestAnimationFrame(tick); return; } // sleep offscreen
-        if (FRAME_SKIP && (frame++ % (FRAME_SKIP+1)) !== 0) { requestAnimationFrame(tick); return; }
-
-        const t = (performance.now() - start) / 1000;
-        renderFrame(t, false);
-        requestAnimationFrame(tick);
-    }
-
-    // ===== Public: quick mode switch helpers (optional) =====
-    // call setMode('vortex') from your code / devtools to try
-    window.setTextMatrixMode = (m) => { mode = m; };
-    window.getTextMatrixMode = () => mode;
-
-    // Initial draw
-    if (reduce?.matches) {
-        renderFrame(0, true);
-    } else {
-        tick();
-    }
-    })();
-
-    // ========== VALIDATION MODULE ==========
-
-    document.getElementById('submit-btn')?.addEventListener('click', validateCode);
-
-    const API_URL = 'https://liminal-webflow-auth.vercel.app/api/validate-code';
-    const ENTRY_PAGE = './unlock';
-    const PROTECTED_PAGE = './space';
-
-    const inputs = document.querySelectorAll('.digit');
-
-    inputs.forEach((input, i) => {
-        input.addEventListener('input', () => {
-            if (input.value && i < inputs.length - 1) {
-            inputs[i + 1].focus();
-            }
-        });
-
-        input.addEventListener('keydown', (e) => {
-            // backspace on empty → go back
-            if (e.key === 'Backspace' && !input.value && i > 0) {
-            inputs[i - 1].focus();
-            }
-        });
+        if (end < total) requestAnimationFrame(() => startAnim(end));
+      };
+      startAnim(0);
     });
+  }
 
-    async function validateCode() {
-    const code = Array.from(document.querySelectorAll('.digit')).map(i => i.value).join('');
-    const button = document.getElementById('submit-btn');
+  // ===================== VALIDATION ========================
+  
+  document.getElementById('submit-btn')?.addEventListener('click', validateCode);
+
+  const inputs = document.querySelectorAll('.digit');
+  inputs.forEach((input, i) => {
+    input.addEventListener('input', () => { if (input.value && i < inputs.length - 1) inputs[i + 1].focus(); });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && !input.value && i > 0) inputs[i - 1].focus(); });
+  });
+
+  async function validateCode() {
+    const code    = Array.from(document.querySelectorAll('.digit')).map(i => i.value).join('');
+    const button  = document.getElementById('submit-btn');
     const message = document.getElementById('message');
-    
+
     if (!code || code.length !== 4) {
-        message.innerHTML = '<span style="color: red;">Please enter a 4-digit code</span>';
-        return;
+      message.innerHTML = '<span style="color:red;">Please enter a 4-digit code</span>';
+      return;
     }
-    
+
     button.textContent = 'Validating';
     button.disabled = true;
     message.innerHTML = '';
-    
+
+    // fetch with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
     try {
-        const response = await fetch(API_URL, {
+      const response = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code })
-        });
-        
-        const result = await response.json();
-        
-        if (result.valid) {
-            document.querySelector('#submit-btn').style.opacity = '0';
-            // Store session data
-            sessionStorage.setItem('userName', result.name);
-            sessionStorage.setItem('sessionToken', result.token);
-            sessionStorage.setItem('accessTime', Date.now());
-            
-            // Success message
-            message.innerHTML = `<span style="color: green;">Welcome ${result.name}! Redirecting...</span>`;
-            dissolveTextMatrix({ from: 'center', duration: 800, spread: 500, driftPx: 18 });
-            
-            
-            // Redirect to protected page using variable
-            setTimeout(() => {
-                window.location.href = PROTECTED_PAGE; // ← Uses variable
-            }, 800);
-        
-        } else {
-            message.innerHTML = '<span style="color: red;">Invalid code. Try again.</span>';
-        }
-    } catch (error) {
-        message.innerHTML = '<span style="color: red;">Connection error. Try again.</span>';
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ code }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const result = await response.json();
+
+      if (result.valid) {
+        // UI + session
+        button.style.opacity = '0';
+        sessionStorage.setItem('userName',    result.name);
+        sessionStorage.setItem('sessionToken', result.token);
+        sessionStorage.setItem('accessTime',   Date.now());
+
+        message.innerHTML = `<span style="color:green;">Welcome ${result.name}! Redirecting...</span>`;
+
+        // Start dissolve but don't block navigation on it
+        const MAX_WAIT = 900;
+        Promise.race([
+          dissolveTextMatrix({ duration: 700, spread: 400 }),
+          new Promise(r => setTimeout(r, MAX_WAIT))
+        ]).then(() => location.replace(PROTECTED_PAGE));
+      } else {
+        message.innerHTML = '<span style="color:red;">Invalid code. Try again.</span>';
+      }
+    } catch (err) {
+      clearTimeout(timeoutId);
+      message.innerHTML = '<span style="color:red;">Connection error. Try again.</span>';
+    } finally {
+      button.textContent = 'Enter';
+      button.disabled = false;
     }
-    
-    button.textContent = 'Enter';
-    button.disabled = false;
-    }    
+  }
 
-    //===== Dissolve Matrix function
-    function dissolveTextMatrix(opts = {}) {
-        const {
-            from = 'center',
-            duration = 700,
-            spread = 500,
-            easing = 'cubic-bezier(0.16,1,0.3,1)',
-            removeOnDone = false
-        } = opts;
-
-        const rect = unlockModule.getBoundingClientRect();
-        let ox, oy;
-        if (Array.isArray(from)) [ox, oy] = from;
-        else { ox = rect.width / 2; oy = rect.height / 2; }
-
-        unlockModule.classList.add('is-dissolving');
-        unlockModule.style.pointerEvents = 'none';
-
-        const diag = Math.hypot(rect.width, rect.height) || 1;
-        let done = 0;
-
-        return new Promise((resolve) => {
-            for (let idx = 0; idx < total; idx++) {
-            const j = (idx / innerW) | 0, i = idx % innerW;
-            const cx = (i + 0.5) * cellSize;
-            const cy = (j + 0.5) * cellSize;
-            const dx = cx - ox, dy = cy - oy;
-            const dist = Math.hypot(dx, dy);
-            const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
-
-            const delay = Math.max(0, (dist / diag) * spread + h * 90);
-
-            // IMPORTANT: opacity only, no transform, default composite (replace)
-            const anim = cells[idx].animate(
-                [{ opacity: 1 }, { opacity: 0 }],
-                { duration, delay, easing, fill: 'forwards' }
-            );
-
-            anim.onfinish = () => {
-                if (++done === total) {
-                if (removeOnDone) unlockModule.remove();
-                unlockModule.dispatchEvent(new CustomEvent('matrix:dissolved'));
-                resolve();
-                }
-            };
-            }
-        });
-    }
-    document.documentElement.style.visibility = 'visible';
+  // Show page
+  document.documentElement.style.visibility = 'visible';
 }
+
 
 // ================================================================
 // =========================== MAIN PAGE ==========================
@@ -845,7 +722,7 @@ function space() {
         threshold: 0.5,      // 🎛️ 0-1: Lower = more objects bloom
         strength: 0.3,     // 🎛️ 0-3: Bloom intensity
         radius: 0.3,       // 🎛️ 0-1: Bloom spread
-        exposure: 0.5        // 🎛️ 0.1-2: Overall brightness
+        exposure: 2        // 🎛️ 0.1-2: Overall brightness
     };
 
     // Size
@@ -856,7 +733,7 @@ function space() {
 
     // Camera
     const camera = new THREE.PerspectiveCamera(75, size.width / size.height, 0.1, 1000);
-    camera.position.set(-2, 0, 3);
+    camera.position.set(-180, 0, 0);
     scene.add(camera);
 
     // Lighting
@@ -921,8 +798,9 @@ function space() {
         depthWrite: false
     });
 
+    const modelURL = new URL('./cloud.glb', import.meta.url);
     loader.load(
-        'http://localhost:3000/src/cloud.glb',
+        modelURL.href,
         function (gltf) {
             object = gltf.scene; 
             object.scale.set(1, 1, 1);            
@@ -969,8 +847,10 @@ function space() {
         antialias: true,
         alpha: true
     })
+    renderer.toneMapping = THREE.ReinhardToneMapping;
+    renderer.toneMappingExposure = params.exposure;
     renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
     renderer.toneMapping = THREE.ReinhardToneMapping;
 
     // Render passes
