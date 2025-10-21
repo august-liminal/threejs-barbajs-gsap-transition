@@ -8,6 +8,17 @@ body {
     background-color: #000;
 }
 
+[data-barba="wrapper"] { position: relative; min-height: 100vh; }
+[data-barba="container"] {
+  position: absolute;
+  inset: 0;          
+  width: 100%;
+  height: 100%;
+}
+
+/* optional: avoid scrollbars fighting during transitions */
+body.is-transitioning { overflow: hidden; }
+
 /*------------------ LANDING ------------------*/
 
 .grid-container {
@@ -26,8 +37,8 @@ body {
     width: 100%; 
     height: 100%;
     background-image: 
-        linear-gradient(to right, rgb(255 255 255 / 50%) 0 1px, #ffffff00 1px), 
-        linear-gradient(to bottom, rgb(255 255 255 / 50%) 0 1px, #ffffff00 1px);
+        linear-gradient(to right, rgb(255 255 255 / 20%) 0 1px, #ffffff00 1px), 
+        linear-gradient(to bottom, rgb(255 255 255 / 20%) 0 1px, #ffffff00 1px);
     background-size: var(--cell-size) var(--cell-size);
     pointer-events:none;
     clip-path: polygon(
@@ -214,6 +225,15 @@ div:has(#unlock-module) {
     );
 }
 
+.welcome {
+    color: white;
+    text-align: center;
+    position: absolute;
+    top: calc(50% - var(--cell-size) * 2);
+    left: 50%;
+    transform: translateX(-50%);
+}
+
 /*------------------ MAIN ------------------*/
 main#liminalspace {
     width: 100vw;
@@ -229,6 +249,21 @@ main#liminalspace {
     inset: 5rem;
 }
 
+#logo-holder #logo-mask {
+    width: 100%;
+    height: 100%;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 320'%3E%3Cpath d='M80 80V240H240L160 320H0V80H80ZM320 0V240H240V80H80L160 0H320Z' fill='white'/%3E%3C/svg%3E");
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+}
+
+#logo-holder #logo-fill {
+    background: #fff;
+    width: 100%;
+    height: 100%;
+}
+
 #liminalspace>div {
     position: absolute;
     width: 100%;
@@ -242,6 +277,16 @@ main#liminalspace {
     text-transform: uppercase;
 }
 
+div:has(>#user_message) {
+    max-width: 65ch;
+}
+
+#user_message {
+    white-space: pre-line;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
 #logout-btn {
     display: none;
 }
@@ -250,19 +295,16 @@ main#liminalspace {
     position: absolute;
     display: flex;
     flex-direction: column;
+    justify-content: flex-start;
     height: 100%;
     bottom: 0;
     text-shadow: 0 0 64px #000, 0 0 24px #000;
 }
 
-#welcome p {
-    max-width: 64em;
-}
-
 #welcome h1 {
     font-family: "Space Grotesk";
     font-size: 8rem;
-    flex: 1 0 0;
+    height: 3em;
     align-content: flex-end;
 }
 
@@ -287,7 +329,17 @@ canvas#space {
     color:#fff
 }
 
+.scroll-cue-container .line {
+    content: '';
+    transform-origin: 50% 0%;
+    display: block;
+    height: 100%;
+    width: 1px;
+    background: #fff;
+}
+
 #welcome .scroll-cue {
+    display: none; /* Hide until there is actual content */
     height: 100%;
     position: relative;
 }
@@ -297,5 +349,3 @@ canvas#space {
   background:#fffa;transform-origin:50% 0%;transform:scaleY(0);
   transition:transform .3s cubic-bezier(0,0.55,0.45,1)
 }
-
-

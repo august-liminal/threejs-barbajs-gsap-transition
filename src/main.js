@@ -6,53 +6,48 @@ import { ShaderPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postproces
 import { UnrealBloomPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/OutputPass.js';
 import gsap from 'https://esm.sh/gsap@3.12.5';
+import barba from 'https://esm.sh/@barba/core@2.9.7';
+import './styles/style.css';
 
+// Initialize barba
+barba.init({
+  preventRunning: true,  
+  transitions: [{
+    name: 'universal',
+    sync: true,
 
-// const animationLeave = () => {
-//     let tl = gsap.timeline();    
-//     tl.to(".window", {
-//         height: "100vh",
-//         width: "100vw",
-//         duration: 1000
-//     });
-//     tl.to(".tagline", {
-//         opacity: 0,
-//         duration: 500
-//     });
-//     return tl;
-// }
+    leave(data) {
+      pin(data.current.container);
+      gsap.set(data.current.container, { zIndex: 2 });
+      const ns = data.current.container.dataset.barbaNamespace;
+      return (Page[ns]?.leave?.(data)) ?? defaultLeave(data);
+    },
 
-// const animationEnter = () => {
-//     let tl = gsap.timeline();
-//     tl.from("#unlock-module", {
-//         opacity: 0
-//     })
-// }
+    async enter(data) {
+      pin(data.next.container);
+      gsap.set(data.next.container, { zIndex: 1 });
 
-// barba.init({
-//   transitions: [{
-//       name: 'landing→unlock',
-//       sync: true,
-//       from: { namespace: ['landing'] },
-//       to:   { namespace: ['unlock'] },
-//       async leave() {
-//         animationLeave()     
-        
-//       },
-//       async enter() {
-//         // optional: any setup code after the new page is ready
-//       }
-//     }]
-// });
+      const ns = data.next.container.dataset.barbaNamespace;
+      Page[ns]?.build?.();
+
+      await nextFrame();
+      await ((Page[ns]?.enter?.(data)) ?? defaultEnter(data));
+
+      unpin(data.next.container);
+    }
+  }]
+});
+
 
 // ================================================================
 // ====================== LANDING PAGE LAYOUT =====================
 // ================================================================
 
+
 let gridDimension, gridSize, cellSize, x, y, deltaW, deltaH;
 
 function landing(){
-    if (!location.pathname.endsWith('/landing')) return;    
+    if (!location.pathname.endsWith('/landing') || landingInit) return;
     //===== DECLARATIONS
     // Grid dimension in pixel
     gridDimension = Math.max(window.innerHeight, window.innerWidth)
@@ -216,6 +211,9 @@ function landing(){
         renderer.render(scene, camera);
     }
 
+    //Start the 3D rendering
+    animate();
+
     //Resize event listener to resize the window and the camera
     window.addEventListener("resize", function () {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -234,10 +232,7 @@ function landing(){
             mouseY = e.clientY;
             lastMouseUpdate = now;
         }
-    }, { passive: true });
-
-    //Start the 3D rendering
-    animate();
+    }, { passive: true });    
 
     // Resize Event Listener
     window.addEventListener('resize', () => {
@@ -257,6 +252,8 @@ function landing(){
     window.addEventListener('resize', landing);
     document.documentElement.style.visibility = 'visible';
 
+    landingInit = true;
+
     window.addEventListener('load',       updateLanding);
     window.addEventListener('mousemove',  updateLanding, { passive: true });
     window.addEventListener('touchstart', updateLanding, { passive: true });
@@ -272,11 +269,10 @@ function updateLanding(e) {
     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
     // --- Get mouse/touch pos relative to viewport center ---
-    const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
     const p = e?.touches?.[0] || e || { clientX: innerWidth, clientY: 0 };
+    
+    console.log(e);
     const pos = { x: p.clientX - innerWidth / 2, y: p.clientY - innerHeight / 2 };
-
-
 
     // --- Multiplier for effect (safe & bounded 0..1) ---
     const EPS = 0.0001;
@@ -287,14 +283,8 @@ function updateLanding(e) {
 
 
     // --- Size in cells ---
-    const windowW = clamp(Math.round(Math.abs(pos.x) / cellSize) * 2, 2, gridSize - 2);
-    const windowH = clamp(Math.round(Math.abs(pos.y) / cellSize) * 2, 2, gridSize - 2 * (y / cellSize) - 4);
-
-    // Passing value
-    windowBox.style.inset = (window.innerHeight < gridDimension ? deltaH / 2 + 'px' : '0') + ' ' +     (window.innerWidth < gridDimension ? deltaW / 2 + 'px' : '0');
-    windowBox.style.setProperty('--w', windowW);
-    windowBox.style.setProperty('--h', windowH);
-
+    const windowW = pos.x?clamp(Math.round(Math.abs(pos.x) / cellSize) * 2, 2, gridSize - 2):windowW;
+    const windowH = pos.y?clamp(Math.round(Math.abs(pos.y) / cellSize) * 2, 2, gridSize - 2 * (y / cellSize) - 4):windowH;    
 
     // Drawing Entrance
     const entrance = document.querySelector('#entrance') || document.querySelector('.grid-container').appendChild(Object.assign(document.createElement('a'), { id: 'entrance' }));
@@ -307,17 +297,21 @@ function updateLanding(e) {
         Object.assign(entrance.style,{background:'transparent', boxShadow: 'none'});
         entrance.removeAttribute('href');
     }
+
+    // Drawing Entrance Inner
+    windowBox.style.inset = (window.innerHeight < gridDimension ? deltaH / 2 + 'px' : '0') + ' ' + (window.innerWidth < gridDimension ? deltaW / 2 + 'px' : '0');
+    if(windowW) windowBox.style.setProperty('--w', windowW);
+    if(windowH) windowBox.style.setProperty('--h', windowH);
 }
 
 // ================================================================
 // ========================== UNLOCK PAGE =========================
 // ================================================================
 
-let unlockInit = false;
+let paddingX, paddingY;
 
 function unlock() {
   if (!location.pathname.endsWith('/unlock') || unlockInit) return;
-  unlockInit = true;
 
   // ---- CONSTANTS
   const ENTRY_PAGE     = '/landing';
@@ -336,7 +330,7 @@ function unlock() {
   if (t?.style.lineHeight) t.style.removeProperty('line-height');
 
   const mincellSize = 0.5 * parseFloat(getComputedStyle(t).fontSize);
-  const dimensionH  = Math.max(12, Math.floor(window.innerHeight / mincellSize));
+  const dimensionH  = Math.max(12, Math.floor(window.innerHeight / mincellSize / 2) * 2);
   const dimensionW  = Math.max(12, Math.floor(window.innerWidth  / mincellSize / 2) * 2);
   const cellSize    = window.innerHeight / dimensionH;
 
@@ -350,21 +344,21 @@ function unlock() {
   // ---- LINES: clear previous then place fresh
   container.querySelectorAll('.line-solid, .line-dashed').forEach(n => n.remove());
 
-  const paddingY = (window.innerHeight - innerH * cellSize) / 2;
-  const paddingX = (window.innerWidth  - innerW * cellSize) / 2;
+  paddingY = (window.innerHeight - innerH * cellSize) / 2;
+  paddingX = (window.innerWidth  - innerW * cellSize) / 2;
   container.style.padding = `${paddingY}px ${paddingX}px`;
 
   // verticals
   container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical',  style: `left:${paddingX - 8}px;` }));
   container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical',  style: `left:${paddingX}px;` }));
-  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `left:${Math.round(window.innerWidth / 2 - cellSize * 4)}px;` }));
-  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `right:${Math.round(window.innerWidth / 2 - cellSize * 4)}px;` }));
+  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `left:${Math.round(window.innerWidth / 2 - cellSize * 4 + 1)}px;` }));
+  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `right:${Math.round(window.innerWidth / 2 - cellSize * 4 + 1)}px;` }));
   container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical',  style: `right:${paddingX}px;` }));
   container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical',  style: `right:${paddingX - 8}px;` }));
   // horizontals
   container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal',  style: `top:${paddingY}px;` }));
-  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `top:${window.innerHeight / 2 - cellSize}px;` }));
-  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `bottom:${window.innerHeight / 2 - cellSize}px;` }));
+  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `top:${window.innerHeight / 2 - cellSize + 1}px;` }));
+  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `bottom:${window.innerHeight / 2 - cellSize + 1}px;` }));
   container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal',  style: `bottom:${paddingY}px;` }));
 
   // ---- GRID SETUP
@@ -589,18 +583,25 @@ function unlock() {
       if (result.valid) {
         // UI + session
         button.style.opacity = '0';
-        sessionStorage.setItem('userName',    result.name);
+        sessionStorage.setItem('userName', result.user_name);
+        sessionStorage.setItem('userGreeting', result.user_greeting);
+        sessionStorage.setItem('userMessage', result.user_message);
+
         sessionStorage.setItem('sessionToken', result.token);
         sessionStorage.setItem('accessTime',   Date.now());
 
-        message.innerHTML = `<span style="color:green;">Welcome ${result.name}! Redirecting...</span>`;
+        document.querySelectorAll('.line-vertical, .line-horizontal').forEach(el => {el.style.transition = 'transform 0.3s ease-out';});
+        document.querySelectorAll('.line-vertical, .line-horizontal').forEach(el => {el.style.transform = 'scale(0)';});
 
+        document.querySelectorAll('.text-line').forEach(el => {el.style.opacity = '0';});
+        message.innerHTML = `<span class="welcome">Welcome ${result.user_name}! Redirecting...</span>`;
+        
         // Start dissolve but don't block navigation on it
         const MAX_WAIT = 900;
         Promise.race([
           dissolveTextMatrix({ duration: 700, spread: 400 }),
           new Promise(r => setTimeout(r, MAX_WAIT))
-        ]).then(() => location.replace(PROTECTED_PAGE));
+        ]).then(() => barba.go(PROTECTED_PAGE));
       } else {
         message.innerHTML = '<span style="color:red;">Invalid code. Try again.</span>';
       }
@@ -615,6 +616,7 @@ function unlock() {
 
   // Show page
   document.documentElement.style.visibility = 'visible';
+  unlockInit = true;
 }
 
 
@@ -623,39 +625,40 @@ function unlock() {
 // ================================================================
 
 function space() {
-    if (!location.pathname.endsWith('/space')) return;
-    document.getElementById('logout-btn')?.addEventListener('click', logout);
-    // SET URLS HERE
-    const ENTRY_PAGE = './landing';
-    const PROTECTED_PAGE = './space';
+    if (!location.pathname.endsWith('/space') || spaceInit) return;
 
-    // Protect this page
-    (function() {
-    const userName = sessionStorage.userName;
+
+    const userName = sessionStorage.getItem('userName');
+    const userGreeting = sessionStorage.getItem('userGreeting');
+    const userMessage = sessionStorage.getItem('userMessage');
+
+    // Protection from parachuting
+    (function() {    
+    const validDuration = 3600000 * 24; // 24 hours
+
     const sessionToken = sessionStorage.getItem('sessionToken');
     const accessTime = parseInt(sessionStorage.getItem('accessTime'));
     
-    const validDuration = 2 * 60 * 60 * 1000; // 2 hours
-    
     // Check if session is valid
-    if (!userName || !sessionToken || !accessTime || (Date.now() - accessTime) > validDuration) {
-        // Invalid session - redirect to entry page using variable
-        sessionStorage.clear();
-        window.location.replace(ENTRY_PAGE);
+    if (!(sessionToken && accessTime && (Date.now() - accessTime) < validDuration)) {
+        // Invalid session - redirect to landing
+        logout();
         return;
     }
-
-    // Logo
-    document.querySelector('#logo-svg').setAttribute('fill', 'white');
-    
-    // Append user's name into span
-    document.querySelector('#user-name').textContent = sessionStorage.getItem('userName') || '';
     })();    
 
     function logout() {
     sessionStorage.clear();
-    window.location.href = ENTRY_PAGE; 
+    barba.go('/');
     }
+
+    
+
+    // ------------------------- PAGE CONTENT    
+    
+    // Injecting content
+    document.querySelector('#user_greeting').innerHTML = userGreeting;
+    document.querySelector('#user_message').innerHTML = userMessage;
 
     // Scroll cue
     const host=document.querySelector('#welcome .scroll-cue');
@@ -699,9 +702,9 @@ function space() {
     }
 
     runCueAnimation();
-    
 
-    
+    document.getElementById('logout-btn')?.addEventListener('click', logout);
+
     // =============== THREEJS ===============
 
     // Canvas
@@ -714,13 +717,7 @@ function space() {
     const bloomLayer = new THREE.Layers();
     bloomLayer.set(BLOOM_SCENE);
 
-    // 🎛️ BLOOM KNOBS - Adjust these values!
-    const params = {
-        threshold: 0.5,      // 🎛️ 0-1: Lower = more objects bloom
-        strength: 0.3,     // 🎛️ 0-3: Bloom intensity
-        radius: 0.3,       // 🎛️ 0-1: Bloom spread
-        exposure: 2        // 🎛️ 0.1-2: Overall brightness
-    };
+    
 
     // Size
     const size = {
@@ -729,211 +726,179 @@ function space() {
     }
 
     // Camera
-    const camera = new THREE.PerspectiveCamera(75, size.width / size.height, 0.1, 1000);
-    camera.position.set(-180, 0, 0);
+    const camera = new THREE.PerspectiveCamera(60, size.width / size.height, 0.5, 200);
+    camera.position.set(-200, 0, 0);
     scene.add(camera);
-
-    // Lighting
-    const light = new THREE.AmbientLight(0xffffff, 1);
-    scene.add(light);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(5, 5, 5);
-    scene.add(directionalLight);
 
     // GLTF Loader
     const loader = new GLTFLoader();   
     
+    // Points shader  ✅ crisp disc + bright core
     const shaderMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-            uColor: { value: new THREE.Color(0xffffff) },
-            // tweak this size constant as needed
-            uSize: { value: 200.0 },
-            cameraNear: { value: camera.near },
-            cameraFar: { value: camera.far }
-        },
-        vertexShader: `
-            uniform float uSize;
-            uniform float cameraNear;
-            uniform float cameraFar;
-            varying float vDepth;
-
-            void main() {
-                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                vDepth = -mvPosition.z;
-
-                // You can experiment with scaling formula
-                // Here: point size falls off with depth
-                float size = uSize * (1.2 / vDepth);
-                gl_PointSize = size;
-
-                gl_Position = projectionMatrix * mvPosition;
-            }
-        `,
-        fragmentShader: `
+    uniforms: {
+        uColor: { value: new THREE.Color(0xffffff) },
+        uSize:  { value: 200.0 }
+    },
+    vertexShader: `
+        uniform float uSize;
+        void main(){
+        vec4 mv = modelViewMatrix * vec4(position,1.0);
+        float d  = max(1.0, -mv.z);
+        float sized = clamp(uSize * (1.2 / d), 1.0, 300.0);
+        gl_PointSize = sized;
+        gl_Position  = projectionMatrix * mv;
+        }`,
+    fragmentShader: `
         uniform vec3 uColor;
-        varying float vDepth;
+        void main(){
+        vec2 uv = gl_PointCoord - 0.5;
+        float r = length(uv);
 
-        void main() {
-            // compute distance from center of point
-            vec2 uv = gl_PointCoord.xy - vec2(0.5);
-            float dist = length(uv);
+        float edge = smoothstep(0.49, 0.5, r);
+        if (edge >= 1.0) discard;
 
-            // discard fragments outside radius
-            if (dist > 0.5) {
-            discard;
-            }
+        float core = 1.0 - smoothstep(0.00, 0.18, r);
+        float ring = 1.0 - smoothstep(0.30, 0.49, r);
 
-            // simple shading: fade by distance from center
-            float t = 1.0 - smoothstep(0.4, 0.5, dist);
-            vec3 color = uColor * t;
+        vec3 glow  = mix(uColor * 0.9, vec3(1.0), core * 0.85);
+        float alpha = max(core * 0.9, ring * 0.6) * (1.0 - edge);
 
-            gl_FragColor = vec4(color, t);
-        }
-        `,
-        transparent: true,
-        depthWrite: false
+        gl_FragColor = vec4(glow, alpha);
+        }`,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
     });
 
     const modelURL = new URL('./cloud.glb', import.meta.url);
     loader.load(
         modelURL.href,
         function (gltf) {
-            object = gltf.scene; 
-            object.scale.set(1, 1, 1);            
-            
-            gltf.scene.traverse((object) => {
-                if (object.isPoints) {
-                    const geometry = object.geometry;
-                    object.material.dispose();             
-                    object.material = shaderMaterial;
-                    const newPoints = new THREE.Points(geometry, shaderMaterial);
-                    newPoints.position.copy(object.position);
-                    newPoints.rotation.copy(object.rotation);
-                    newPoints.scale.copy(object.scale);
+            // Build a clean root with Points using the shared shader
+            const root = new THREE.Group();
+            gltf.scene.traverse((n) => {
+            if (n.isPoints) {
+                const geo = n.geometry.clone();
+                const pts = new THREE.Points(geo, shaderMaterial);
+                pts.position.copy(n.position);
+                pts.rotation.copy(n.rotation);
+                pts.scale.copy(n.scale);
+                root.add(pts);
 
-                    // replace in scene
-                    object.parent.add(newPoints);
-                    object.parent.remove(object);
-                }
-            });  
-            
-            const boundingBox = new THREE.Box3().setFromObject(object);
+                n.material?.dispose?.(); // free original
+            }
+            });
+
+            // Center once
+            const boundingBox = new THREE.Box3().setFromObject(root);
             const center = new THREE.Vector3();
             boundingBox.getCenter(center);
-            
-            object.position.set(-center.x, -center.y, -center.z);
-            
-            const group = new THREE.Group();
-            group.add(object);
-            scene.add(group);
-            
-            object = group;
+            root.position.sub(center);
+
+            // Wrap in a group for rotation
+            object = new THREE.Group();
+            object.add(root);
+            scene.add(object);
         },
         function (xhr) {
-            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+            console.log(((xhr.loaded / xhr.total) * 100).toFixed(1) + '% loaded');
         },
         function (error) {
             console.error('An error occurred loading the GLB:', error);
         }
     );
 
+
     // Renderer
     const renderer = new THREE.WebGLRenderer({
-        canvas: canvas,
-        antialias: true,
-        alpha: true
-    })
+    canvas: canvas,
+    alpha: true,
+    antialias: true,
+    depth: true,
+    stencil: false,
+    powerPreference: 'high-performance',
+    failIfMajorPerformanceCaveat: true
+    });
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ReinhardToneMapping;
-    renderer.toneMappingExposure = params.exposure;
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
-    renderer.toneMapping = THREE.ReinhardToneMapping;
+
+    // 🎛️ BLOOM KNOBS - Adjust these values!
+    const params = {
+        threshold: 0.1,      // 🎛️ 0-1: Lower = more objects bloom
+        strength: 0.3,     // 🎛️ 0-3: Bloom intensity
+        radius: 0.3,       // 🎛️ 0-1: Bloom spread
+        exposure: 2        // 🎛️ 0.1-2: Overall brightness
+    };
+    renderer.toneMappingExposure = 1.35; // see bloom params below
+    renderer.setSize(size.width, size.height, false);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
 
     // Render passes
     const renderScene = new RenderPass(scene, camera);
 
-    const bloomPass = new UnrealBloomPass(
-        new THREE.Vector2(window.innerWidth, window.innerHeight),
-        params.strength,  // strength
-        params.radius,    // radius
-        params.threshold  // threshold
-    );
+    
 
+    // Half-res bloom composer
     const bloomComposer = new EffectComposer(renderer);
+    const halfW = Math.max(256, size.width >> 1);
+    const halfH = Math.max(256, size.height >> 1);
     bloomComposer.renderToScreen = false;
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(halfW, halfH), params.strength, params.radius, params.threshold);
     bloomComposer.addPass(renderScene);
     bloomComposer.addPass(bloomPass);
 
     // Shader to mix bloom with scene
     const mixPass = new ShaderPass(
-        new THREE.ShaderMaterial({
-            uniforms: {
-                baseTexture: { value: null },
-                bloomTexture: { value: bloomComposer.renderTarget2.texture }
-            },
-            vertexShader: `
-                varying vec2 vUv;
-                void main() {
-                    vUv = uv;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform sampler2D baseTexture;
-                uniform sampler2D bloomTexture;
-                varying vec2 vUv;
-                void main() {
-                    gl_FragColor = texture2D(baseTexture, vUv) + vec4(1.0) * texture2D(bloomTexture, vUv);
-                }
-            `,
-            defines: {}
-        }), 'baseTexture'
+    new THREE.ShaderMaterial({
+        uniforms: {
+        baseTexture:  { value: null },
+        bloomTexture: { value: bloomComposer.renderTarget2.texture },
+        bloomGain:    { value: 0.7 }
+        },
+        vertexShader: `
+        varying vec2 vUv;
+        void main(){ vUv=uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+        `,
+        fragmentShader: `
+        uniform sampler2D baseTexture, bloomTexture;
+        uniform float bloomGain;
+        varying vec2 vUv;
+        void main(){
+            vec4 base  = texture2D(baseTexture,  vUv);
+            vec4 bloom = texture2D(bloomTexture, vUv) * bloomGain;
+            gl_FragColor = min(base + bloom, 1.0);
+        }
+        `
+    }),
+    'baseTexture'
     );
     mixPass.needsSwap = true;
 
     const outputPass = new OutputPass();
 
     const finalComposer = new EffectComposer(renderer);
+    finalComposer.setSize(size.width, size.height);
     finalComposer.addPass(renderScene);
     finalComposer.addPass(mixPass);
     finalComposer.addPass(outputPass);
 
     // 🎛️ ROTATION SPEED
-    const rotationSpeed = 0.0006; // Adjust rotation speed
+    const rotationSpeed = 0.0004; // Adjust rotation speed
 
     // Animation loop
-    function animate() {
-        requestAnimationFrame(animate);
-        
-        if (object) {
-            object.rotation.y += rotationSpeed;
-        }
-        
-        // 🎛️ USE COMPOSERS INSTEAD OF DIRECT RENDER
-        scene.traverse(darkenNonBloomed);
-        bloomComposer.render();
-        scene.traverse(restoreMaterial);
-        finalComposer.render();
-    }
+    const clock = new THREE.Clock();
+    const ROT_SPEED = 1.8; // deg/sec (tweak)
 
-    // Helper to isolate bloom objects
-    const materials = {};
-    function darkenNonBloomed(obj) {
-        if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
-            materials[obj.uuid] = obj.material;
-            obj.material = new THREE.MeshBasicMaterial({ color: 'black' });
-        }
-    }
+    renderer.setAnimationLoop(() => {
+    const dt = clock.getDelta();
+    if (object) {
+        object.rotation.y += (ROT_SPEED * Math.PI / 180) * dt;
+    }    
+    bloomComposer.render();    
+    finalComposer.render();
+    });
 
-    function restoreMaterial(obj) {
-        if (materials[obj.uuid]) {
-            obj.material = materials[obj.uuid];
-            delete materials[obj.uuid];
-        }
-    }
-
-    animate();
+    
 
     // Resize Event Listener
     window.addEventListener('resize', () => {
@@ -950,16 +915,181 @@ function space() {
         finalComposer.setSize(size.width, size.height);
     });
 
+    // Animation pause/resume helper
+    
+    let isRunning = false;    
+    function startThree() {
+    if (!isRunning) { renderer.setAnimationLoop(tick); isRunning = true; }
+    }
+    function stopThree() {
+    if (isRunning) { renderer.setAnimationLoop(null); isRunning = false; }
+    }
+
     document.documentElement.style.visibility = 'visible';
+    spaceInit = true;
 }
 
-// ================================================================
-// ========================= EVENT LISTENER =======================
-// ================================================================
-window.addEventListener('DOMContentLoaded', () => {
-  landing();
-  updateLanding();
-  unlock();
-  space();
-});
+// -----------------------------------------------------
+// ANIMATION HELPERS
+// -----------------------------------------------------
+let landingInit = false, unlockInit = false, spaceInit = false;
+const nextFrame = () => new Promise(r => requestAnimationFrame(r));
+const pin = el => gsap.set(el, { position:'absolute', inset:0, width:'100%', height:'100%', overflow:'hidden' });
+const unpin = el => gsap.set(el, { clearProps:'position,inset,width,height,overflow,zIndex' });
+
+// default fallback anims
+const defaultLeave = ({ current }) => gsap.to(current.container, { autoAlpha: 0, duration: 0.3, ease: 'power1.out' });
+const defaultEnter = ({ next })    => gsap.fromTo(next.container, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: 'power1.out' });
+
+// -----------------------------------------------------
+// PAGE BUILD & ANIMATION DEFINITION
+// -----------------------------------------------------
+
+const Page = {
+  landing: { // LANDING PAGE ---------------------------
+    build: () => { landing(); updateLanding(); },
+    // -------------------------------------------------
+    enter: ({ next }) => {
+        const tl = gsap.timeline({ defaults:{ ease:'power2.out' } });
+        tl.from(next.container, { 
+            scale:1.5, autoAlpha: 0, duration: 0.5
+        }, 0);
+        return tl;
+    },
+    // -------------------------------------------------
+    leave: ({ current }) => {
+        landingInit = false;
+        const tl = gsap.timeline({ defaults:{ ease:'power2.inOut' } });
+        tl.to(current.container.querySelectorAll('#entrance, .window'), {
+            width:'100vw', height:'100vh', backgroundColor:'#0000', borderColor:'#fff', boxShadow:'none', duration:0.5
+        }, 0);
+        tl.to(current.container.querySelectorAll('.tagline, .copyright-text, #outline, #grid-bg'),
+                { autoAlpha:0, duration:0.5 }, 0);
+        tl.to(current.container.querySelector('canvas'), { autoAlpha:0, duration:0.4 }, 0);
+        return tl;
+    }
+  },
+
+  unlock: { // UNLOCK PAGE -----------------------------
+    build: () => { unlock(); },
+    // -------------------------------------------------
+    enter: ({ next }) => {
+        const tl = gsap.timeline({ defaults:{ ease:'power2.out' } });
+        tl.from(next.container.querySelector('#unlock-module'), { 
+            scale:0, duration: 1
+        }, 0);
+        tl.from(next.container.querySelectorAll('.line-horizontal, .line-vertical'), { 
+            scale:0, transformOrigin:'50% 50%', duration:0.4 
+        }, 0.5);
+        tl.from(next.container.querySelector('.code'), { 
+            autoAlpha:0, duration:0.3 
+        }, 0.5);
+        tl.from(next.container.querySelectorAll('.cell'), { 
+            opacity:0, duration:0.5
+        }, 1);
+        return tl;
+    },
+    // -------------------------------------------------
+    leave: ({ current }) => {
+        unlockInit = false;
+        const tl = gsap.timeline({ defaults:{ ease:'power2.out' } });
+        tl.to(current.container, { 
+            autoAlpha:0, duration: 0.5
+        }, 0);
+        return tl;
+    }
+  },
+
+  space: { // MAIN PAGE --------------------------------
+    build: () => { space(); },
+    // -------------------------------------------------
+    enter: ({ next }) => {
+        const message = next.container.querySelector('#user_message');
+        const messageContent = message.textContent;
+        const greeting = next.container.querySelector('#user_greeting');
+        const greetingContent = greeting.textContent;
+        
+        message.textContent = '';
+        greeting.textContent = '';
+
+        const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+
+        tl.add(() => stopThree(), 0);
+
+        // Logo fades in
+        tl.from(next.container.querySelector('#logo-fill'), { 
+            scale: 0, 
+            duration: 1
+        }, '+=0.5');    
+        
+        // Typewriter effect for greeting
+        tl.to({ value: 0 }, {
+            value: greetingContent.length,
+            duration: greetingContent.length * 0.1, // 100ms per character
+            ease: 'none',
+            onUpdate: function() {
+                const progress = Math.floor(this.targets()[0].value);
+                greeting.textContent = greetingContent.substring(0, progress) + '_';
+            },
+            onComplete: () => {
+                greeting.textContent = greetingContent; // Remove cursor
+            }
+        });
+        
+        // Typewriter effect for message
+        tl.to({ value: 0 }, {
+            value: messageContent.length,
+            duration: messageContent.length * 0.04, // 40ms per character
+            ease: 'none',
+            onUpdate: function() {
+                const progress = Math.floor(this.targets()[0].value);
+                message.textContent = messageContent.substring(0, progress) + '_';
+            },
+            onComplete: () => {
+                message.textContent = messageContent; // Remove cursor
+            }
+        }, '+=1');
+        
+        // Animations after typing
+        tl.from(next.container.querySelector('.line'), { 
+            scale: 0, 
+            duration: 2
+        }, '+=1.5');
+
+        tl.from(next.container.querySelector('.scroll-hint'), { 
+            autoAlpha: 0, 
+            duration: 0.5
+        }, '-=0.5');
+
+        tl.add(() => startThree(), '>-3');
+        
+        tl.from(next.container.querySelector('#space'), {
+            autoAlpha: 0, 
+            duration: 3
+        }, '-=1');
+
+        return tl;
+    },
+    // -------------------------------------------------
+    leave: ({ current }) => {
+        spaceInit = false;
+        const tl = gsap.timeline();
+        tl.to(current.container, { 
+        opacity: 0, duration: 0.5, ease: 'power2.in' 
+        }, 0);
+        return tl;
+    }
+    }
+};
+// -------------------------------------------
+// Page Build
+// -------------------------------------------
+
+(() => {
+  const container = document.querySelector('[data-barba="container"]');
+  if (container) {
+    const ns = container.dataset.barbaNamespace;
+    Page[ns]?.build?.();
+  }
+})();
 
