@@ -158,6 +158,20 @@ div:has(#unlock-module) {
     box-shadow: none;
 }
 
+.message {
+    width: calc(var(--cell-size) * 8 - 4px);
+    height: var(--cell-size);
+    display: block;
+    text-align: center;
+    background: #000;
+    top: calc(50% - var(--cell-size) * 2);
+    position: absolute;
+}
+
+.warning-message {
+    color: red;
+}
+
 .text-line {
     position: absolute;
 }

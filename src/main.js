@@ -7,7 +7,6 @@ import { UnrealBloomPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postp
 import { OutputPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/OutputPass.js';
 import gsap from 'https://esm.sh/gsap@3.12.5';
 import barba from 'https://esm.sh/@barba/core@2.9.7';
-//import './styles/style.css';
 
 // Initialize barba
 barba.init({
@@ -183,7 +182,7 @@ function landing(){
         object.position.sub(center);
         object.position.z = 1;
         scene.add(object);
-    },
+    },null,
     function (error) {
         //If there is an error, log it
         console.error(error);
@@ -270,8 +269,6 @@ function updateLanding(e) {
 
     // --- Get mouse/touch pos relative to viewport center ---
     const p = e?.touches?.[0] || e || { clientX: innerWidth, clientY: 0 };
-    
-    console.log(e);
     const pos = { x: p.clientX - innerWidth / 2, y: p.clientY - innerHeight / 2 };
 
     // --- Multiplier for effect (safe & bounded 0..1) ---
@@ -283,8 +280,9 @@ function updateLanding(e) {
 
 
     // --- Size in cells ---
-    const windowW = pos.x?clamp(Math.round(Math.abs(pos.x) / cellSize) * 2, 2, gridSize - 2):windowW;
-    const windowH = pos.y?clamp(Math.round(Math.abs(pos.y) / cellSize) * 2, 2, gridSize - 2 * (y / cellSize) - 4):windowH;    
+    let windowW, windowH;
+    windowW = pos.x?clamp(Math.round(Math.abs(pos.x) / cellSize) * 2, 2, gridSize - 2):windowW;
+    windowH = pos.y?clamp(Math.round(Math.abs(pos.y) / cellSize) * 2, 2, gridSize - 2 * (y / cellSize) - 4):windowH;    
 
     // Drawing Entrance
     const entrance = document.querySelector('#entrance') || document.querySelector('.grid-container').appendChild(Object.assign(document.createElement('a'), { id: 'entrance' }));
@@ -393,11 +391,13 @@ function unlock() {
 
   // =============== TEXT MATRIX (single mode) ===============
   
-  const RAMP = Array.from(" .:-=+*#%@");
-  const MIN_SCALE = 0.1, MAX_SCALE = 3;
-  const RIPPLE_DECAY = 0.01;
-  const POINTER_SIGMA_FACTOR = 0.25;
-  const NOISE_SCALE = 3.0;
+    const RAMP = Array.from(" .:-=+*#%@");
+    const MIN_SCALE = 0.1, MAX_SCALE = 3;
+    const RIPPLE_DECAY = 0.01;
+    const POINTER_SIGMA_FACTOR = 0.25;
+    const NOISE_SCALE = 3.0;
+    let wrongTimer = null;
+    let matrixBlocked = false;
 
   // centers & jitter
   const centersX = new Float32Array(total);
@@ -472,6 +472,7 @@ function unlock() {
   io.observe(unlockModule);
 
   function renderFrame(tSec, staticOnce) {
+    if (matrixBlocked) return;
     const modW = modRect.width  || (innerW * cellSize);
     const modH = modRect.height || (innerH * cellSize);
     const field = makeField(modW, modH);
@@ -542,81 +543,135 @@ function unlock() {
 
   // ===================== VALIDATION ========================
   
-  document.getElementById('submit-btn')?.addEventListener('click', validateCode);
+    document.getElementById('submit-btn')?.addEventListener('click', validateCode);    
 
-  const inputs = document.querySelectorAll('.digit');
-  inputs.forEach((input, i) => {
-    input.addEventListener('input', () => { if (input.value && i < inputs.length - 1) inputs[i + 1].focus(); });
-    input.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && !input.value && i > 0) inputs[i - 1].focus(); });
-  });
+    const inputs = document.querySelectorAll('.digit');
+    inputs.forEach((input, i) => {
+        input.addEventListener('input', () => { if (input.value && i < inputs.length - 1) inputs[i + 1].focus(); });
+        input.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && !input.value && i > 0) inputs[i - 1].focus(); });
+    });
 
-  async function validateCode() {
-    const code    = Array.from(document.querySelectorAll('.digit')).map(i => i.value).join('');
-    const button  = document.getElementById('submit-btn');
-    const message = document.getElementById('message');
+    async function validateCode() {
+        const code    = Array.from(document.querySelectorAll('.digit')).map(i => i.value).join('');
+        const button  = document.getElementById('submit-btn');
+        const message = document.getElementById('message');
 
-    if (!code || code.length !== 4) {
-      message.innerHTML = '<span style="color:red;">Please enter a 4-digit code</span>';
-      return;
+        if (!code || code.length !== 4) {
+        message.innerHTML = '<span style="color:red;">Please enter a 4-digit code</span>';
+        return;
+        }
+
+        button.textContent = 'Validating';
+        button.disabled = true;
+        message.innerHTML = '';
+
+        // fetch with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+        try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify({ code }),
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const result = await response.json();
+
+        if (result.valid) { // ============== VALID CODE ANIMATIONS
+            // UI + session
+            button.style.opacity = '0';
+            sessionStorage.setItem('userName', result.user_name);
+            sessionStorage.setItem('userGreeting', result.user_greeting);
+            sessionStorage.setItem('userMessage', result.user_message);
+
+            sessionStorage.setItem('sessionToken', result.token);
+            sessionStorage.setItem('accessTime',   Date.now());
+
+            document.querySelectorAll('.line-vertical, .line-horizontal').forEach(el => {el.style.transition = 'transform 0.3s ease-out';});
+            document.querySelectorAll('.line-vertical, .line-horizontal').forEach(el => {el.style.transform = 'scale(0)';});
+
+            (function scaleDigitsOut() {
+            const digits = document.querySelectorAll('.code .digit');
+            digits.forEach((digit, i) => {
+                digit.animate(
+                [
+                    { transform: 'scale(1)', opacity: 1 },
+                    { transform: 'scale(0)', opacity: 0 }
+                ],
+                { duration: 300, delay: i * 50, easing: 'cubic-bezier(0.5, 0, 0.5, 1)', fill: 'forwards' }
+                );
+            });
+            })();
+
+            document.querySelectorAll('.text-line').forEach(el => {el.style.opacity = '0';});
+            message.innerHTML = `<span class="welcome">Welcome ${result.user_name}! Redirecting...</span>`;
+            
+            // Start dissolve but don't block navigation on it
+            const MAX_WAIT = 900;
+            Promise.race([
+            dissolveTextMatrix({ duration: 700, spread: 400 }),
+            new Promise(r => setTimeout(r, MAX_WAIT))
+            ]).then(() => barba.go(PROTECTED_PAGE));
+        } else {
+                message.innerHTML = '<span class="warning-message">Invalid code. Try again.</span>';
+                console.log('Wrong code');
+
+                // Immediately run wrong-input feedback
+                (() => {
+                    const duration = 200;
+                    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+
+                    // --- Block the matrix render temporarily ---
+                    matrixBlocked = true;
+                    if (wrongTimer) clearTimeout(wrongTimer);
+
+                    // --- Turn every cell into 'X' ---
+                    for (let i = 0; i < total; i++) {
+                    cells[i].textContent = 'X';
+                    lastChar[i] = -2; // mark as dirty
+                    }
+
+                    // --- Quick shake animation ---
+                    if (!reduce?.matches) {
+                    unlockModule.animate(
+                        [
+                        { transform: 'translateX(0)'   },
+                        { transform: 'translateX(-8px)' },
+                        { transform: 'translateX(8px)'  },
+                        { transform: 'translateX(-6px)' },
+                        { transform: 'translateX(6px)'  },
+                        { transform: 'translateX(-3px)' },
+                        { transform: 'translateX(3px)'  },
+                        { transform: 'translateX(0)'    }
+                        ],
+                        { duration, easing: 'linear' }
+                    );
+                    }
+
+                    // --- Restore matrix after 200ms ---
+                    wrongTimer = setTimeout(() => {
+                    matrixBlocked = false;
+                    wrongTimer = null;
+                    lastChar.fill(-1); // force next render refresh
+                    }, duration);
+                })();
+        }
+        } catch (err) {
+        clearTimeout(timeoutId);
+        message.innerHTML = '<span style="color:red;">Connection error. Try again.</span>';
+        } finally {
+        button.textContent = 'Enter';
+        button.disabled = false;
+        }
     }
 
-    button.textContent = 'Validating';
-    button.disabled = true;
-    message.innerHTML = '';
-
-    // fetch with timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-    try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({ code }),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      const result = await response.json();
-
-      if (result.valid) {
-        // UI + session
-        button.style.opacity = '0';
-        sessionStorage.setItem('userName', result.user_name);
-        sessionStorage.setItem('userGreeting', result.user_greeting);
-        sessionStorage.setItem('userMessage', result.user_message);
-
-        sessionStorage.setItem('sessionToken', result.token);
-        sessionStorage.setItem('accessTime',   Date.now());
-
-        document.querySelectorAll('.line-vertical, .line-horizontal').forEach(el => {el.style.transition = 'transform 0.3s ease-out';});
-        document.querySelectorAll('.line-vertical, .line-horizontal').forEach(el => {el.style.transform = 'scale(0)';});
-
-        document.querySelectorAll('.text-line').forEach(el => {el.style.opacity = '0';});
-        message.innerHTML = `<span class="welcome">Welcome ${result.user_name}! Redirecting...</span>`;
-        
-        // Start dissolve but don't block navigation on it
-        const MAX_WAIT = 900;
-        Promise.race([
-          dissolveTextMatrix({ duration: 700, spread: 400 }),
-          new Promise(r => setTimeout(r, MAX_WAIT))
-        ]).then(() => barba.go(PROTECTED_PAGE));
-      } else {
-        message.innerHTML = '<span style="color:red;">Invalid code. Try again.</span>';
-      }
-    } catch (err) {
-      clearTimeout(timeoutId);
-      message.innerHTML = '<span style="color:red;">Connection error. Try again.</span>';
-    } finally {
-      button.textContent = 'Enter';
-      button.disabled = false;
-    }
-  }
-
-  // Show page
-  document.documentElement.style.visibility = 'visible';
-  unlockInit = true;
+    // Show page
+    document.documentElement.style.visibility = 'visible';
+    unlockInit = true;
 }
 
 
@@ -800,9 +855,7 @@ function space() {
             object.add(root);
             scene.add(object);
         },
-        function (xhr) {
-            console.log(((xhr.loaded / xhr.total) * 100).toFixed(1) + '% loaded');
-        },
+        null,
         function (error) {
             console.error('An error occurred loading the GLB:', error);
         }
@@ -963,6 +1016,9 @@ const Page = {
         tl.to(current.container.querySelectorAll('#entrance, .window'), {
             width:'100vw', height:'100vh', backgroundColor:'#0000', borderColor:'#fff', boxShadow:'none', duration:0.5
         }, 0);
+        tl.to(current.container.querySelectorAll('#entrance'), {
+            borderColor:'transparent', duration:0.5
+        }, '>');
         tl.to(current.container.querySelectorAll('.tagline, .copyright-text, #outline, #grid-bg'),
                 { autoAlpha:0, duration:0.5 }, 0);
         tl.to(current.container.querySelector('canvas'), { autoAlpha:0, duration:0.4 }, 0);
@@ -973,20 +1029,23 @@ const Page = {
   unlock: { // UNLOCK PAGE -----------------------------
     build: () => { unlock(); },
     // -------------------------------------------------
-    enter: ({ next }) => {
-        const tl = gsap.timeline({ defaults:{ ease:'power2.out' } });
-        tl.from(next.container.querySelector('#unlock-module'), { 
-            scale:0, duration: 1
-        }, 0);
+    enter: ({ next }) => {        
+        const tl = gsap.timeline({ defaults:{ ease:'power2.out' } });        
         tl.from(next.container.querySelectorAll('.line-horizontal, .line-vertical'), { 
             scale:0, transformOrigin:'50% 50%', duration:0.4 
         }, 0.5);
         tl.from(next.container.querySelector('.code'), { 
             autoAlpha:0, duration:0.3 
         }, 0.5);
+        tl.from(next.container.querySelector('.button-wrapper'), { 
+            autoAlpha:0, duration:0.3 
+        }, '>');
         tl.from(next.container.querySelectorAll('.cell'), { 
             opacity:0, duration:0.5
         }, 1);
+        tl.from(next.container.querySelectorAll('.text-line'), { 
+            opacity:0, duration:0.5
+        }, '>');
         return tl;
     },
     // -------------------------------------------------
@@ -1022,33 +1081,51 @@ const Page = {
             duration: 1
         }, '+=0.5');    
         
-        // Typewriter effect for greeting
+        // --- Typewriter: GREETING (O(n) appends, no growing prefix copy)
+        {
+        let last = 0;                  // last written index
+        let acc  = '';                 // accumulated text
+        const total = greetingContent.length;
+
         tl.to({ value: 0 }, {
-            value: greetingContent.length,
-            duration: greetingContent.length * 0.1, // 100ms per character
+            value: total,
+            duration: total * 0.1,       // 100ms per character
             ease: 'none',
-            onUpdate: function() {
-                const progress = Math.floor(this.targets()[0].value);
-                greeting.textContent = greetingContent.substring(0, progress) + '_';
-            },
-            onComplete: () => {
-                greeting.textContent = greetingContent; // Remove cursor
+            onUpdate: function () {
+            const i = Math.floor(this.targets()[0].value);
+            if (i > last) {
+                // append only the delta, not the whole 0..i prefix
+                acc += greetingContent.slice(last, i);
+                greeting.textContent = acc + (i < total ? '_' : '');
+                last = i;
             }
+            },
+            onComplete: () => { greeting.textContent = greetingContent; }
         });
-        
-        // Typewriter effect for message
+        }
+
+        // --- Typewriter: MESSAGE (same optimization)
+        {
+        let last = 0;
+        let acc  = '';
+        const total = messageContent.length;
+
         tl.to({ value: 0 }, {
-            value: messageContent.length,
-            duration: messageContent.length * 0.04, // 40ms per character
+            value: total,
+            duration: total * 0.04,      // 40ms per character
             ease: 'none',
-            onUpdate: function() {
-                const progress = Math.floor(this.targets()[0].value);
-                message.textContent = messageContent.substring(0, progress) + '_';
-            },
-            onComplete: () => {
-                message.textContent = messageContent; // Remove cursor
+            onUpdate: function () {
+            const i = Math.floor(this.targets()[0].value);
+            if (i > last) {
+                acc += messageContent.slice(last, i);
+                message.textContent = acc + (i < total ? '_' : '');
+                last = i;
             }
+            },
+            onComplete: () => { message.textContent = messageContent; }
         }, '+=1');
+        }
+
         
         // Animations after typing
         tl.from(next.container.querySelector('.line'), { 
