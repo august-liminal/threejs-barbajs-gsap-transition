@@ -7,7 +7,7 @@ import { UnrealBloomPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postp
 import { OutputPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/OutputPass.js';
 import gsap from 'https://esm.sh/gsap@3.12.5';
 import barba from 'https://esm.sh/@barba/core@2.9.7';
-import './styles/style.css';
+//import './styles/style.css';
 
 // Initialize barba
 barba.init({
