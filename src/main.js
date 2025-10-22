@@ -608,7 +608,7 @@ function unlock() {
             })();
 
             document.querySelectorAll('.text-line').forEach(el => {el.style.opacity = '0';});
-            message.innerHTML = `<span class="welcome">Welcome ${result.user_name}! Redirecting...</span>`;
+            message.innerHTML = `<span class="welcome">${result.user_greeting} Redirecting...</span>`;
             
             // Start dissolve but don't block navigation on it
             const MAX_WAIT = 900;

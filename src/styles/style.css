@@ -158,18 +158,18 @@ div:has(#unlock-module) {
     box-shadow: none;
 }
 
-.message {
-    width: calc(var(--cell-size) * 8 - 4px);
+
+.warning-message {
+    color: red;
+    width: calc(var(--cell-size) * 8 - 8px);
     height: var(--cell-size);
     display: block;
     text-align: center;
     background: #000;
-    top: calc(50% - var(--cell-size) * 2);
+    top: calc(50% - var(--cell-size) * 2 - 2px);
+    left: 50%;
+    transform: translateX(-50%);
     position: absolute;
-}
-
-.warning-message {
-    color: red;
 }
 
 .text-line {
