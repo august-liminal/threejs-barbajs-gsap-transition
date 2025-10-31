@@ -3,25 +3,24 @@
 //==========================
 
 // THREE core
-import * as THREE from 'https://esm.sh/three@0.169.0?target=es2020';
+import * as THREE from 'https://esm.sh/three@0.180.0?target=es2020';
 
-// THREE add-ons
-import { GLTFLoader } from 'https://esm.sh/three@0.169.0/examples/jsm/loaders/GLTFLoader.js?deps=three@0.169.0&target=es2020';
-import { EffectComposer } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/EffectComposer.js?deps=three@0.169.0&target=es2020';
-import { RenderPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/RenderPass.js?deps=three@0.169.0&target=es2020';
-import { ShaderPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/ShaderPass.js?deps=three@0.169.0&target=es2020';
-import { UnrealBloomPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/UnrealBloomPass.js?deps=three@0.169.0&target=es2020';
-import { OutputPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/OutputPass.js?deps=three@0.169.0&target=es2020';
+// THREE add-ons (bundle ensures internal imports like three/src/nodes/TSL.js resolve)
+import { GLTFLoader } from 'https://esm.sh/three@0.180.0/examples/jsm/loaders/GLTFLoader.js?bundle&target=es2020';
+import { EffectComposer } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/EffectComposer.js?bundle&target=es2020';
+import { RenderPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/RenderPass.js?bundle&target=es2020';
+import { ShaderPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/ShaderPass.js?bundle&target=es2020';
+import { UnrealBloomPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/UnrealBloomPass.js?bundle&target=es2020';
+import { OutputPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/OutputPass.js?bundle&target=es2020';
 
 // GSAP
-import { gsap } from "https://esm.sh/gsap@3.12.5?target=es2020";
-import { ScrollTrigger } from "https://esm.sh/gsap@3.12.5/ScrollTrigger?target=es2020&external=gsap";
-import { ScrollToPlugin } from "https://esm.sh/gsap@3.12.5/ScrollToPlugin?target=es2020&external=gsap";
+import { gsap } from 'https://esm.sh/gsap@3.12.5?target=es2020';
+import { ScrollTrigger } from 'https://esm.sh/gsap@3.12.5/ScrollTrigger?target=es2020&external=gsap';
+import { ScrollToPlugin } from 'https://esm.sh/gsap@3.12.5/ScrollToPlugin?target=es2020&external=gsap';
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
 // Barba
 import barba from 'https://esm.sh/@barba/core@2.9.7?target=es2020';
-import { materialClearcoatRoughness } from 'three/src/nodes/TSL.js';
 
 
 // Initialize barba
