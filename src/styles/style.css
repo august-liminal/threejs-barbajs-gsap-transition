@@ -411,24 +411,10 @@ canvas#space {
     color:#fff
 }
 
-.scroll-cue-container .line {
-    content: '';
-    transform-origin: 50% 0%;
-    display: block;
-    height: 100%;
-    width: 1px;
+.scroll-cue-container .cue {
+    width: 100%;
+    position: absolute;
     background: #fff;
-}
-
-#welcome .scroll-cue {
-    height: 100%;
-    position: relative;
-}
-
-#welcome .scroll-cue .inner{
-  position:absolute;left:0;top:0;width:100%;height:100%;
-  background:#fffa;transform-origin:50% 0%;transform:scaleY(0);
-  transition:transform .3s cubic-bezier(0,0.55,0.45,1)
 }
 
 .backBtn {

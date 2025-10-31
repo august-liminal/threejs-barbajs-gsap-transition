@@ -659,7 +659,7 @@ function unlock() {
             })();
 
             document.querySelectorAll('.text-line').forEach(el => {el.style.opacity = '0';});
-            message.innerHTML = `<span class="welcome">${result.user_greeting} Redirecting...</span>`;
+            message.innerHTML = `<span class="welcome">${result.user_greeting}. Redirecting...</span>`;
 
             //Set state management. Only uncomment after states are done
             //if(!localStorage.getItem(code)) {
@@ -981,11 +981,6 @@ function space() {
 
     // =========================== WELCOME & MENU ==========================
 
-    const userGreeting = localStorage.getItem('userGreeting');
-    const userMessage = localStorage.getItem('userMessage');
-    const message = root.querySelector('#user_message');
-    const greeting = root.querySelector('#user_greeting');
-
     if (localStorage.getItem(key) == 0) {
         //creating scroller
         const scroller = Object.assign(document.createElement('div'), {className: 'scroller'
@@ -993,11 +988,16 @@ function space() {
         document.querySelector('#menu').setAttribute('hidden','');
         menuLayout(localStorage.getItem(key));        
         return new Promise((resolve) => {
-            const root = document.querySelector('[data-barba="container"]');
+            const root = document.querySelector('[data-barba="container"][data-barba-namespace="space"]');
             if (!root) {
             resolve();
             return;
-            }            
+            }
+
+            const userGreeting = localStorage.getItem('userGreeting');
+            const userMessage = localStorage.getItem('userMessage');
+            const message = root.querySelector('#user_message');
+            const greeting = root.querySelector('#user_greeting');
                 
             message.textContent = '';
             greeting.textContent = '';            
@@ -1062,28 +1062,40 @@ function space() {
             }
 
             // Animations after typing
-            tl.from(root.querySelector('.line'), { 
-            scale: 0, 
-            duration: 2
-            }, '+=1.5');
-
+            
             tl.add(() => {
-                (async () => {
-                    const scrollCue = document.querySelector('#welcome .scroll-cue');
-                    const cueInner = document.createElement('div');
-                    cueInner.className = 'inner';
-                    scrollCue.appendChild(cueInner);
-                    animateCueInner(cueInner);
-                    setTimeout(() => cueInner.remove(), 3000);
-                    await new Promise(r => setTimeout(r, 2100));
-                })();
-            }, '>');
+                const host = document.querySelector('#welcome .scroll-cue-container');
 
+                const GROW = 1.6;
+                const OVERLAP = 1;
+                const SPACING = 0.45;
+
+                host._cueLoops?.forEach(({ tl, cue }) => {
+                    tl.kill();
+                    cue.remove();
+                });
+
+                host._cueLoops = [0, (2 * GROW) - OVERLAP * SPACING].map((offset) => {
+                    const cue = host.appendChild(Object.assign(document.createElement('div'), { className: 'cue' }));
+
+                    const tlCue = gsap.timeline({
+                    repeat: -1,
+                    delay: offset,                     // reapplies each repeat
+                    defaults: { ease: 'power2.inOut' }
+                    })
+                    .set(cue, { top: '0%', bottom: '100%' })
+                    .to(cue, { bottom: '0%', duration: GROW })
+                    .to(cue, { top: '100%', duration: GROW }, `>-${OVERLAP}`)
+                    .set(cue, { top: '0%', bottom: '100%' });
+
+                    return { cue, tl: tlCue };
+                });
+            }, '>');
 
             tl.from(root.querySelector('.scroll-hint'), { 
             autoAlpha: 0, 
             duration: 0.5
-            }, '-=0.5');
+            }, '>');
 
             tl.add(() => startThree(), '>-3');
             
@@ -1154,7 +1166,7 @@ function space() {
 
     else {
         menuLayout(localStorage.getItem(key));
-        const root = document.querySelector('[data-barba="container"]');
+        const root = document.querySelector('[data-barba="container"][data-barba-namespace="space"]');
         if (!root) return;
 
         root.querySelector('#welcome').remove();
@@ -1700,8 +1712,10 @@ function space() {
         tl.from('#profile-toggle a', {
             autoAlpha: 0, duration: 0.5, stagger: 0.05, ease: 'bounce.out'
         }, '-=0.25');
-        tl.from('.backBtn', {
-            autoAlpha: 0, duration: 0.5
+        tl.fromTo('.backBtn', {
+            autoAlpha: 0
+        },{
+            autoAlpha: 1, duration: 0.5
         }, '+=0.5');
 
         tl.add(() => {            
@@ -1709,6 +1723,8 @@ function space() {
         });
 
     };
+
+    // ===================== PORTFOLIO
 
     function portfolio() {
         if (localStorage.getItem(key) < 4) return;
@@ -1968,3 +1984,46 @@ const Page = {
     }
     }
 };
+
+// -----------------------------------------------------
+// DEBUG PAUSE TOGGLE (press Shift+P)
+// -----------------------------------------------------
+(() => {
+  if (typeof window === 'undefined' || !gsap?.globalTimeline) return;
+
+  let paused = false;
+  let scrollState = [];
+
+  const haltScrollTriggers = () => {
+    scrollState = ScrollTrigger?.getAll?.() ?? [];
+    scrollState.forEach(st => st.disable());
+  };
+
+  const resumeScrollTriggers = () => {
+    scrollState.forEach(st => st.enable());
+    scrollState.length = 0;
+    ScrollTrigger?.refresh?.();
+  };
+
+  const pauseAll = () => {
+    gsap.globalTimeline.pause();
+    haltScrollTriggers();
+    stopThree?.();
+    paused = true;
+    console.info('[debug] paused');
+  };
+
+  const resumeAll = () => {
+    gsap.globalTimeline.resume();
+    resumeScrollTriggers();
+    startThree?.();
+    paused = false;
+    console.info('[debug] resumed');
+  };
+
+  window.addEventListener('keydown', evt => {
+    if (evt.key.toLowerCase() !== 'p' || !evt.shiftKey) return;
+    evt.preventDefault();
+    paused ? resumeAll() : pauseAll();
+  });
+})();
