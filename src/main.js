@@ -981,6 +981,11 @@ function space() {
 
     // =========================== WELCOME & MENU ==========================
 
+    const userGreeting = localStorage.getItem('userGreeting');
+    const userMessage = localStorage.getItem('userMessage');
+    const message = root.querySelector('#user_message');
+    const greeting = root.querySelector('#user_greeting');
+
     if (localStorage.getItem(key) == 0) {
         //creating scroller
         const scroller = Object.assign(document.createElement('div'), {className: 'scroller'
@@ -992,12 +997,7 @@ function space() {
             if (!root) {
             resolve();
             return;
-            }
-
-            const userGreeting = localStorage.getItem('userGreeting');
-            const userMessage = localStorage.getItem('userMessage');
-            const message = root.querySelector('#user_message');
-            const greeting = root.querySelector('#user_greeting');
+            }            
                 
             message.textContent = '';
             greeting.textContent = '';            
