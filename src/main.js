@@ -3,15 +3,15 @@
 //==========================
 
 // THREE core
-import * as THREE from 'https://esm.sh/three@0.180.0?target=es2020';
+import * as THREE from 'https://unpkg.com/three@0.180.0/build/three.module.js';
 
-// THREE add-ons (bundle ensures internal imports like three/src/nodes/TSL.js resolve)
-import { GLTFLoader } from 'https://esm.sh/three@0.180.0/examples/jsm/loaders/GLTFLoader.js?bundle&target=es2020';
-import { EffectComposer } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/EffectComposer.js?bundle&target=es2020';
-import { RenderPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/RenderPass.js?bundle&target=es2020';
-import { ShaderPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/ShaderPass.js?bundle&target=es2020';
-import { UnrealBloomPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/UnrealBloomPass.js?bundle&target=es2020';
-import { OutputPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/OutputPass.js?bundle&target=es2020';
+// THREE add-ons 
+import { GLTFLoader } from 'https://unpkg.com/three@0.180.0/examples/jsm/loaders/GLTFLoader.js?module';
+import { EffectComposer } from 'https://unpkg.com/three@0.180.0/examples/jsm/postprocessing/EffectComposer.js?module';
+import { RenderPass } from 'https://unpkg.com/three@0.180.0/examples/jsm/postprocessing/RenderPass.js?module';
+import { ShaderPass } from 'https://unpkg.com/three@0.180.0/examples/jsm/postprocessing/ShaderPass.js?module';
+import { UnrealBloomPass } from 'https://unpkg.com/three@0.180.0/examples/jsm/postprocessing/UnrealBloomPass.js?module';
+import { OutputPass } from 'https://unpkg.com/three@0.180.0/examples/jsm/postprocessing/OutputPass.js?module';
 
 // GSAP
 import { gsap } from 'https://esm.sh/gsap@3.12.5?target=es2020';
@@ -21,6 +21,7 @@ gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
 // Barba
 import barba from 'https://esm.sh/@barba/core@2.9.7?target=es2020';
+
 
 
 // Initialize barba
