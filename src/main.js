@@ -1,12 +1,28 @@
-import * as THREE from 'https://esm.sh/three@0.169.0';
-import { GLTFLoader } from 'https://esm.sh/three@0.169.0/examples/jsm/loaders/GLTFLoader.js';
-import { EffectComposer } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/RenderPass.js';
-import { ShaderPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/ShaderPass.js';
-import { UnrealBloomPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/OutputPass.js';
-import gsap from 'https://esm.sh/gsap@3.12.5';
-import barba from 'https://esm.sh/@barba/core@2.9.7';
+//==========================
+//IMPORT
+//==========================
+
+// THREE core
+import * as THREE from 'https://esm.sh/three@0.169.0?target=es2020';
+
+// THREE add-ons
+import { GLTFLoader } from 'https://esm.sh/three@0.169.0/examples/jsm/loaders/GLTFLoader.js?deps=three@0.169.0&target=es2020';
+import { EffectComposer } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/EffectComposer.js?deps=three@0.169.0&target=es2020';
+import { RenderPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/RenderPass.js?deps=three@0.169.0&target=es2020';
+import { ShaderPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/ShaderPass.js?deps=three@0.169.0&target=es2020';
+import { UnrealBloomPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/UnrealBloomPass.js?deps=three@0.169.0&target=es2020';
+import { OutputPass } from 'https://esm.sh/three@0.169.0/examples/jsm/postprocessing/OutputPass.js?deps=three@0.169.0&target=es2020';
+
+// GSAP
+import { gsap } from "https://esm.sh/gsap@3.12.5?target=es2020";
+import { ScrollTrigger } from "https://esm.sh/gsap@3.12.5/ScrollTrigger?target=es2020&external=gsap";
+import { ScrollToPlugin } from "https://esm.sh/gsap@3.12.5/ScrollToPlugin?target=es2020&external=gsap";
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+
+// Barba
+import barba from 'https://esm.sh/@barba/core@2.9.7?target=es2020';
+import { materialClearcoatRoughness } from 'three/src/nodes/TSL.js';
+
 
 // Initialize barba
 barba.init({
@@ -14,6 +30,22 @@ barba.init({
   transitions: [{
     name: 'universal',
     sync: true,
+
+    async once({ next }) {
+      pin(next.container);
+      gsap.set(next.container, { zIndex: 1 });
+
+      const ns = next.container.dataset.barbaNamespace;
+      Page[ns]?.build?.();
+      await nextFrame();
+
+      // try once → else enter → else default
+      await (Page[ns]?.once?.({ next }) 
+          ?? Page[ns]?.enter?.({ next }) 
+          ?? defaultEnter({ next }));
+
+      unpin(next.container);
+    },
 
     leave(data) {
       pin(data.current.container);
@@ -36,6 +68,24 @@ barba.init({
     }
   }]
 });
+
+// Animation pause/resume helper    
+let spaceRenderer = null;
+let spaceTick = null;
+let isRunning = false;
+
+function startThree() {
+  if (spaceRenderer && spaceTick && !isRunning) {
+    spaceRenderer.setAnimationLoop(spaceTick);
+    isRunning = true;
+  }
+}
+function stopThree() {
+  if (spaceRenderer && isRunning) {
+    spaceRenderer.setAnimationLoop(null);
+    isRunning = false;
+  }
+}
 
 
 // ================================================================
@@ -204,8 +254,8 @@ function landing(){
         //Here we could add some code to update the scene, adding some automatic movement
         //Make the scene move
         if (object) {
-            object.rotation.y = ((mouseX / window.innerWidth) * 20 - 10) * Math.PI / 180;
-            object.rotation.x = ((mouseY / window.innerHeight) * 20 - 10) * Math.PI / 180;
+            object.rotation.y = ((mouseX / window.innerWidth) * 20 - 20) * Math.PI / 180;
+            object.rotation.x = ((mouseY / window.innerHeight) * 20 - 20) * Math.PI / 180;
         }
         renderer.render(scene, camera);
     }
@@ -582,14 +632,15 @@ function unlock() {
         const result = await response.json();
 
         if (result.valid) { // ============== VALID CODE ANIMATIONS
-            // UI + session
-            button.style.opacity = '0';
-            sessionStorage.setItem('userName', result.user_name);
-            sessionStorage.setItem('userGreeting', result.user_greeting);
-            sessionStorage.setItem('userMessage', result.user_message);
-
-            sessionStorage.setItem('sessionToken', result.token);
-            sessionStorage.setItem('accessTime',   Date.now());
+            // Session
+            localStorage.setItem('userName', result.user_name);
+            localStorage.setItem('userGreeting', result.user_greeting);
+            localStorage.setItem('userMessage', result.user_message);
+            localStorage.setItem('sessionToken', result.token);
+            localStorage.setItem('accessTime',   Date.now());
+            
+            // UI
+            button.style.opacity = '0';            
 
             document.querySelectorAll('.line-vertical, .line-horizontal').forEach(el => {el.style.transition = 'transform 0.3s ease-out';});
             document.querySelectorAll('.line-vertical, .line-horizontal').forEach(el => {el.style.transform = 'scale(0)';});
@@ -609,6 +660,12 @@ function unlock() {
 
             document.querySelectorAll('.text-line').forEach(el => {el.style.opacity = '0';});
             message.innerHTML = `<span class="welcome">${result.user_greeting} Redirecting...</span>`;
+
+            //Set state management. Only uncomment after states are done
+            //if(!localStorage.getItem(code)) {
+                localStorage.setItem('userId', code);
+                localStorage.setItem(code, 0);
+            //}
             
             // Start dissolve but don't block navigation on it
             const MAX_WAIT = 900;
@@ -679,20 +736,18 @@ function unlock() {
 // =========================== MAIN PAGE ==========================
 // ================================================================
 
-function space() {
-    if (!location.pathname.endsWith('/space') || spaceInit) return;
+function space() {    
+    // =================== CHECKS AND PROTECTIONS ===================
+    if (!location.pathname.endsWith('/space') || spaceInit || !localStorage.getItem('userId')) return;
 
-
-    const userName = sessionStorage.getItem('userName');
-    const userGreeting = sessionStorage.getItem('userGreeting');
-    const userMessage = sessionStorage.getItem('userMessage');
+    const key = localStorage.getItem('userId');   
 
     // Protection from parachuting
     (function() {    
     const validDuration = 3600000 * 24; // 24 hours
 
-    const sessionToken = sessionStorage.getItem('sessionToken');
-    const accessTime = parseInt(sessionStorage.getItem('accessTime'));
+    const sessionToken = localStorage.getItem('sessionToken');
+    const accessTime = parseInt(localStorage.getItem('accessTime'));
     
     // Check if session is valid
     if (!(sessionToken && accessTime && (Date.now() - accessTime) < validDuration)) {
@@ -700,67 +755,13 @@ function space() {
         logout();
         return;
     }
-    })();    
-
-    function logout() {
-    sessionStorage.clear();
-    barba.go('/');
-    }
-
+    })();   
     
-
-    // ------------------------- PAGE CONTENT    
-    
-    // Injecting content
-    document.querySelector('#user_greeting').innerHTML = userGreeting;
-    document.querySelector('#user_message').innerHTML = userMessage;
-
-    // Scroll cue
-    const host=document.querySelector('#welcome .scroll-cue');
-    const easeCirc = 'cubic-bezier(0,0.55,0.45,1)';
-    
-    function animateCueInner(cueInner) {
-      // Animation sequence:
-      // 0-0.75s: transform-origin 50% 0%, scale 0% -> 100%
-      // 0.75s: instant switch to transform-origin 50% 100%, scale 100%
-      // 0.75-1.5s: transform-origin 50% 100%, scale 100% -> 0%
-      return cueInner.animate([
-        { transformOrigin: '50% 0%', transform: 'scaleY(0)', offset: 0 },        // 0s
-        { transformOrigin: '50% 0%', transform: 'scaleY(1)', offset: 0.75 },      // 0.75s
-        { transformOrigin: '50% 100%', transform: 'scaleY(1)', offset: 0.8 },    // 0.75s (instant)
-        { transformOrigin: '50% 100%', transform: 'scaleY(0)', offset: 1 }       // 1.5s
-      ], {
-        duration: 3000, // Total duration
-        easing: easeCirc
-      });
-    }
-
-    async function runCueAnimation() {
-        const scrollCue = document.querySelector('#welcome .scroll-cue');        
-        while (true) {
-            // Create and append a new cueInner
-            const cueInner = document.createElement('div');
-            cueInner.className = 'inner';
-            scrollCue.appendChild(cueInner);
-            
-            // Start the animation
-            const animation = animateCueInner(cueInner);
-            
-            // Remove element after animation completes
-            setTimeout(() => {
-            cueInner.remove();
-            }, 3000);
-            
-            // Wait 1.0s before starting next
-            await new Promise(resolve => setTimeout(resolve, 2100));
-        }
-    }
-
-    runCueAnimation();
-
+    // Logout function
+    function logout() { localStorage.clear(); barba.go('/landing'); }    
     document.getElementById('logout-btn')?.addEventListener('click', logout);
 
-    // =============== THREEJS ===============
+    // ============================= THREEJS ==============================
 
     // Canvas
     const canvas = document.querySelector('#space');
@@ -782,7 +783,7 @@ function space() {
 
     // Camera
     const camera = new THREE.PerspectiveCamera(60, size.width / size.height, 0.5, 200);
-    camera.position.set(-200, 0, 0);
+    camera.position.set(0, 0, 0);
     scene.add(camera);
 
     // GLTF Loader
@@ -853,6 +854,7 @@ function space() {
             // Wrap in a group for rotation
             object = new THREE.Group();
             object.add(root);
+            object.position.set(200,0,1)
             scene.add(object);
         },
         null,
@@ -940,18 +942,24 @@ function space() {
 
     // Animation loop
     const clock = new THREE.Clock();
-    const ROT_SPEED = 1.8; // deg/sec (tweak)
+    let ROT_SPEED = 1.8; // deg/sec (tweak)
 
-    renderer.setAnimationLoop(() => {
+    let rotateThreeModel = true;
+
+    function tick() {
     const dt = clock.getDelta();
-    if (object) {
+    if (object && rotateThreeModel) {
         object.rotation.y += (ROT_SPEED * Math.PI / 180) * dt;
-    }    
-    bloomComposer.render();    
+    }
+    bloomComposer.render();
     finalComposer.render();
-    });
-
+    }
     
+    spaceRenderer = renderer;
+    spaceTick = tick;
+
+    renderer.setAnimationLoop(tick);
+    isRunning = true;
 
     // Resize Event Listener
     window.addEventListener('resize', () => {
@@ -968,19 +976,869 @@ function space() {
         finalComposer.setSize(size.width, size.height);
     });
 
-    // Animation pause/resume helper
-    
-    let isRunning = false;    
-    function startThree() {
-    if (!isRunning) { renderer.setAnimationLoop(tick); isRunning = true; }
-    }
-    function stopThree() {
-    if (isRunning) { renderer.setAnimationLoop(null); isRunning = false; }
-    }
-
     document.documentElement.style.visibility = 'visible';
     spaceInit = true;
+
+    // =========================== WELCOME & MENU ==========================
+
+    if (localStorage.getItem(key) == 0) {
+        //creating scroller
+        const scroller = Object.assign(document.createElement('div'), {className: 'scroller'
+        });
+        document.querySelector('#menu').setAttribute('hidden','');
+        menuLayout(localStorage.getItem(key));        
+        return new Promise((resolve) => {
+            const root = document.querySelector('[data-barba="container"]');
+            if (!root) {
+            resolve();
+            return;
+            }
+
+            const userGreeting = localStorage.getItem('userGreeting');
+            const userMessage = localStorage.getItem('userMessage');
+            const message = root.querySelector('#user_message');
+            const greeting = root.querySelector('#user_greeting');
+                
+            message.textContent = '';
+            greeting.textContent = '';            
+
+            const tl = gsap.timeline({ 
+            defaults: { ease: 'power2.out' },
+            onComplete: () => {                
+                resolve();
+            }
+            });
+
+            tl.add(() => stopThree(), 0);
+
+            // Logo fades in
+            tl.from(root.querySelector('#logo-fill'), { 
+            scale: 0, 
+            duration: 1
+            }, '+=0.5');    
+            
+            // --- Typewriter: GREETING
+            {
+            let last = 0;
+            let acc = '';
+            const total = userGreeting.length;
+
+            tl.to({ value: 0 }, {
+                value: total,
+                duration: Math.max(0.2, total * 0.1),
+                ease: 'none',
+                onUpdate: function () {
+                const i = Math.floor(this.targets()[0].value);
+                if (i > last) {
+                    acc += userGreeting.slice(last, i);
+                    if (greeting) greeting.textContent = acc + (i < total ? '_' : '');
+                    last = i;
+                }
+                },
+                onComplete: () => { if (greeting) greeting.textContent = userGreeting; }
+            });
+            }
+
+            // --- Typewriter: MESSAGE
+            {
+            let last = 0;
+            let acc = '';
+            const total = userMessage.length;
+
+            tl.to({ value: 0 }, {
+                value: total,
+                duration: Math.max(0.2, total * 0.01),
+                ease: 'none',
+                onUpdate: function () {
+                const i = Math.floor(this.targets()[0].value);
+                if (i > last) {
+                    acc += userMessage.slice(last, i);
+                    if (message) message.textContent = acc + (i < total ? '_' : '');
+                    last = i;
+                }
+                },
+                onComplete: () => { if (message) message.textContent = userMessage; }
+            }, '+=1');
+            }
+
+            // Animations after typing
+            tl.from(root.querySelector('.line'), { 
+            scale: 0, 
+            duration: 2
+            }, '+=1.5');
+
+            tl.add(() => {
+                (async () => {
+                    const scrollCue = document.querySelector('#welcome .scroll-cue');
+                    const cueInner = document.createElement('div');
+                    cueInner.className = 'inner';
+                    scrollCue.appendChild(cueInner);
+                    animateCueInner(cueInner);
+                    setTimeout(() => cueInner.remove(), 3000);
+                    await new Promise(r => setTimeout(r, 2100));
+                })();
+            }, '>');
+
+
+            tl.from(root.querySelector('.scroll-hint'), { 
+            autoAlpha: 0, 
+            duration: 0.5
+            }, '-=0.5');
+
+            tl.add(() => startThree(), '>-3');
+            
+            tl.from(root.querySelector('#space'), {
+            autoAlpha: 0, 
+            duration: 3
+            }, '-=1');
+
+            // After intro timeline completes, set up scroll trigger for menu
+            tl.add(() => { // Append Scroller
+                document.body.appendChild(scroller);
+                appendSegments(2);
+                window.scrollTo(0, 0);
+                scroller.scrollTop = 0;
+                ScrollTrigger.refresh();
+            }, '-=4')
+
+            // TIMELINE
+            tl.add(() => {
+                const menu = root.querySelector('#menu');
+                menu.removeAttribute('hidden');
+                const items = root.querySelectorAll('.menu-item');
+                gsap.set(items, { autoAlpha: 0, yPercent: 100 });
+
+                const defaultRot = ROT_SPEED; // 3JS original rotation speed
+                const scrubTl = gsap.timeline({
+                defaults: { ease: 'power2.out' },
+                scrollTrigger: {
+                    trigger: '#segment-2',
+                    scroller,
+                    start: 'top bottom',
+                    end: 'top top',
+                    scrub: true,
+                    invalidateOnRefresh: true,
+                    onToggle({ isActive }) {                        
+                        ROT_SPEED = isActive ? 0 : defaultRot;
+                    },
+                    onLeave(self) {
+                        if (scrubTl.data === 'done') return;
+                        scrubTl.data = 'done';
+
+                        const welcome = document.querySelector('#welcome');
+                        const scrollerEl = document.querySelector('.scroller');
+                        self.kill(false);
+
+                        gsap.timeline().add(() => {  welcome?.remove(); scrollerEl?.remove(); ScrollTrigger.refresh(); });
+                        ROT_SPEED = 0.5; // slow rotation down
+                        localStorage.setItem(localStorage.getItem('userId'), 1);
+                    }
+                    
+                }
+            });
+            scrubTl.to('#welcome', { autoAlpha: 0, duration: 1 }, 0)
+            scrubTl.to('#logo-fill', { scale: 0, duration: 1 }, 0)
+            scrubTl.to({}, { duration: 0.6 })
+            scrubTl.to(items, {
+                yPercent: 0, autoAlpha: 1, duration: 1, ease: "power2.out"
+            }, '>');
+            scrubTl.to(camera.position, {
+                x: 200, y: 50, z: 200, duration: 5, ease: 'power4.inOut'
+            }, 0);
+            scrubTl.to(camera.rotation, {
+                x: THREE.MathUtils.degToRad(-20), duration: 3, ease: 'power4.inOut', onUpdate: () => camera.updateProjectionMatrix()
+            }, 0);
+            });
+        })
+    }
+
+    else {
+        menuLayout(localStorage.getItem(key));
+        const root = document.querySelector('[data-barba="container"]');
+        if (!root) return;
+
+        root.querySelector('#welcome').remove();
+
+        const menu = root.querySelector('#menu');
+        const items = root.querySelectorAll('.menu-item');
+
+        
+        menu?.removeAttribute('hidden');
+        ROT_SPEED = 0.5;
+        gsap.set(camera.position, { x: 200, y: 50, z: 200 });
+        gsap.set(camera.rotation, {
+            x: THREE.MathUtils.degToRad(-20),
+            onUpdate: () => camera.updateProjectionMatrix()
+        });   
+
+        gsap.set(items, { autoAlpha: 0, yPercent: 100 });
+
+        const tl = gsap.timeline({
+            defaults: { ease: 'power2.out' }
+        });
+
+        gsap.set(root.querySelector('#logo-holder'), {autoAlpha: 0})
+
+        tl.add(() => startThree(), 0);
+        tl.to(items, {
+            yPercent: 0,
+            autoAlpha: 1,
+            duration: 1,
+            stagger: 0.2,
+            ease: "power2.out"
+        }, 0);
+        tl.from(root.querySelector('#space'), {
+            autoAlpha: 0,
+            duration: 1
+        }, 0.5)
+    };
+
+    // ================================ OUR THESIS ===================================
+
+    function thesis() {
+        if (localStorage.getItem(key) < 1) return;        
+        const page = document.querySelector('#page-thesis');
+        const btn = page.querySelector('.backBtn');
+        btn.textContent = localStorage.getItem(key) == 1 ? 'Continue' : 'Back';
+
+        // show page
+        page.removeAttribute('hidden');
+        page.setAttribute('style', 'position: absolute; inset: 0');
+
+        //creating scroller
+        const scroller = Object.assign(document.createElement('div'), {className: 'scroller'
+        });
+        
+        // ============================== TIMELINE
+
+        const tl = gsap.timeline({defaults: { ease: "power2.out" }});
+
+        // Set initial states
+        gsap.set('#thesis-title', {fontSize: '8rem', xPercent: 100, autoAlpha: 0, bottom: '2em' });
+        gsap.set('#page-thesis .section>*', { visibility: 'hidden' });
+
+        // Definition timeline
+        tl.to('#menu', {
+            autoAlpha: 0, duration: 1
+        }, 0)
+        tl.from('#page-thesis', {
+            autoAlpha: 0, duration: 1
+        }, '<');
+        tl.to(renderer.domElement, {
+            autoAlpha: 0, duration: 1, ease: 'power2.out'
+            // onComplete: swapScene(); // add your replacement logic here when ready
+        }, '<');  
+        tl.set('#thesis-section-1 *', { visibility: 'visible' })
+
+        if (localStorage.getItem(key) < 2) {
+            {   // Typewriter for "liminal"
+                const txt = document.querySelector('#liminal-title');
+                if (txt) {
+                const full = txt.textContent;
+                const proxy = { index: 0 };
+
+                txt.textContent = '';
+
+                tl.to(proxy, {
+                    index: full.length,
+                    duration: Math.max(0.2, full.length * 0.08),
+                    ease: 'none',
+                    onUpdate() {
+                    const i = Math.floor(proxy.index);
+                    txt.textContent = full.slice(0, i) + (i < full.length ? '_' : '');
+                    },
+                    onComplete() {
+                    txt.textContent = full;
+                    }
+                }, '>'); 
+                }
+            }
+            {   // Typewriter for phonetics
+                const txt = document.querySelector('#liminal-phonetic');
+                if (txt) {
+                const full = txt.innerHTML;
+                const proxy = { index: 0 };
+
+                txt.innerHTML = '';
+
+                tl.to(proxy, {
+                    index: full.length,
+                    duration: Math.max(0.2, full.length * 0.05),
+                    ease: 'none',
+                    onUpdate() {
+                    const i = Math.floor(proxy.index);
+                    txt.innerHTML = full.slice(0, i) + (i < full.length ? '_' : '');
+                    },
+                    onComplete() {
+                    txt.innerHTML = full;
+                    }
+                }, '>'); 
+                }
+            }
+            {   // Typewriter for definition
+                const txt = document.querySelector('#liminal-def');
+                if (txt) {
+                const full = txt.textContent;
+                const proxy = { index: 0 };
+
+                txt.textContent = '';
+
+                tl.to(proxy, {
+                    index: full.length,
+                    duration: Math.max(1, full.length * 0.01),
+                    ease: 'none',
+                    onUpdate() {
+                    const i = Math.floor(proxy.index);
+                    txt.textContent = full.slice(0, i) + (i < full.length ? '_' : '');
+                    },
+                    onComplete() {
+                    txt.textContent = full;
+                    }
+                }, '+=1'); 
+                }
+            }
+            tl.from('#liminal-desc', {
+                autoAlpha: 0,
+                duration: 0.5
+            }, '+=1');
+            tl.from('.scroll-hint', {
+                autoAlpha: 0,
+                duration: 0.5
+            }, '+=0.5');
+        }
+        else {
+            tl.set(['#liminal-title', '#liminal-phonetic', '#liminal-def', '#liminal-desc', '.scroll-hint'], {autoAlpha: 0});
+            tl.to('#liminal-title', {
+                autoAlpha: 1, duration: 0.5
+            });
+            tl.to('#liminal-phonetic', {
+                autoAlpha: 1, duration: 0.5
+            }, '-=0.2');
+            tl.to('#liminal-def', {
+                autoAlpha: 1, duration: 0.5
+            }, '-=0.2');
+            tl.to('#liminal-desc', {
+                autoAlpha: 1, duration: 0.5
+            }, '-=0.2');
+            tl.to('.scroll-hint', {
+                autoAlpha: 1, duration: 0.5
+            }, '-=0.2');
+        }
+
+        tl.add(() => { // Append Scroller
+            document.body.appendChild(scroller);
+            appendSegments(5);
+            window.scrollTo(0, 0);
+            scroller.scrollTop = 0;
+            ScrollTrigger.refresh();
+        },'-=1')
+
+        tl.add(() => { // Our Core Belief timeline
+            const segmentTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#segment-2',
+                    scroller,
+                    start: 'top bottom',
+                    end: 'top top',                    
+                    scrub: true,
+                    invalidateOnRefresh: true,
+                }
+            });
+            segmentTl.to('#liminal-title', {
+                xPercent: -100, autoAlpha: 0                
+            }, 0);
+            segmentTl.to('#liminal-phonetic', {
+                xPercent: -100, autoAlpha: 0                
+            }, '-=0.5');
+            segmentTl.to('#liminal-def', {
+                xPercent: -100, autoAlpha: 0                
+            }, '-=0.5');
+            segmentTl.to('#liminal-desc', {
+                xPercent: -100, autoAlpha: 0                
+            }, '-=0.5');
+            segmentTl.to('.scroll-hint', {
+                autoAlpha: 0                
+            }, '-=0.5');
+            segmentTl.to('#thesis-title', {
+                xPercent: 0, autoAlpha: 1                
+            }, '-=0.5');
+        });
+
+        tl.add(() => { // Who > What timeline            
+            const segmentTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#segment-3',
+                    scroller,
+                    start: 'top bottom',
+                    end: 'top top',          
+                    scrub: true,
+                    invalidateOnRefresh: true,
+                }
+            });            
+            segmentTl.to('#thesis-title', {
+                fontSize: '2rem', top: '4rem', bottom: 'unset'               
+            }, 0);
+            segmentTl.to('#who-what', {
+                xPercent: 0, autoAlpha: 1 
+            }, '+=0.2');
+            segmentTl.to('#who-what-content', {
+                autoAlpha: 1 
+            }, '>');
+        });
+
+        tl.add(() => { // Unlocked Potential timeline            
+            const segmentTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#segment-4',
+                    scroller,
+                    start: 'top bottom',
+                    end: 'top top',          
+                    scrub: true,
+                    invalidateOnRefresh: true,
+                }
+            });            
+            segmentTl.to('#who-what', {
+                xPercent: -100, autoAlpha: 0 
+            }, 0);
+            segmentTl.to('#who-what-content', {
+                xPercent: -100, autoAlpha: 0 
+            }, 0);
+            segmentTl.to('#unlock-potential', {
+                autoAlpha: 1 
+            }, 0);
+            segmentTl.to('#unlock-potential-content', {
+                autoAlpha: 1 
+            }, 0);
+        });
+
+        tl.add(() => { // Domains timeline            
+            const segmentTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#segment-5',
+                    scroller,
+                    start: 'top bottom',
+                    end: 'top top',      
+                    scrub: true,
+                    invalidateOnRefresh: true,
+                }
+            });            
+            segmentTl.to('#unlock-potential', {
+                autoAlpha: 0
+            });
+            segmentTl.to('#unlock-potential-content', {
+                autoAlpha: 0
+            });
+            segmentTl.fromTo('#whitespaces', {
+                yPercent: -50, autoAlpha: 0
+            }, {
+                yPercent: 0, autoAlpha: 1
+            });
+            segmentTl.fromTo('#whitespaces-content', {
+                autoAlpha: 0
+            }, {
+                autoAlpha: 1, delay: 1
+            });
+            segmentTl.to({}, { duration: 5, ease: 'none' }, '>');
+            segmentTl.fromTo('.backBtn', {
+                autoAlpha: 0, bottom: '2em'
+            }, {
+                autoAlpha: 1
+            }, '>');
+        });
+
+        tl.add(() => {
+            btn?.addEventListener('click', (e) => back(1, e), { once: true });
+        });        
+    };
+
+    // ============================ WHAT WE ARE
+
+    function what() {
+        if (localStorage.getItem(key) < 2) return;        
+        const page = document.querySelector('#page-what');
+
+        // show page
+        page.removeAttribute('hidden');
+        page.setAttribute('style', 'position: absolute; inset: 0');
+
+        const btn = page.querySelector('.backBtn');
+        btn.textContent = localStorage.getItem(key) == 2 ? 'Continue' : 'Back';
+
+        //creating scroller
+        const scroller = Object.assign(document.createElement('div'), {className: 'scroller'
+        });
+        
+        // ============================== TIMELINE
+
+        const tl = gsap.timeline({defaults: { ease: "power2.out" }});
+
+        // Set initial states
+        gsap.set('#what-title', {fontSize: '8rem', top: '50%', yPercent: 500, autoAlpha: 0 });
+        gsap.set('.section>*', { visibility: 'hidden' });
+
+        // Definition timeline
+        tl.to('#menu', {
+            autoAlpha: 0, duration: 1
+        }, 0)
+        tl.from('#page-what', {
+            autoAlpha: 0, duration: 1
+        }, '<');
+        tl.to(renderer.domElement, {
+            autoAlpha: 0, duration: 1, ease: 'power2.out'
+            // onComplete: swapScene(); // add your replacement logic here when ready
+        }, '<');          
+        tl.to('#what-title', {
+            yPercent: 0, autoAlpha: 1, duration: 1
+        }, 0)
+
+        tl.add(() => { // Append Scroller
+            document.body.appendChild(scroller);
+            appendSegments(5);
+            window.scrollTo(0, 0);
+            scroller.scrollTop = 0;
+            ScrollTrigger.refresh();
+        })
+
+        tl.add(() => { // VC timeline
+            const segmentTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#segment-2',
+                    scroller,
+                    start: 'top bottom',
+                    end: 'top top',                    
+                    scrub: true,
+                    invalidateOnRefresh: true,
+                }
+            });
+            segmentTl.to('#what-title', {
+                fontSize: '2rem', top: '4rem'          
+            }, 0);
+            segmentTl.to('#vc', {
+                autoAlpha: 1                
+            }, '>');
+            segmentTl.to('#vc-def', {
+                autoAlpha: 1                
+            }, '>');
+            segmentTl.to('#vc-content', {
+                autoAlpha: 1                
+            }, '>');
+        });
+        tl.add(() => { // VS timeline
+            const segmentTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#segment-3',
+                    scroller,
+                    start: 'top bottom',
+                    end: 'top top',                    
+                    scrub: true,
+                    invalidateOnRefresh: true,
+                }
+            });            
+            segmentTl.to('#vc', {
+                autoAlpha: 0, xPercent: 10                
+            });
+            segmentTl.fromTo('#vs', {
+                autoAlpha: 0, xPercent: -10                
+            },{
+                autoAlpha: 1, xPercent: 0                
+            }, '>');
+            segmentTl.to('#vc-def', {
+                autoAlpha: 0, xPercent: 10                
+            }, '<');
+            segmentTl.fromTo('#vs-def', {
+                autoAlpha: 0, xPercent: -10                
+            },{
+                autoAlpha: 1, xPercent: 0                
+            }, '>');
+            segmentTl.to('#vc-content', {
+                autoAlpha: 0, xPercent: 10                
+            }, '<');
+            segmentTl.fromTo('#vs-content', {
+                autoAlpha: 0, xPercent: -10               
+            },{
+                autoAlpha: 1, xPercent: 0                
+            }, '>');
+        });
+        tl.add(() => { // Accelerator timeline
+            const segmentTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#segment-4',
+                    scroller,
+                    start: 'top bottom',
+                    end: 'top top',                    
+                    scrub: true,
+                    invalidateOnRefresh: true,
+                }
+            });            
+            segmentTl.to('#vs', {
+                autoAlpha: 0, xPercent: 10                
+            });
+            segmentTl.fromTo('#acc', {
+                autoAlpha: 0, xPercent: -10                
+            },{
+                autoAlpha: 1, xPercent: 0                
+            }, '>');
+            segmentTl.to('#vs-def', {
+                autoAlpha: 0, xPercent: 10                
+            }, '<');
+            segmentTl.fromTo('#acc-def', {
+                autoAlpha: 0, xPercent: -10                
+            },{
+                autoAlpha: 1, xPercent: 0                
+            }, '>');
+            segmentTl.to('#vs-content', {
+                autoAlpha: 0, xPercent: 10                
+            }, '<');
+            segmentTl.fromTo('#acc-content', {
+                autoAlpha: 0, xPercent: -10               
+            },{
+                autoAlpha: 1, xPercent: 0                
+            }, '>');
+        });
+        tl.add(() => { // We Are Liminal timeline
+            const segmentTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#segment-5',
+                    scroller,
+                    start: 'top bottom',
+                    end: 'top top',                    
+                    scrub: true,
+                    invalidateOnRefresh: true,
+                }
+            });
+            segmentTl.to('#what-title', {
+                autoAlpha: 0, xPercent: -10, duration: 0.01               
+            });            
+            segmentTl.to('#acc', {
+                autoAlpha: 0, xPercent: -10, duration: 0.5               
+            }, '<');
+            segmentTl.to('#acc-def', {
+                autoAlpha: 0, xPercent: -10, duration: 0.5                
+            }, '<');
+            segmentTl.to('#acc-content', {
+                autoAlpha: 0, xPercent: -10, duration: 0.5               
+            }, '<');
+            segmentTl.add(gsap.to({}, { duration: 2 }, '>'));            
+            segmentTl.fromTo('#we-are-liminal', {
+                autoAlpha: 0, scale: 0                
+            },{
+                autoAlpha: 1, scale: 1, duration: 0.5               
+            }, '-=0.5');
+            segmentTl.fromTo('#we-are-liminal-content', {
+                autoAlpha: 0                
+            },{
+                autoAlpha: 1            
+            }, '>');
+            segmentTl.fromTo('.backBtn', {
+                autoAlpha: 0                
+            },{
+                autoAlpha: 1            
+            }, '+=1');
+        });
+        tl.add(() => {            
+            btn?.addEventListener('click', (e) => back(2, e), { once: true });
+        });
+
+    };
+
+    // =============================== PROFILE
+
+    function us() {
+        if (localStorage.getItem(key) < 3) return;
+        const page = document.querySelector('#page-profile');
+
+        // show page
+        page.removeAttribute('hidden');
+        page.setAttribute('style', 'position: absolute; inset: 0');
+
+        const btn = page.querySelector('.backBtn');
+        btn.textContent = localStorage.getItem(key) == 3 ? 'Continue' : 'Back';
+
+        const tl = gsap.timeline({defaults: { ease: "power4.out" }});
+        gsap.set('#page-profile', { '--pseudo-opacity': 0 });
+
+        // TIMELINE
+
+        tl.to('#menu', {
+            autoAlpha: 0, duration: 1
+        }, 0)
+        tl.from('#page-profile', {
+            autoAlpha: 0, duration: 1
+        }, '<');
+        tl.to(renderer.domElement, {
+            autoAlpha: 0, duration: 1, ease: 'power2.out'
+            // onComplete: swapScene(); // add your replacement logic here when ready
+        }, '<');  
+
+        tl.from('#page-profile>i:nth-child(1)', {
+            scaleX: 0, duration: 0.5
+        }, '>');
+        tl.from('#page-profile>i:nth-child(2)', {
+            scaleY: 0, duration: 0.5
+        }, '>');
+        tl.from('#page-profile>i:nth-child(3)', {
+            scaleX: 0, duration: 0.5
+        }, '<');
+        tl.from('#page-profile>i:nth-child(4)', {
+            scaleY: 0, duration: 0.5
+        }, '<');
+        tl.to('#page-profile', { 
+            '--pseudo-opacity': 1, duration: 0.5 
+        }, '>');
+        tl.from('#profile-name', {
+            autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
+        }, '-=0.5');
+        tl.from('#profile-title', {
+            autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
+        }, '>');
+        tl.from('#profile-desc', {
+            autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
+        }, '-=0.25');
+        tl.from('#profile-toggle', {
+            autoAlpha: 0, duration: 0.2
+        }, '-=0.25');
+        tl.from('#profile-toggle a', {
+            autoAlpha: 0, duration: 0.5, stagger: 0.05, ease: 'bounce.out'
+        }, '-=0.25');
+        tl.from('.backBtn', {
+            autoAlpha: 0, duration: 0.5
+        }, '+=0.5');
+
+        tl.add(() => {            
+            btn?.addEventListener('click', (e) => back(3, e), { once: true });
+        });
+
+    };
+
+    function portfolio() {
+        if (localStorage.getItem(key) < 4) return;
+        const page = document.querySelector('#page-portfolio');
+
+        // show page
+        page.removeAttribute('hidden');
+        page.setAttribute('style', 'position: absolute; inset: 0');
+        const btn = page.querySelector('.backBtn');
+
+        const tl = gsap.timeline({defaults: { ease: "power4.out" }});
+
+        // TIMELINE
+
+        tl.to('#menu', {
+            autoAlpha: 0, duration: 1
+        }, 0)
+        tl.from('#page-portfolio', {
+            autoAlpha: 0, duration: 1
+        }, '<');
+        tl.to(renderer.domElement, {
+            autoAlpha: 0, duration: 1, ease: 'power2.out'
+            // onComplete: swapScene(); // add your replacement logic here when ready
+        }, '<');  
+
+        tl.from('#page-portfolio>i:nth-child(1)', {
+            scaleX: 0, duration: 0.5
+        }, '>');
+        tl.from('#page-portfolio>i:nth-child(2)', {
+            scaleY: 0, duration: 0.5
+        }, '>');
+        tl.from('#page-portfolio>i:nth-child(3)', {
+            scaleY: 0, duration: 0.5
+        }, '<');
+        tl.from('#portfolio-toggle', {
+            autoAlpha: 0, duration: 0.2
+        }, '-=0.25');
+        tl.from('#portfolio-toggle a', {
+            autoAlpha: 0, duration: 0.5, stagger: 0.05, ease: 'bounce.out'
+        }, '-=0.25');
+        tl.from('#portfolio-name', {
+            autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
+        }, '-=0.5');
+        tl.from('#portfolio-desc', {
+            autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
+        }, '-=0.25');        
+        tl.from('.backBtn', {
+            autoAlpha: 0, duration: 0.5
+        }, '+=0.5');
+
+        tl.add(() => {            
+            btn?.addEventListener('click', (e) => back(4, e), { once: true });
+        });
+    };
+
+    // ========== HELPERS
+
+    // Appending Scroll Segment
+    function appendSegments(number) {
+        const scroller = document.querySelector('.scroller');
+        for (let i = 0; i < number; i++)
+            scroller.appendChild(Object.assign(document.createElement('div'), { className: 'segment', id: `segment-${i + 1}`
+ }));
+    }
+       
+    // Back Button
+    function back(ref, e) {
+        const page = e.currentTarget.closest('.page');
+        const menu = document.querySelector('#menu');
+        const scroller = document.querySelector('.scroller')
+
+        const userId = localStorage.getItem('userId');
+        const key = userId;
+        const value = Number(localStorage.getItem(key)) || 0;
+
+        if (value === ref) menuLayout(value + 1);
+        const lastMenuItem = menu?.querySelector('.menu-item:last-child'); 
+
+        const tl = gsap.timeline({
+            defaults: { ease: 'power2.out' },
+            onComplete() {
+            ScrollTrigger.getAll().forEach(st => {
+                const scrollEl = st.scroller || st.vars?.scroller || ScrollTrigger.defaultScroller || window;
+                if (scrollEl === scroller || scroller?.contains(st.trigger)) st.kill();
+                });
+                gsap.killTweensOf(page);
+                gsap.killTweensOf(page.querySelectorAll('*'));
+                gsap.set(page.querySelectorAll('*'), { clearProps: 'all' });
+                gsap.set(page, { clearProps: 'all' });
+                page.hidden = true;
+                menu.style.position = '';
+                scroller?.remove();
+                window.scrollTo(0, 0);
+
+                if (value === ref) {localStorage.setItem(key, value + 1)};                
+            }
+        });
+        tl.to(page, { 
+            autoAlpha: 0, duration: 1 
+        }, 0);
+        tl.to(menu, {
+            autoAlpha: 1, duration: 1
+        }, '>');
+        if (value === ref && lastMenuItem) { tl.fromTo( lastMenuItem, { 
+            opacity: 0, yPercent: 20 
+            }, { opacity: 1, yPercent: 0, duration: 0.6                 
+            }, '>');
+        }
+        tl.to('#space', {
+            autoAlpha: 1, duration: 1
+        }, '>');
+    };
+    
+    // Conditional Menu
+    function menuLayout(state) {
+        const menu = document.querySelector('#menu');
+        menu.innerHTML = `
+            <div class="menu-item" id="menu-thesis">${state < 2 ? 'Start Here' : 'Our Thesis'}</div>
+            ${state >= 2 ? '<div class="menu-item" id="menu-what">What We Are (Not)</div>' : ''}
+            ${state >= 3 ? '<div class="menu-item" id="menu-us">About Us</div>' : ''}
+            ${state >= 4 ? '<div class="menu-item" id="menu-portfolio">Our Portfolio</div>' : ''}`;
+
+        document.querySelector('#menu-thesis')?.addEventListener('click', thesis);
+        document.querySelector('#menu-what')?.addEventListener('click', what);
+        document.querySelector('#menu-us')?.addEventListener('click', us);
+        document.querySelector('#menu-portfolio')?.addEventListener('click', portfolio);
+    }
+
 }
+
 
 // -----------------------------------------------------
 // ANIMATION HELPERS
@@ -994,13 +1852,43 @@ const unpin = el => gsap.set(el, { clearProps:'position,inset,width,height,overf
 const defaultLeave = ({ current }) => gsap.to(current.container, { autoAlpha: 0, duration: 0.3, ease: 'power1.out' });
 const defaultEnter = ({ next })    => gsap.fromTo(next.container, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: 'power1.out' });
 
+
 // -----------------------------------------------------
-// PAGE BUILD & ANIMATION DEFINITION
+// PAGE TRANSITION ANIMATION TIMELINE
 // -----------------------------------------------------
+
 
 const Page = {
   landing: { // LANDING PAGE ---------------------------
     build: () => { landing(); updateLanding(); },
+    // -------------------------------------------------
+    once: ({ next }) => {
+        const tl = gsap.timeline({ defaults:{ ease:'power2.out' } });
+        tl.set(next.container.querySelector('#entrance'), {scaleX:0, scaleY:0});
+        tl.set(next.container.querySelector('.window'), {scaleX:0, scaleY:0});
+        tl.from(next.container.querySelector('.grid-viewport'), { 
+            scale:0, duration:0.5 
+        }, 0);
+        tl.to(next.container.querySelector('.window'), {
+            scaleX:1, duration:0.2
+        }, '-=0.5');
+        tl.to(next.container.querySelector('#entrance'), {
+            scaleX:1, duration:0.2
+        }, '<');
+        tl.to(next.container.querySelector('.window'), {
+            scaleY:1, duration:0.2
+        }, '>');
+        tl.to(next.container.querySelector('#entrance'), {
+            scaleY:1, duration:0.2
+        }, '<');
+        tl.from(next.container.querySelector('.tagline'), {
+            autoAlpha:0, duration: 0.2
+        }, '>');
+        tl.from(next.container.querySelector('.copyright-text'), {
+            autoAlpha:0, duration: 0.2
+        }, '<');
+        return tl;
+    },
     // -------------------------------------------------
     enter: ({ next }) => {
         const tl = gsap.timeline({ defaults:{ ease:'power2.out' } });
@@ -1031,9 +1919,12 @@ const Page = {
     // -------------------------------------------------
     enter: ({ next }) => {        
         const tl = gsap.timeline({ defaults:{ ease:'power2.out' } });        
-        tl.from(next.container.querySelectorAll('.line-horizontal, .line-vertical'), { 
-            scale:0, transformOrigin:'50% 50%', duration:0.4 
-        }, 0.5);
+        tl.from(next.container.querySelectorAll('.line-vertical'), { 
+            autoAlpha:0, left:'50%', duration:0.4 
+        }, 0);
+        tl.from(next.container.querySelectorAll('.line-horizontal'), { 
+            autoAlpha:0, top:'50%', duration:0.4 
+        }, '<');
         tl.from(next.container.querySelector('.code'), { 
             autoAlpha:0, duration:0.3 
         }, 0.5);
@@ -1063,88 +1954,7 @@ const Page = {
     build: () => { space(); },
     // -------------------------------------------------
     enter: ({ next }) => {
-        const message = next.container.querySelector('#user_message');
-        const messageContent = message.textContent;
-        const greeting = next.container.querySelector('#user_greeting');
-        const greetingContent = greeting.textContent;
-        
-        message.textContent = '';
-        greeting.textContent = '';
-
         const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
-
-        tl.add(() => stopThree(), 0);
-
-        // Logo fades in
-        tl.from(next.container.querySelector('#logo-fill'), { 
-            scale: 0, 
-            duration: 1
-        }, '+=0.5');    
-        
-        // --- Typewriter: GREETING (O(n) appends, no growing prefix copy)
-        {
-        let last = 0;                  // last written index
-        let acc  = '';                 // accumulated text
-        const total = greetingContent.length;
-
-        tl.to({ value: 0 }, {
-            value: total,
-            duration: total * 0.1,       // 100ms per character
-            ease: 'none',
-            onUpdate: function () {
-            const i = Math.floor(this.targets()[0].value);
-            if (i > last) {
-                // append only the delta, not the whole 0..i prefix
-                acc += greetingContent.slice(last, i);
-                greeting.textContent = acc + (i < total ? '_' : '');
-                last = i;
-            }
-            },
-            onComplete: () => { greeting.textContent = greetingContent; }
-        });
-        }
-
-        // --- Typewriter: MESSAGE (same optimization)
-        {
-        let last = 0;
-        let acc  = '';
-        const total = messageContent.length;
-
-        tl.to({ value: 0 }, {
-            value: total,
-            duration: total * 0.04,      // 40ms per character
-            ease: 'none',
-            onUpdate: function () {
-            const i = Math.floor(this.targets()[0].value);
-            if (i > last) {
-                acc += messageContent.slice(last, i);
-                message.textContent = acc + (i < total ? '_' : '');
-                last = i;
-            }
-            },
-            onComplete: () => { message.textContent = messageContent; }
-        }, '+=1');
-        }
-
-        
-        // Animations after typing
-        tl.from(next.container.querySelector('.line'), { 
-            scale: 0, 
-            duration: 2
-        }, '+=1.5');
-
-        tl.from(next.container.querySelector('.scroll-hint'), { 
-            autoAlpha: 0, 
-            duration: 0.5
-        }, '-=0.5');
-
-        tl.add(() => startThree(), '>-3');
-        
-        tl.from(next.container.querySelector('#space'), {
-            autoAlpha: 0, 
-            duration: 3
-        }, '-=1');
-
         return tl;
     },
     // -------------------------------------------------
@@ -1158,15 +1968,3 @@ const Page = {
     }
     }
 };
-// -------------------------------------------
-// Page Build
-// -------------------------------------------
-
-(() => {
-  const container = document.querySelector('[data-barba="container"]');
-  if (container) {
-    const ns = container.dataset.barbaNamespace;
-    Page[ns]?.build?.();
-  }
-})();
-
