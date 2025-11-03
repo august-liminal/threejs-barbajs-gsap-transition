@@ -14,10 +14,10 @@ import { UnrealBloomPass } from 'https://unpkg.com/three@0.180.0/examples/jsm/po
 import { OutputPass } from 'https://unpkg.com/three@0.180.0/examples/jsm/postprocessing/OutputPass.js?module';
 
 // GSAP
-import { gsap } from 'https://esm.sh/gsap@3.12.5?target=es2020';
-import { ScrollTrigger } from 'https://esm.sh/gsap@3.12.5/ScrollTrigger?target=es2020&external=gsap';
-import { ScrollToPlugin } from 'https://esm.sh/gsap@3.12.5/ScrollToPlugin?target=es2020&external=gsap';
-gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+import { gsap } from 'https://esm.sh/gsap@3.13.0?target=es2020';
+import { ScrollTrigger } from 'https://esm.sh/gsap@3.13.0/ScrollTrigger?target=es2020&external=gsap';
+import { ScrambleTextPlugin } from 'https://esm.sh/gsap@3.13.0/ScrambleTextPlugin?target=es2020&external=gsap';
+gsap.registerPlugin(ScrollTrigger, ScrambleTextPlugin);
 
 // Barba
 import barba from 'https://esm.sh/@barba/core@2.9.7?target=es2020';
@@ -74,11 +74,11 @@ let spaceRenderer = null;
 let spaceTick = null;
 let isRunning = false;
 
-function startThree() {
+function startThree() {    
   if (spaceRenderer && spaceTick && !isRunning) {
     spaceRenderer.setAnimationLoop(spaceTick);
     isRunning = true;
-  }
+  }  
 }
 function stopThree() {
   if (spaceRenderer && isRunning) {
@@ -209,7 +209,7 @@ function landing(){
     loader.load(
     modelURL.href,
     function (gltf) {
-        //If the file is loaded, add it to the scene
+        //If the file is loaded, add it to the scene        
         object = gltf.scene;
         const material = new THREE.PointsMaterial({
             size: 3,
@@ -827,9 +827,9 @@ function space() {
     });
 
     const modelURL = new URL('./cloud.glb', import.meta.url);
-    loader.load(
+    loader.load(        
         modelURL.href,
-        function (gltf) {
+        function (gltf) {            
             // Build a clean root with Points using the shared shader
             const root = new THREE.Group();
             gltf.scene.traverse((n) => {
@@ -958,8 +958,8 @@ function space() {
     spaceRenderer = renderer;
     spaceTick = tick;
 
-    renderer.setAnimationLoop(tick);
-    isRunning = true;
+    //renderer.setAnimationLoop(tick);
+    //isRunning = true;
 
     // Resize Event Listener
     window.addEventListener('resize', () => {
@@ -982,11 +982,17 @@ function space() {
     // =========================== WELCOME & MENU ==========================
 
     if (localStorage.getItem(key) == 0) {
-        //creating scroller
+        // Creating scroller
         const scroller = Object.assign(document.createElement('div'), {className: 'scroller'
         });
         document.querySelector('#menu').setAttribute('hidden','');
-        menuLayout(localStorage.getItem(key));        
+        menuLayout(localStorage.getItem(key));
+        
+        // Caching Constants
+
+        const logoFill = document.querySelector('#logo-fill');
+        const scrollHint = document.querySelector('.scroll-hint')
+
         return new Promise((resolve) => {
             const root = document.querySelector('[data-barba="container"][data-barba-namespace="space"]');
             if (!root) {
@@ -1000,19 +1006,101 @@ function space() {
             const greeting = root.querySelector('#user_greeting');
                 
             message.textContent = '';
-            greeting.textContent = '';            
+            greeting.textContent = '';  
+            
+            // --- Create Message Block with Character Elements
+            {
+                let chars = '01';
+                let charIndex = 0;
+                const message = document.getElementById('user_message');
+                message.textContent = '';
+
+                let word = null;
+                const fragment = document.createDocumentFragment();
+
+                const makeWord = () => {
+                    const span = document.createElement('span');
+                    span.className = 'coded-word';
+                    fragment.appendChild(span);
+                    return span;
+                };
+
+                for (const ch of userMessage) {
+                    if (ch === '\n') {
+                        word = null;
+                        fragment.appendChild(document.createElement('br'));
+                        continue;
+                    }
+                    if (ch === ' ') {
+                        word = null;
+                        fragment.appendChild(document.createTextNode(' '));
+                        continue;
+                    }
+
+                    if (!word) word = makeWord();
+
+                    const wrap = document.createElement('span');
+                    wrap.className = 'coded-char';  // NO 'animate' class yet
+                    wrap.style.setProperty('--char-index', charIndex);
+
+                    const encoded = document.createElement('i');
+                    encoded.className = 'encoded';
+                    encoded.textContent = chars[(Math.random() * chars.length) | 0];
+
+                    const decoded = document.createElement('i');
+                    decoded.className = 'decoded';
+                    decoded.textContent = ch;
+
+                    wrap.appendChild(encoded);
+                    wrap.appendChild(decoded);
+                    word.appendChild(wrap);
+
+                    charIndex++;
+                }
+
+                message.appendChild(fragment);
+                document.querySelector('#user_message').setAttribute('style','--char-count:' + userMessage.length);
+            }       
+
+            // Build Cue Animation
+
+            const host = document.querySelector('#welcome .scroll-cue-container');
+
+            const GROW = 1.6;
+            const OVERLAP = 1;
+            const SPACING = 0.45;
+
+            host._cueLoops?.forEach(({ tl, cue }) => {
+                tl.kill();
+                cue.remove();
+            });
+
+            host._cueLoops = [0, (2 * GROW) - OVERLAP * SPACING].map((offset) => {
+                const cue = host.appendChild(Object.assign(document.createElement('div'), { className: 'cue' }));
+
+                const tlCue = gsap.timeline({
+                paused: true,
+                repeat: -1,
+                delay: offset,                     // reapplies each repeat
+                defaults: { ease: 'power2.inOut' }
+                })
+                .set(cue, { top: '0%', bottom: '100%' })
+                .to(cue, { bottom: '0%', duration: GROW })
+                .to(cue, { top: '100%', duration: GROW }, `>-${OVERLAP}`)
+                .set(cue, { top: '0%', bottom: '100%' });
+
+                return { cue, tl: tlCue };
+            });
 
             const tl = gsap.timeline({ 
             defaults: { ease: 'power2.out' },
             onComplete: () => {                
                 resolve();
             }
-            });
-
-            tl.add(() => stopThree(), 0);
+            });            
 
             // Logo fades in
-            tl.from(root.querySelector('#logo-fill'), { 
+            tl.from(logoFill, { 
             scale: 0, 
             duration: 1
             }, '+=0.5');    
@@ -1039,70 +1127,28 @@ function space() {
             });
             }
 
-            // --- Typewriter: MESSAGE
-            {
-            let last = 0;
-            let acc = '';
-            const total = userMessage.length;
+            // --- Decode Reveal: MESSAGE
 
-            tl.to({ value: 0 }, {
-                value: total,
-                duration: Math.max(0.2, total * 0.01),
-                ease: 'none',
-                onUpdate: function () {
-                const i = Math.floor(this.targets()[0].value);
-                if (i > last) {
-                    acc += userMessage.slice(last, i);
-                    if (message) message.textContent = acc + (i < total ? '_' : '');
-                    last = i;
-                }
-                },
-                onComplete: () => { if (message) message.textContent = userMessage; }
-            }, '+=1');
-            }
+            tl.to('#user_message .coded-char', {
+                className: 'coded-char animated',
+                stagger: 0.003,
+                duration: userMessage.length * 0.043 - 2.5
+            }, '>')
 
-            // Animations after typing
+            // Cue Animation
             
+            tl.add(() => { host._cueLoops?.forEach(({ tl }) => tl.play())}, '>');
+
+            tl.from(scrollHint, { 
+            autoAlpha: 0, duration: 0.5 
+            }, '>1');
+
             tl.add(() => {
-                const host = document.querySelector('#welcome .scroll-cue-container');
-
-                const GROW = 1.6;
-                const OVERLAP = 1;
-                const SPACING = 0.45;
-
-                host._cueLoops?.forEach(({ tl, cue }) => {
-                    tl.kill();
-                    cue.remove();
-                });
-
-                host._cueLoops = [0, (2 * GROW) - OVERLAP * SPACING].map((offset) => {
-                    const cue = host.appendChild(Object.assign(document.createElement('div'), { className: 'cue' }));
-
-                    const tlCue = gsap.timeline({
-                    repeat: -1,
-                    delay: offset,                     // reapplies each repeat
-                    defaults: { ease: 'power2.inOut' }
-                    })
-                    .set(cue, { top: '0%', bottom: '100%' })
-                    .to(cue, { bottom: '0%', duration: GROW })
-                    .to(cue, { top: '100%', duration: GROW }, `>-${OVERLAP}`)
-                    .set(cue, { top: '0%', bottom: '100%' });
-
-                    return { cue, tl: tlCue };
-                });
-            }, '>');
-
-            tl.from(root.querySelector('.scroll-hint'), { 
-            autoAlpha: 0, 
-            duration: 0.5
-            }, '>');
-
-            tl.add(() => startThree(), '>-3');
-            
+                renderer.setAnimationLoop(tick);isRunning = true;startThree
+            },'<');
             tl.from(root.querySelector('#space'), {
-            autoAlpha: 0, 
-            duration: 3
-            }, '-=1');
+                    autoAlpha: 0, duration: 3
+            }, '>');
 
             // After intro timeline completes, set up scroll trigger for menu
             tl.add(() => { // Append Scroller
@@ -1120,7 +1166,7 @@ function space() {
                 const items = root.querySelectorAll('.menu-item');
                 gsap.set(items, { autoAlpha: 0, yPercent: 100 });
 
-                const defaultRot = ROT_SPEED; // 3JS original rotation speed
+                
                 const scrubTl = gsap.timeline({
                 defaults: { ease: 'power2.out' },
                 scrollTrigger: {
@@ -1130,9 +1176,7 @@ function space() {
                     end: 'top top',
                     scrub: true,
                     invalidateOnRefresh: true,
-                    onToggle({ isActive }) {                        
-                        ROT_SPEED = isActive ? 0 : defaultRot;
-                    },
+                    
                     onLeave(self) {
                         if (scrubTl.data === 'done') return;
                         scrubTl.data = 'done';
@@ -1149,7 +1193,7 @@ function space() {
                 }
             });
             scrubTl.to('#welcome', { autoAlpha: 0, duration: 1 }, 0)
-            scrubTl.to('#logo-fill', { scale: 0, duration: 1 }, 0)
+            scrubTl.to(logoFill, { scale: 0, duration: 1 }, 0)
             scrubTl.to({}, { duration: 0.6 })
             scrubTl.to(items, {
                 yPercent: 0, autoAlpha: 1, duration: 1, ease: "power2.out"
