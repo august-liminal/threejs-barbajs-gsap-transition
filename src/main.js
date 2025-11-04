@@ -2,22 +2,21 @@
 //IMPORT
 //==========================
 
-// THREE core
-import * as THREE from 'https://unpkg.com/three@0.180.0/build/three.module.js';
+// Three core (CDN)
+import * as THREE from 'https://esm.sh/three@0.180.0';
 
-// THREE add-ons 
-import { GLTFLoader } from 'https://unpkg.com/three@0.180.0/examples/jsm/loaders/GLTFLoader.js?module';
-import { EffectComposer } from 'https://unpkg.com/three@0.180.0/examples/jsm/postprocessing/EffectComposer.js?module';
-import { RenderPass } from 'https://unpkg.com/three@0.180.0/examples/jsm/postprocessing/RenderPass.js?module';
-import { ShaderPass } from 'https://unpkg.com/three@0.180.0/examples/jsm/postprocessing/ShaderPass.js?module';
-import { UnrealBloomPass } from 'https://unpkg.com/three@0.180.0/examples/jsm/postprocessing/UnrealBloomPass.js?module';
-import { OutputPass } from 'https://unpkg.com/three@0.180.0/examples/jsm/postprocessing/OutputPass.js?module';
+// Three add-ons (same CDN + shared dependency)
+import { GLTFLoader }     from 'https://esm.sh/three@0.180.0/examples/jsm/loaders/GLTFLoader.js?deps=three@0.180.0';
+import { EffectComposer } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/EffectComposer.js?deps=three@0.180.0';
+import { RenderPass }     from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/RenderPass.js?deps=three@0.180.0';
+import { ShaderPass }     from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/ShaderPass.js?deps=three@0.180.0';
+import { UnrealBloomPass }from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/UnrealBloomPass.js?deps=three@0.180.0';
+import { OutputPass }     from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/OutputPass.js?deps=three@0.180.0';
 
 // GSAP
 import { gsap } from 'https://esm.sh/gsap@3.13.0?target=es2020';
 import { ScrollTrigger } from 'https://esm.sh/gsap@3.13.0/ScrollTrigger?target=es2020&external=gsap';
-import { ScrambleTextPlugin } from 'https://esm.sh/gsap@3.13.0/ScrambleTextPlugin?target=es2020&external=gsap';
-gsap.registerPlugin(ScrollTrigger, ScrambleTextPlugin);
+gsap.registerPlugin(ScrollTrigger);
 
 // Barba
 import barba from 'https://esm.sh/@barba/core@2.9.7?target=es2020';
@@ -26,47 +25,47 @@ import barba from 'https://esm.sh/@barba/core@2.9.7?target=es2020';
 
 // Initialize barba
 barba.init({
-  preventRunning: true,  
-  transitions: [{
-    name: 'universal',
-    sync: true,
+    preventRunning: true,
+    transitions: [{
+        name: 'universal',
+        sync: true,
 
-    async once({ next }) {
-      pin(next.container);
-      gsap.set(next.container, { zIndex: 1 });
+        async once({ next }) {
+            pin(next.container);
+            gsap.set(next.container, { zIndex: 1 });
 
-      const ns = next.container.dataset.barbaNamespace;
-      Page[ns]?.build?.();
-      await nextFrame();
+            const ns = next.container.dataset.barbaNamespace;
+            Page[ns]?.build?.();
+            await nextFrame();
 
-      // try once → else enter → else default
-      await (Page[ns]?.once?.({ next }) 
-          ?? Page[ns]?.enter?.({ next }) 
-          ?? defaultEnter({ next }));
+            // try once → else enter → else default
+            await (Page[ns]?.once?.({ next })
+                ?? Page[ns]?.enter?.({ next })
+                ?? defaultEnter({ next }));
 
-      unpin(next.container);
-    },
+            unpin(next.container);
+        },
 
-    leave(data) {
-      pin(data.current.container);
-      gsap.set(data.current.container, { zIndex: 2 });
-      const ns = data.current.container.dataset.barbaNamespace;
-      return (Page[ns]?.leave?.(data)) ?? defaultLeave(data);
-    },
+        leave(data) {
+            pin(data.current.container);
+            gsap.set(data.current.container, { zIndex: 2 });
+            const ns = data.current.container.dataset.barbaNamespace;
+            return (Page[ns]?.leave?.(data)) ?? defaultLeave(data);
+        },
 
-    async enter(data) {
-      pin(data.next.container);
-      gsap.set(data.next.container, { zIndex: 1 });
+        async enter(data) {
+            pin(data.next.container);
+            gsap.set(data.next.container, { zIndex: 1 });
 
-      const ns = data.next.container.dataset.barbaNamespace;
-      Page[ns]?.build?.();
+            const ns = data.next.container.dataset.barbaNamespace;
+            Page[ns]?.build?.();
 
-      await nextFrame();
-      await ((Page[ns]?.enter?.(data)) ?? defaultEnter(data));
+            await nextFrame();
+            await ((Page[ns]?.enter?.(data)) ?? defaultEnter(data));
 
-      unpin(data.next.container);
-    }
-  }]
+            unpin(data.next.container);
+        }
+    }]
 });
 
 // Animation pause/resume helper    
@@ -74,17 +73,17 @@ let spaceRenderer = null;
 let spaceTick = null;
 let isRunning = false;
 
-function startThree() {    
-  if (spaceRenderer && spaceTick && !isRunning) {
-    spaceRenderer.setAnimationLoop(spaceTick);
-    isRunning = true;
-  }  
+function startThree() {
+    if (spaceRenderer && spaceTick && !isRunning) {
+        spaceRenderer.setAnimationLoop(spaceTick);
+        isRunning = true;
+    }
 }
 function stopThree() {
-  if (spaceRenderer && isRunning) {
-    spaceRenderer.setAnimationLoop(null);
-    isRunning = false;
-  }
+    if (spaceRenderer && isRunning) {
+        spaceRenderer.setAnimationLoop(null);
+        isRunning = false;
+    }
 }
 
 
@@ -95,90 +94,104 @@ function stopThree() {
 
 let gridDimension, gridSize, cellSize, x, y, deltaW, deltaH;
 
-function landing(){
+function landing() {
     if (!location.pathname.endsWith('/landing') || landingInit) return;
-    //===== DECLARATIONS
-    // Grid dimension in pixel
-    gridDimension = Math.max(window.innerHeight, window.innerWidth)
-    document.documentElement.style.setProperty('--grid-dimension', `${gridDimension}px`)
-    // Calculate difference between viewport and grid dimension
-    deltaW = Math.abs(window.innerWidth - gridDimension);
-    deltaH = Math.abs(window.innerHeight - gridDimension);    
-    // Calculate tagline-dependent variables
-    let taglineFontsize, copyrightFontsize, taglineWidth;
-    if (document.querySelector('.tagline')) {
-        const t = document.querySelector('.tagline');
-        // Measure zize of tagline
-        taglineWidth = t.getBoundingClientRect().width;
-        // remove line-height inline style if exist
-        t?.style.lineHeight && t.style.removeProperty('line-height');
-        //Set minCellSize to be half of font size
-        const minCellSize = 0.5 * parseFloat(getComputedStyle(t).fontSize);
-        // Largest number of cells in grid, minimum 20
-        gridSize = Math.max(Math.floor(gridDimension / minCellSize / 4) * 4, 12)
-        //Calculate actual possible cell size
-        cellSize = gridDimension / gridSize
-        document.documentElement.style.setProperty('--cell-size', `${cellSize}px`)
-        //Set tagline actual line height as 2x cell size
-        t.style.setProperty('line-height', `${cellSize * 2}px`);
-        //===== SHAPE
-        // X being tagline width starting from viewport edge or 25% side whichever greater, round up to nearest cell
-        x = Math.ceil(Math.max(gridDimension * 0.25, deltaW / 2 + taglineWidth) / cellSize) * cellSize;
-        // Y at least 3 cells away from viewport edge and never project diagonally into the vertical edge of screen, round up to nearest cell
-        y = Math.ceil(Math.min(deltaH / 2 + 2 * cellSize, gridDimension - x) / cellSize) * cellSize;
-        //===== Text Layout
-        taglineFontsize = parseFloat(getComputedStyle(document.querySelector('.tagline')).fontSize)
-        copyrightFontsize = parseFloat(getComputedStyle(document.querySelector('.copyright-text')).fontSize)
-        const textHorizontalOffset = window.innerWidth < gridDimension ? deltaW / 2 : 0        
-        const taglineOffset = y - cellSize * 0.26;
-        const copyrightOffset = y - cellSize * 0.8;
-        document.querySelector('.tagline').style.right = textHorizontalOffset + 'px';
-        document.querySelector('.tagline').style.bottom = taglineOffset + 'px';
-        document.querySelector('.copyright-text').style.left = textHorizontalOffset + 'px';
-        document.querySelector('.copyright-text').style.top = copyrightOffset + 'px'; 
-    }   
 
-    
+    function landingLayout() {
+        //===== DECLARATIONS
+        // Grid dimension in pixel
+        gridDimension = Math.max(window.innerHeight, window.innerWidth)
+        document.documentElement.style.setProperty('--grid-dimension', `${gridDimension}px`)
+        // Calculate difference between viewport and grid dimension
+        deltaW = Math.abs(window.innerWidth - gridDimension);
+        deltaH = Math.abs(window.innerHeight - gridDimension);
+        // Calculate tagline-dependent variables
+        let taglineFontsize, copyrightFontsize, taglineWidth;
+        if (document.querySelector('.tagline')) {
+            const t = document.querySelector('.tagline');
+            // Measure zize of tagline
+            taglineWidth = t.getBoundingClientRect().width;
+            // remove line-height inline style if exist
+            t?.style.lineHeight && t.style.removeProperty('line-height');
+            //Set minCellSize to be half of font size
+            const minCellSize = 0.5 * parseFloat(getComputedStyle(t).fontSize);
+            // Largest number of cells in grid, minimum 20
+            gridSize = Math.max(Math.floor(gridDimension / minCellSize / 4) * 4, 12)
+            //Calculate actual possible cell size
+            cellSize = gridDimension / gridSize
+            document.documentElement.style.setProperty('--cell-size', `${cellSize}px`)
+            //Set tagline actual line height as 2x cell size
+            t.style.setProperty('line-height', `${cellSize * 2}px`);
+            //===== SHAPE
+            // X being tagline width starting from viewport edge or 25% side whichever greater, round up to nearest cell
+            x = Math.ceil(Math.max(gridDimension * 0.25, deltaW / 2 + taglineWidth) / cellSize) * cellSize;
+            // Y at least 3 cells away from viewport edge and never project diagonally into the vertical edge of screen, round up to nearest cell
+            y = Math.ceil(Math.min(deltaH / 2 + 2 * cellSize, gridDimension - x) / cellSize) * cellSize;
+            //===== Text Layout
+            taglineFontsize = parseFloat(getComputedStyle(document.querySelector('.tagline')).fontSize)
+            copyrightFontsize = parseFloat(getComputedStyle(document.querySelector('.copyright-text')).fontSize)
+            const textHorizontalOffset = window.innerWidth < gridDimension ? deltaW / 2 : 0
+            const taglineOffset = y - cellSize * 0.26;
+            const copyrightOffset = y - cellSize * 0.8;
+            document.querySelector('.tagline').style.right = textHorizontalOffset + 'px';
+            document.querySelector('.tagline').style.bottom = taglineOffset + 'px';
+            document.querySelector('.copyright-text').style.left = textHorizontalOffset + 'px';
+            document.querySelector('.copyright-text').style.top = copyrightOffset + 'px';
+        }
 
-    //===== Injecting point values into CSS
-    document.documentElement.style.setProperty('--x', `${x}px`);
-    document.documentElement.style.setProperty('--y', `${y}px`);
-    
-    //===== Creating outline as SVG
-    // Declaring points
-    const pts = [
-    { x: 0, y: y },
-    { x: x, y: y },
-    { x: x + y, y: 0 },
-    { x: gridDimension, y: 0 },
-    { x: gridDimension, y: gridDimension - y },
-    { x: gridDimension - x, y: gridDimension - y },
-    { x: gridDimension - x - y, y: gridDimension },
-    { x: 0, y: gridDimension },
-    ];
 
-    // Creating SVG
-    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg')
-    svg.setAttribute('id', 'outline');
-    svg.setAttribute('width',  gridDimension);
-    svg.setAttribute('height', gridDimension);
-    svg.setAttribute('viewBox', `0 0 ${gridDimension} ${gridDimension}`);
-    svg.setAttribute('preserveAspectRatio', 'none');
-    
-    // Create polyline
-    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-    poly.setAttribute('points', pts.map(p => `${p.x},${p.y}`).join(' '));
-    poly.setAttribute('fill', 'none');
-    poly.setAttribute('stroke', 'currentColor');
-    poly.setAttribute('stroke-width', '1');
-    poly.setAttribute('vector-effect', 'non-scaling-stroke');
 
-    //Appending into DOM
-    document.querySelector('#outline')?.remove();
-    svg.appendChild(poly);
-    document.querySelector('.grid-viewport').appendChild(svg);
-        
-    
+        //===== Injecting point values into CSS
+        document.documentElement.style.setProperty('--x', `${x}px`);
+        document.documentElement.style.setProperty('--y', `${y}px`);
+
+        //===== Creating outline as SVG
+        // Declaring points
+        const pts = [
+            { x: 0, y: y },
+            { x: x, y: y },
+            { x: x + y, y: 0 },
+            { x: gridDimension, y: 0 },
+            { x: gridDimension, y: gridDimension - y },
+            { x: gridDimension - x, y: gridDimension - y },
+            { x: gridDimension - x - y, y: gridDimension },
+            { x: 0, y: gridDimension },
+        ];
+
+        // Creating SVG
+        const NS = 'http://www.w3.org/2000/svg';
+        let svg = document.getElementById('outline');
+        let poly;
+
+        if (!svg) {
+            svg = document.createElementNS(NS, 'svg');
+            svg.id = 'outline';
+
+            poly = document.createElementNS(NS, 'polyline');
+            poly.setAttribute('fill', 'none');
+            poly.setAttribute('stroke', 'currentColor');
+            poly.setAttribute('stroke-width', '1');
+            poly.setAttribute('vector-effect', 'non-scaling-stroke');
+            svg.appendChild(poly);
+
+            document.querySelector('.grid-viewport')?.appendChild(svg);
+        } else {
+            poly = svg.querySelector('polyline');
+        }
+
+        svg.setAttribute('width', gridDimension);
+        svg.setAttribute('height', gridDimension);
+        svg.setAttribute('viewBox', `0 0 ${gridDimension} ${gridDimension}`);
+        svg.setAttribute('preserveAspectRatio', 'none');
+
+        poly.setAttribute('points', pts.map(p => `${p.x},${p.y}`).join(' '));
+    }
+
+    landingLayout();
+
+
+
+
     //=============== THREEJS
     // Canvas
     const canvas = document.querySelector('.webgl');
@@ -199,7 +212,7 @@ function landing(){
 
     // Camera
     const camera = new THREE.PerspectiveCamera(75, size.width / size.height, 0.1, 1000);
-    camera.position.set(0,0,0);
+    camera.position.set(0, 0, 0);
     scene.add(camera);
 
     // GLTF Loader
@@ -207,36 +220,36 @@ function landing(){
     const modelURL = new URL('./cloud.glb', import.meta.url);
     //Load the file
     loader.load(
-    modelURL.href,
-    function (gltf) {
-        //If the file is loaded, add it to the scene        
-        object = gltf.scene;
-        const material = new THREE.PointsMaterial({
-            size: 3,
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.7,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-        });
-        object.traverse((child) => {
-            if (child.isPoints) {
-                // child.material = material;
-                // child.material.size = 3; // increase this value to make points bigger
-                // child.material.color.set('#ffffff');
-            }
-        });
-        const boundingBox = new THREE.Box3().setFromObject(object);
-        const center = new THREE.Vector3();
-        boundingBox.getCenter(center);
-        object.position.sub(center);
-        object.position.z = 1;
-        scene.add(object);
-    },null,
-    function (error) {
-        //If there is an error, log it
-        console.error(error);
-    }
+        modelURL.href,
+        function (gltf) {
+            //If the file is loaded, add it to the scene        
+            object = gltf.scene;
+            const material = new THREE.PointsMaterial({
+                size: 3,
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.7,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+            });
+            object.traverse((child) => {
+                if (child.isPoints) {
+                    // child.material = material;
+                    // child.material.size = 3; // increase this value to make points bigger
+                    // child.material.color.set('#ffffff');
+                }
+            });
+            const boundingBox = new THREE.Box3().setFromObject(object);
+            const center = new THREE.Vector3();
+            boundingBox.getCenter(center);
+            object.position.sub(center);
+            object.position.z = 1;
+            scene.add(object);
+        }, null,
+        function (error) {
+            //If there is an error, log it
+            console.error(error);
+        }
     );
 
     //Instantiate a new renderer and set its size
@@ -246,7 +259,7 @@ function landing(){
         alpha: true
     })
     renderer.setSize(size.width, size.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))     
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
     //Render the scene
     function animate() {
@@ -265,9 +278,9 @@ function landing(){
 
     //Resize event listener to resize the window and the camera
     window.addEventListener("resize", function () {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
     //Mouse position listener
@@ -281,32 +294,33 @@ function landing(){
             mouseY = e.clientY;
             lastMouseUpdate = now;
         }
-    }, { passive: true });    
+    }, { passive: true });
 
     // Resize Event Listener
     window.addEventListener('resize', () => {
         // Update Size
         size.width = window.innerWidth,
-        size.height = window.innerHeight,
+            size.height = window.innerHeight,
 
-        // Update camera
-        camera.aspect = size.width / size.height,
-        camera.updateProjectionMatrix(),
+            // Update camera
+            camera.aspect = size.width / size.height,
+            camera.updateProjectionMatrix(),
 
-        // Update renderer
-        renderer.setSize(size.width, size.height),
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5))        
-    })    
-    
-    window.addEventListener('resize', landing);
+            // Update renderer
+            renderer.setSize(size.width, size.height),
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
+    })
+
     document.documentElement.style.visibility = 'visible';
 
     landingInit = true;
 
-    window.addEventListener('load',       updateLanding);
-    window.addEventListener('mousemove',  updateLanding, { passive: true });
+    window.addEventListener('load', updateLanding);
+    window.addEventListener('mousemove', updateLanding, { passive: true });
     window.addEventListener('touchstart', updateLanding, { passive: true });
-    window.addEventListener('touchmove',  updateLanding, { passive: true });
+    window.addEventListener('touchmove', updateLanding, { passive: true });
+
+    window.addEventListener('resize', () => { landingLayout(); });
 }
 
 //===== Landing page window resizing & flickering effect
@@ -331,116 +345,143 @@ function updateLanding(e) {
 
     // --- Size in cells ---
     let windowW, windowH;
-    windowW = pos.x?clamp(Math.round(Math.abs(pos.x) / cellSize) * 2, 2, gridSize - 2):windowW;
-    windowH = pos.y?clamp(Math.round(Math.abs(pos.y) / cellSize) * 2, 2, gridSize - 2 * (y / cellSize) - 4):windowH;    
+    const rawW = Math.round(Math.abs(pos.x) / cellSize) * 2;
+    const rawH = Math.round(Math.abs(pos.y) / cellSize) * 2;
+    windowW = clamp(Math.max(2, rawW), 2, gridSize - 2);
+    windowH = clamp(Math.max(2, rawH), 2, gridSize - 2 * (y / cellSize) - 4);
+
+    if (!Number.isFinite(windowW)) windowW = Math.floor(Math.min(window.innerHeight, window.innerWidth) / cellSize / 2) * 2;
+    if (!Number.isFinite(windowH)) windowH = Math.floor(Math.min(window.innerHeight, window.innerWidth) / cellSize / 2) * 2;
 
     // Drawing Entrance
     const entrance = document.querySelector('#entrance') || document.querySelector('.grid-container').appendChild(Object.assign(document.createElement('a'), { id: 'entrance' }));
-    Object.assign(entrance.style,{position:'absolute', zIndex: '999', top: '50%', left: '50%', transform:'translate(-50%,-50%)', width: windowW * cellSize + 'px', height: windowH * cellSize + 'px', border: '1px solid #fff', transition: 'background 0.2s ease-out, box-shadow 0.2s ease-out'});
-    if(windowH == 2 && windowW == 2) {
-        Object.assign(entrance.style,{background:'#fff', boxShadow: '0 0 2rem #fff'});
-        entrance.setAttribute('href','/unlock');          
-        document.documentElement.style.setProperty('--e', '1');      
+    entrance.style.setProperty('--entrance-w', windowW);
+    entrance.style.setProperty('--entrance-h', windowH);
+    //Object.assign(entrance.style,{position:'absolute', zIndex: '999', top: '50%', left: '50%', transform:'translate(-50%,-50%)', width: windowW * cellSize + 'px', height: windowH * cellSize + 'px', border: '1px solid #fff', transition: 'background 0.2s ease-out, box-shadow 0.2s ease-out'});
+    if (windowH == 2 && windowW == 2) {
+        Object.assign(entrance.style, { background: '#fff', boxShadow: '0 0 2rem #fff' });
+        entrance.setAttribute('href', '/unlock');
+        document.documentElement.style.setProperty('--e', '1');
     } else {
-        Object.assign(entrance.style,{background:'transparent', boxShadow: 'none'});
+        Object.assign(entrance.style, { background: 'transparent', boxShadow: 'none' });
         entrance.removeAttribute('href');
     }
 
     // Drawing Entrance Inner
     windowBox.style.inset = (window.innerHeight < gridDimension ? deltaH / 2 + 'px' : '0') + ' ' + (window.innerWidth < gridDimension ? deltaW / 2 + 'px' : '0');
-    if(windowW) windowBox.style.setProperty('--w', windowW);
-    if(windowH) windowBox.style.setProperty('--h', windowH);
+    if (windowW) windowBox.style.setProperty('--w', windowW);
+    if (windowH) windowBox.style.setProperty('--h', windowH);
 }
 
 // ================================================================
 // ========================== UNLOCK PAGE =========================
 // ================================================================
 
-let paddingX, paddingY;
-
 function unlock() {
-  if (!location.pathname.endsWith('/unlock') || unlockInit) return;
+    if (!location.pathname.endsWith('/unlock') || unlockInit) return;
 
-  // ---- CONSTANTS
-  const ENTRY_PAGE     = '/landing';
-  const PROTECTED_PAGE = '/space';
-  const API_URL        = 'https://liminal-webflow-auth.vercel.app/api/validate-code';
+    // ---- CONSTANTS
+    const ENTRY_PAGE = '/landing';
+    const PROTECTED_PAGE = '/space';
+    const API_URL = 'https://liminal-webflow-auth.vercel.app/api/validate-code';
+    let paddingX, paddingY;
 
-  // ---- ELEMENTS
-  const t            = document.querySelector('#unlock-title');
-  const unlockModule = document.querySelector('#unlock-module');
-  const inner        = document.querySelector('#unlock-module-inner');
-  const container    = unlockModule?.parentNode;
+    // ---- ELEMENTS
+    const t = document.querySelector('#unlock-title');
+    const unlockModule = document.querySelector('#unlock-module');
+    const inner = document.querySelector('#unlock-module-inner');
+    const container = unlockModule?.parentNode;
 
-  if (!t || !unlockModule || !container) return; // basic guard
 
-  // ---- TYPOGRAPHY / GRID SIZING
-  if (t?.style.lineHeight) t.style.removeProperty('line-height');
+    // ----- GRID SETUP
 
-  const mincellSize = 0.5 * parseFloat(getComputedStyle(t).fontSize);
-  const dimensionH  = Math.max(12, Math.floor(window.innerHeight / mincellSize / 2) * 2);
-  const dimensionW  = Math.max(12, Math.floor(window.innerWidth  / mincellSize / 2) * 2);
-  const cellSize    = window.innerHeight / dimensionH;
+    unlockModule.style.display = 'grid';
+    unlockModule.style.gap = '0';
 
-  inner?.style.setProperty('--cell-size', `${cellSize}px`);
-  t.style.lineHeight = (cellSize * 2) + 'px';
+    // ---- TYPOGRAPHY / GRID SIZING
+    if (t?.style.lineHeight) t.style.removeProperty('line-height');
 
-  const innerH = dimensionH - 8;
-  const innerW = dimensionW - 2;
-  const total  = innerH * innerW;
+    const mincellSize = 0.5 * parseFloat(getComputedStyle(t).fontSize);
+    let dimensionH, dimensionW, cellSize, innerH, innerW, cells, total, codeOffsetX, codeOffsetY, moduleOffsetX, moduleOffsetY;
 
-  // ---- LINES: clear previous then place fresh
-  container.querySelectorAll('.line-solid, .line-dashed').forEach(n => n.remove());
+    function unlockGrid() {
+        unlockModule.querySelectorAll('.cell').forEach(el => el.remove()); // clear previous cells if re-running    
+        dimensionH = Math.max(12, Math.floor(window.innerHeight / mincellSize / 2) * 2);
+        dimensionW = Math.max(12, Math.floor(window.innerWidth / mincellSize / 2) * 2);
+        cellSize = window.innerHeight / dimensionH;
 
-  paddingY = (window.innerHeight - innerH * cellSize) / 2;
-  paddingX = (window.innerWidth  - innerW * cellSize) / 2;
-  container.style.padding = `${paddingY}px ${paddingX}px`;
+        inner?.style.setProperty('--cell-size', `${cellSize}px`);
+        t.style.lineHeight = (cellSize * 2) + 'px';
 
-  // verticals
-  container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical',  style: `left:${paddingX - 8}px;` }));
-  container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical',  style: `left:${paddingX}px;` }));
-  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `left:${Math.round(window.innerWidth / 2 - cellSize * 4 + 1)}px;` }));
-  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `right:${Math.round(window.innerWidth / 2 - cellSize * 4 + 1)}px;` }));
-  container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical',  style: `right:${paddingX}px;` }));
-  container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical',  style: `right:${paddingX - 8}px;` }));
-  // horizontals
-  container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal',  style: `top:${paddingY}px;` }));
-  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `top:${window.innerHeight / 2 - cellSize + 1}px;` }));
-  container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `bottom:${window.innerHeight / 2 - cellSize + 1}px;` }));
-  container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal',  style: `bottom:${paddingY}px;` }));
+        innerH = dimensionH - 8;
+        innerW = dimensionW - 4;
+        total = innerH * innerW;
 
-  // ---- GRID SETUP
-  document.querySelector('.code')?.style && (document.querySelector('.code').style.top = (innerH / 2 - 1) * cellSize + 'px');
+        // ---- GRID CALCULATION
+        document.querySelector('.code')?.style && (document.querySelector('.code').style.top = (innerH / 2 - 1) * cellSize + 'px');
 
-  unlockModule.style.display = 'grid';
-  unlockModule.style.gridTemplateColumns = `repeat(${innerW}, ${cellSize}px)`;
-  unlockModule.style.gap    = '0';
-  unlockModule.style.width  = (innerW * cellSize) + 'px';
-  unlockModule.style.height = (innerH * cellSize) + 'px';
 
-  // clear previous cells if re-running
-  unlockModule.querySelectorAll('.cell').forEach(el => el.remove());
+        unlockModule.style.gridTemplateColumns = `repeat(${innerW}, ${cellSize}px)`;
 
-  const frag  = document.createDocumentFragment();
-  const cells = new Array(total);
-  for (let i = 0; i < total; i++) {
-    const cell = document.createElement('div');
-    cell.className         = 'cell';
-    cell.textContent       = '•';
-    cell.style.width       = cellSize + 'px';
-    cell.style.height      = cellSize + 'px';
-    cell.style.lineHeight  = `${cellSize}px`;
-    cell.style.textAlign   = 'center';
-    cell.style.userSelect  = 'none';
-    cell.style.pointerEvents = 'none';
-    cell.style.willChange  = 'transform';
-    frag.appendChild(cell);
-    cells[i] = cell;
-  }
-  unlockModule.appendChild(frag);
+        unlockModule.style.width = (innerW * cellSize) + 'px';
+        unlockModule.style.height = (innerH * cellSize) + 'px';
 
-  // =============== TEXT MATRIX (single mode) ===============
-  
+        cells = new Array(total);
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < total; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.textContent = '•';
+            frag.appendChild(cell);
+            cells[i] = cell;
+        }
+        unlockModule.appendChild(frag);
+
+        paddingY = (window.innerHeight - innerH * cellSize) / 2;
+        paddingX = (window.innerWidth - innerW * cellSize) / 2;
+        container.style.padding = `${paddingY}px ${paddingX}px`;
+
+        codeOffsetX = window.innerWidth / 2 - document.querySelector('.code').clientWidth / 2;
+        codeOffsetY = window.innerHeight / 2 - document.querySelector('.code').clientHeight / 2;
+        moduleOffsetX = window.innerWidth / 2 - document.querySelector('#unlock-module').clientWidth / 2;
+        moduleOffsetY = window.innerHeight / 2 - document.querySelector('#unlock-module').clientHeight / 2
+
+        if (unlockInit) {
+            // ---- LINES: clear previous then place fresh
+            container.querySelectorAll('.line-solid, .line-dashed').forEach(n => n.remove());
+
+            // verticals
+            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX - 8}px;` }));
+            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX}px;` }));
+            container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `left:${codeOffsetX}px;` }));
+            container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `right:${codeOffsetX}px;` }));
+            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX}px;` }));
+            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX - 8}px;` }));
+            // horizontals
+            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `top:${moduleOffsetY}px;` }));
+            container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `top:${codeOffsetY}px;` }));
+            container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `bottom:${codeOffsetY}px;` }));
+            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `bottom:${paddingY}px;` }));
+        }
+
+    }
+    unlockGrid()
+
+    // verticals
+    container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX - 8}px;` }));
+    container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX}px;` }));
+    container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `left:${codeOffsetX}px;` }));
+    container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `right:${codeOffsetX}px;` }));
+    container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX}px;` }));
+    container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX - 8}px;` }));
+    // horizontals
+    container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `top:${moduleOffsetY}px;` }));
+    container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `top:${codeOffsetY}px;` }));
+    container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `bottom:${codeOffsetY}px;` }));
+    container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `bottom:${paddingY}px;` }));
+
+    // =============== TEXT MATRIX (single mode) ===============
+
     const RAMP = Array.from(" .:-=+*#%@");
     const MIN_SCALE = 0.1, MAX_SCALE = 3;
     const RIPPLE_DECAY = 0.01;
@@ -449,151 +490,154 @@ function unlock() {
     let wrongTimer = null;
     let matrixBlocked = false;
 
-  // centers & jitter
-  const centersX = new Float32Array(total);
-  const centersY = new Float32Array(total);
-  const jitter   = new Float32Array(total);
-  const lastChar = new Int16Array(total); lastChar.fill(-1);
+    // centers & jitter
+    const centersX = new Float32Array(total);
+    const centersY = new Float32Array(total);
+    const jitter = new Float32Array(total);
+    const lastChar = new Int16Array(total); lastChar.fill(-1);
 
-  for (let j = 0; j < innerH; j++) {
-    for (let i = 0; i < innerW; i++) {
-      const idx = j * innerW + i;
-      centersX[idx] = (i + 0.5) * cellSize;
-      centersY[idx] = (j + 0.5) * cellSize;
-      const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
-      jitter[idx] = h * 0.03;
-    }
-  }
-
-  // module rect / pointer
-  let modRect = unlockModule.getBoundingClientRect();
-  const ro = new ResizeObserver(() => { modRect = unlockModule.getBoundingClientRect(); });
-  ro.observe(unlockModule);
-  addEventListener('scroll', () => { modRect = unlockModule.getBoundingClientRect(); }, { passive: true });
-
-  let mx = modRect.width / 2, my = modRect.height / 2;
-  let vx = 0, vy = 0, lastX = mx, lastY = my;
-
-  function onPointer(e) {
-    const p = e.touches ? e.touches[0] : e;
-    const x = p.clientX - modRect.left;
-    const y = p.clientY - modRect.top;
-    vx = 0.7 * vx + 0.3 * (x - lastX);
-    vy = 0.7 * vy + 0.3 * (y - lastY);
-    mx = x; my = y; lastX = x; lastY = y;
-  }
-  unlockModule.addEventListener('pointermove', onPointer, { passive: true });
-  unlockModule.addEventListener('touchmove',  onPointer, { passive: true });
-
-  // helpers
-  const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
-  const mix = (a,b,t) => a + (b - a) * t;
-  function noise2(x, y, t){
-    return (Math.sin(1.7*x + 1.3*y + 0.9*t) * 0.6 +
-            Math.sin(2.1*x - 0.8*y + 1.7*t) * 0.4) * 0.5 + 0.5;
-  }
-
-  function makeField(modW, modH) {
-    const invW = 1 / modW, invH = 1 / modH;
-    const minSide = Math.min(modW, modH);
-    const sigma = Math.max(80, minSide * POINTER_SIGMA_FACTOR);
-    const inv2Sig2 = 1 / (2 * sigma * sigma);
-
-    return function field(x, y, t) {
-      const xn = x * invW, yn = y * invH;
-      const dx = x - mx,   dy = y - my;
-      const dist = Math.hypot(dx, dy);
-
-      const ang   = Math.atan2(dy, dx);
-      const swirl = Math.sin(ang * 3.0 + t * 1.5) * Math.exp(-dist * 0.008) * 0.5 + 0.5;
-      const Noise = noise2(xn * NOISE_SCALE, yn * NOISE_SCALE, t * 0.5);
-      const Cursor= Math.exp(-(dx*dx + dy*dy) * inv2Sig2);
-
-      return clamp01( swirl * 0.5 + Noise * 0.3 + Cursor * 0.2 );
-    };
-  }
-
-  let start = performance.now();
-  let running = true;
-
-  const io = new IntersectionObserver((entries) => {
-    running = entries.some(e => e.isIntersecting);
-  }, { root: null, threshold: 0.01 });
-  io.observe(unlockModule);
-
-  function renderFrame(tSec, staticOnce) {
-    if (matrixBlocked) return;
-    const modW = modRect.width  || (innerW * cellSize);
-    const modH = modRect.height || (innerH * cellSize);
-    const field = makeField(modW, modH);
-
-    for (let idx = 0; idx < total; idx++) {
-      let F = field(centersX[idx], centersY[idx], tSec) + jitter[idx];
-      F = clamp01(F);
-
-      const ci = (F * (RAMP.length - 1)) | 0;
-      if (ci !== lastChar[idx]) {
-        cells[idx].textContent = RAMP[ci];
-        lastChar[idx] = ci;
-      }
-      const s = mix(MIN_SCALE, MAX_SCALE, F);
-      cells[idx].style.transform = `scale(${s})`;
-    }
-    if (staticOnce) return;
-  }
-
-  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-  function tick() {
-    if (reduce?.matches) { renderFrame(0, true); return; }
-    if (!running) { requestAnimationFrame(tick); return; }
-    const t = (performance.now() - start) / 1000;
-    renderFrame(t, false);
-    requestAnimationFrame(tick);
-  }
-  if (reduce?.matches) renderFrame(0, true); else tick();
-
-  // ---- DISSOLVE 
-  function dissolveTextMatrix({ from = 'center', duration = 700, spread = 400, easing = 'cubic-bezier(0.16,1,0.3,1)' } = {}) {
-    const rect = unlockModule.getBoundingClientRect();
-    let ox, oy;
-    if (Array.isArray(from)) [ox, oy] = from; else { ox = rect.width / 2; oy = rect.height / 2; }
-
-    unlockModule.classList.add('is-dissolving');
-    unlockModule.style.pointerEvents = 'none';
-
-    const diag = Math.hypot(rect.width, rect.height) || 1;
-    let done = 0;
-
-    return new Promise((resolve) => {
-      // schedule in chunks to reduce main-thread spike
-      const CHUNK = 500;
-      const startAnim = (startIdx) => {
-        const end = Math.min(startIdx + CHUNK, total);
-        for (let idx = startIdx; idx < end; idx++) {
-          const j = (idx / innerW) | 0, i = idx % innerW;
-          const cx = (i + 0.5) * cellSize;
-          const cy = (j + 0.5) * cellSize;
-          const dx = cx - ox, dy = cy - oy;
-          const dist = Math.hypot(dx, dy);
-          const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
-
-          const delay = Math.max(0, (dist / diag) * spread + h * 90);
-
-          const anim = cells[idx].animate(
-            [{ opacity: 1 }, { opacity: 0 }],
-            { duration, delay, easing, fill: 'forwards' }
-          );
-          anim.onfinish = () => { if (++done === total) resolve(); };
+    for (let j = 0; j < innerH; j++) {
+        for (let i = 0; i < innerW; i++) {
+            const idx = j * innerW + i;
+            centersX[idx] = (i + 0.5) * cellSize;
+            centersY[idx] = (j + 0.5) * cellSize;
+            const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
+            jitter[idx] = h * 0.03;
         }
-        if (end < total) requestAnimationFrame(() => startAnim(end));
-      };
-      startAnim(0);
-    });
-  }
+    }
 
-  // ===================== VALIDATION ========================
-  
-    document.getElementById('submit-btn')?.addEventListener('click', validateCode);    
+    // module rect / pointer
+    let modRect = unlockModule.getBoundingClientRect();
+    const ro = new ResizeObserver(() => { modRect = unlockModule.getBoundingClientRect(); });
+    ro.observe(unlockModule);
+    addEventListener('scroll', () => { modRect = unlockModule.getBoundingClientRect(); }, { passive: true });
+
+    let mx = modRect.width / 2, my = modRect.height / 2;
+    let vx = 0, vy = 0, lastX = mx, lastY = my;
+
+    function onPointer(e) {
+        const p = e.touches ? e.touches[0] : e;
+        const x = p.clientX - modRect.left;
+        const y = p.clientY - modRect.top;
+        vx = 0.7 * vx + 0.3 * (x - lastX);
+        vy = 0.7 * vy + 0.3 * (y - lastY);
+        mx = x; my = y; lastX = x; lastY = y;
+    }
+    unlockModule.addEventListener('pointermove', onPointer, { passive: true });
+    unlockModule.addEventListener('touchmove', onPointer, { passive: true });
+
+    // helpers
+    const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+    const mix = (a, b, t) => a + (b - a) * t;
+    function noise2(x, y, t) {
+        return (Math.sin(1.7 * x + 1.3 * y + 0.9 * t) * 0.6 +
+            Math.sin(2.1 * x - 0.8 * y + 1.7 * t) * 0.4) * 0.5 + 0.5;
+    }
+
+    function makeField(modW, modH) {
+        const invW = 1 / modW, invH = 1 / modH;
+        const minSide = Math.min(modW, modH);
+        const sigma = Math.max(80, minSide * POINTER_SIGMA_FACTOR);
+        const inv2Sig2 = 1 / (2 * sigma * sigma);
+
+        return function field(x, y, t) {
+            const xn = x * invW, yn = y * invH;
+            const dx = x - mx, dy = y - my;
+            const dist = Math.hypot(dx, dy);
+
+            const ang = Math.atan2(dy, dx);
+            const swirl = Math.sin(ang * 3.0 + t * 1.5) * Math.exp(-dist * 0.008) * 0.5 + 0.5;
+            const Noise = noise2(xn * NOISE_SCALE, yn * NOISE_SCALE, t * 0.5);
+            const Cursor = Math.exp(-(dx * dx + dy * dy) * inv2Sig2);
+
+            return clamp01(swirl * 0.5 + Noise * 0.3 + Cursor * 0.2);
+        };
+    }
+
+    let start = performance.now();
+    let running = true;
+
+    const io = new IntersectionObserver((entries) => {
+        running = entries.some(e => e.isIntersecting);
+    }, { root: null, threshold: 0.01 });
+    io.observe(unlockModule);
+
+    function renderFrame(tSec, staticOnce) {
+        if (matrixBlocked) return;
+
+        const modW = modRect.width || (innerW * cellSize);
+        const modH = modRect.height || (innerH * cellSize);
+        const field = makeField(modW, modH);
+
+        for (let idx = 0; idx < total; idx++) {
+            let F = field(centersX[idx], centersY[idx], tSec) + jitter[idx];
+            F = clamp01(F);
+
+            const ci = (F * (RAMP.length - 1)) | 0;
+            if (ci !== lastChar[idx]) {
+                cells[idx].textContent = RAMP[ci];
+                lastChar[idx] = ci;
+            }
+
+            const s = mix(MIN_SCALE, MAX_SCALE, F);
+            cells[idx].style.transform = `scale(${s})`;
+        }
+        if (staticOnce) return;
+    }
+
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    function tick() {
+        if (reduce?.matches) { renderFrame(0, true); return; }
+        if (!running) { requestAnimationFrame(tick); return; }
+        const t = (performance.now() - start) / 1000;
+        renderFrame(t, false);
+        requestAnimationFrame(tick);
+    }
+    if (reduce?.matches) renderFrame(0, true); else tick();
+
+
+    // ---- DISSOLVE 
+    function dissolveTextMatrix({ from = 'center', duration = 700, spread = 400, easing = 'cubic-bezier(0.16,1,0.3,1)' } = {}) {
+        const rect = unlockModule.getBoundingClientRect();
+        let ox, oy;
+        if (Array.isArray(from)) [ox, oy] = from; else { ox = rect.width / 2; oy = rect.height / 2; }
+
+        unlockModule.classList.add('is-dissolving');
+        unlockModule.style.pointerEvents = 'none';
+
+        const diag = Math.hypot(rect.width, rect.height) || 1;
+        let done = 0;
+
+        return new Promise((resolve) => {
+            // schedule in chunks to reduce main-thread spike
+            const CHUNK = 500;
+            const startAnim = (startIdx) => {
+                const end = Math.min(startIdx + CHUNK, total);
+                for (let idx = startIdx; idx < end; idx++) {
+                    const j = (idx / innerW) | 0, i = idx % innerW;
+                    const cx = (i + 0.5) * cellSize;
+                    const cy = (j + 0.5) * cellSize;
+                    const dx = cx - ox, dy = cy - oy;
+                    const dist = Math.hypot(dx, dy);
+                    const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
+
+                    const delay = Math.max(0, (dist / diag) * spread + h * 90);
+
+                    const anim = cells[idx].animate(
+                        [{ opacity: 1 }, { opacity: 0 }],
+                        { duration, delay, easing, fill: 'forwards' }
+                    );
+                    anim.onfinish = () => { if (++done === total) resolve(); };
+                }
+                if (end < total) requestAnimationFrame(() => startAnim(end));
+            };
+            startAnim(0);
+        });
+    }
+
+    // ===================== VALIDATION ========================
+
+    document.getElementById('submit-btn')?.addEventListener('click', validateCode);
 
     const inputs = document.querySelectorAll('.digit');
     inputs.forEach((input, i) => {
@@ -602,13 +646,13 @@ function unlock() {
     });
 
     async function validateCode() {
-        const code    = Array.from(document.querySelectorAll('.digit')).map(i => i.value).join('');
-        const button  = document.getElementById('submit-btn');
+        const code = Array.from(document.querySelectorAll('.digit')).map(i => i.value).join('');
+        const button = document.getElementById('submit-btn');
         const message = document.getElementById('message');
 
         if (!code || code.length !== 4) {
-        message.innerHTML = '<span style="color:red;">Please enter a 4-digit code</span>';
-        return;
+            message.innerHTML = '<span style="color:red;">Please enter a 4-digit code</span>';
+            return;
         }
 
         button.textContent = 'Validating';
@@ -620,60 +664,60 @@ function unlock() {
         const timeoutId = setTimeout(() => controller.abort(), 6000);
 
         try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type':'application/json' },
-            body: JSON.stringify({ code }),
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        if (!response.ok) throw new Error('HTTP ' + response.status);
-        const result = await response.json();
-
-        if (result.valid) { // ============== VALID CODE ANIMATIONS
-            // Session
-            localStorage.setItem('userName', result.user_name);
-            localStorage.setItem('userGreeting', result.user_greeting);
-            localStorage.setItem('userMessage', result.user_message);
-            localStorage.setItem('sessionToken', result.token);
-            localStorage.setItem('accessTime',   Date.now());
-            
-            // UI
-            button.style.opacity = '0';            
-
-            document.querySelectorAll('.line-vertical, .line-horizontal').forEach(el => {el.style.transition = 'transform 0.3s ease-out';});
-            document.querySelectorAll('.line-vertical, .line-horizontal').forEach(el => {el.style.transform = 'scale(0)';});
-
-            (function scaleDigitsOut() {
-            const digits = document.querySelectorAll('.code .digit');
-            digits.forEach((digit, i) => {
-                digit.animate(
-                [
-                    { transform: 'scale(1)', opacity: 1 },
-                    { transform: 'scale(0)', opacity: 0 }
-                ],
-                { duration: 300, delay: i * 50, easing: 'cubic-bezier(0.5, 0, 0.5, 1)', fill: 'forwards' }
-                );
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code }),
+                signal: controller.signal
             });
-            })();
+            clearTimeout(timeoutId);
 
-            document.querySelectorAll('.text-line').forEach(el => {el.style.opacity = '0';});
-            message.innerHTML = `<span class="welcome">${result.user_greeting}. Redirecting...</span>`;
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const result = await response.json();
 
-            //Set state management. Only uncomment after states are done
-            //if(!localStorage.getItem(code)) {
+            if (result.valid) { // ============== VALID CODE ANIMATIONS
+                // Session
+                localStorage.setItem('userName', result.user_name);
+                localStorage.setItem('userGreeting', result.user_greeting);
+                localStorage.setItem('userMessage', result.user_message);
+                localStorage.setItem('sessionToken', result.token);
+                localStorage.setItem('accessTime', Date.now());
+
+                // UI
+                button.style.opacity = '0';
+
+                document.querySelectorAll('.line-vertical, .line-horizontal').forEach(el => { el.style.transition = 'transform 0.3s ease-out'; });
+                document.querySelectorAll('.line-vertical, .line-horizontal').forEach(el => { el.style.transform = 'scale(0)'; });
+
+                (function scaleDigitsOut() {
+                    const digits = document.querySelectorAll('.code .digit');
+                    digits.forEach((digit, i) => {
+                        digit.animate(
+                            [
+                                { transform: 'scale(1)', opacity: 1 },
+                                { transform: 'scale(0)', opacity: 0 }
+                            ],
+                            { duration: 300, delay: i * 50, easing: 'cubic-bezier(0.5, 0, 0.5, 1)', fill: 'forwards' }
+                        );
+                    });
+                })();
+
+                document.querySelectorAll('.text-line').forEach(el => { el.style.opacity = '0'; });
+                message.innerHTML = `<span class="welcome">${result.user_greeting}. Redirecting...</span>`;
+
+                //Set state management. Only uncomment after states are done
+                //if(!localStorage.getItem(code)) {
                 localStorage.setItem('userId', code);
                 localStorage.setItem(code, 0);
-            //}
-            
-            // Start dissolve but don't block navigation on it
-            const MAX_WAIT = 900;
-            Promise.race([
-            dissolveTextMatrix({ duration: 700, spread: 400 }),
-            new Promise(r => setTimeout(r, MAX_WAIT))
-            ]).then(() => barba.go(PROTECTED_PAGE));
-        } else {
+                //}
+
+                // Start dissolve but don't block navigation on it
+                const MAX_WAIT = 900;
+                Promise.race([
+                    dissolveTextMatrix({ duration: 700, spread: 400 }),
+                    new Promise(r => setTimeout(r, MAX_WAIT))
+                ]).then(() => barba.go(PROTECTED_PAGE));
+            } else {
                 message.innerHTML = '<span class="warning-message">Invalid code. Try again.</span>';
                 console.log('Wrong code');
 
@@ -688,47 +732,48 @@ function unlock() {
 
                     // --- Turn every cell into 'X' ---
                     for (let i = 0; i < total; i++) {
-                    cells[i].textContent = 'X';
-                    lastChar[i] = -2; // mark as dirty
+                        cells[i].textContent = 'X';
+                        lastChar[i] = -2; // mark as dirty
                     }
 
                     // --- Quick shake animation ---
                     if (!reduce?.matches) {
-                    unlockModule.animate(
-                        [
-                        { transform: 'translateX(0)'   },
-                        { transform: 'translateX(-8px)' },
-                        { transform: 'translateX(8px)'  },
-                        { transform: 'translateX(-6px)' },
-                        { transform: 'translateX(6px)'  },
-                        { transform: 'translateX(-3px)' },
-                        { transform: 'translateX(3px)'  },
-                        { transform: 'translateX(0)'    }
-                        ],
-                        { duration, easing: 'linear' }
-                    );
+                        unlockModule.animate(
+                            [
+                                { transform: 'translateX(0)' },
+                                { transform: 'translateX(-8px)' },
+                                { transform: 'translateX(8px)' },
+                                { transform: 'translateX(-6px)' },
+                                { transform: 'translateX(6px)' },
+                                { transform: 'translateX(-3px)' },
+                                { transform: 'translateX(3px)' },
+                                { transform: 'translateX(0)' }
+                            ],
+                            { duration, easing: 'linear' }
+                        );
                     }
 
                     // --- Restore matrix after 200ms ---
                     wrongTimer = setTimeout(() => {
-                    matrixBlocked = false;
-                    wrongTimer = null;
-                    lastChar.fill(-1); // force next render refresh
+                        matrixBlocked = false;
+                        wrongTimer = null;
+                        lastChar.fill(-1); // force next render refresh
                     }, duration);
                 })();
-        }
+            }
         } catch (err) {
-        clearTimeout(timeoutId);
-        message.innerHTML = '<span style="color:red;">Connection error. Try again.</span>';
+            clearTimeout(timeoutId);
+            message.innerHTML = '<span style="color:red;">Connection error. Try again.</span>';
         } finally {
-        button.textContent = 'Enter';
-        button.disabled = false;
+            button.textContent = 'Enter';
+            button.disabled = false;
         }
     }
 
     // Show page
     document.documentElement.style.visibility = 'visible';
     unlockInit = true;
+    window.addEventListener('resize', () => { unlockInit = false; unlockGrid(); tick() });
 }
 
 
@@ -736,29 +781,29 @@ function unlock() {
 // =========================== MAIN PAGE ==========================
 // ================================================================
 
-function space() {    
+function space() {
     // =================== CHECKS AND PROTECTIONS ===================
     if (!location.pathname.endsWith('/space') || spaceInit || !localStorage.getItem('userId')) return;
 
-    const key = localStorage.getItem('userId');   
+    const key = localStorage.getItem('userId');
 
     // Protection from parachuting
-    (function() {    
-    const validDuration = 3600000 * 24; // 24 hours
+    (function () {
+        const validDuration = 3600000 * 24; // 24 hours
 
-    const sessionToken = localStorage.getItem('sessionToken');
-    const accessTime = parseInt(localStorage.getItem('accessTime'));
-    
-    // Check if session is valid
-    if (!(sessionToken && accessTime && (Date.now() - accessTime) < validDuration)) {
-        // Invalid session - redirect to landing
-        logout();
-        return;
-    }
-    })();   
-    
+        const sessionToken = localStorage.getItem('sessionToken');
+        const accessTime = parseInt(localStorage.getItem('accessTime'));
+
+        // Check if session is valid
+        if (!(sessionToken && accessTime && (Date.now() - accessTime) < validDuration)) {
+            // Invalid session - redirect to landing
+            logout();
+            return;
+        }
+    })();
+
     // Logout function
-    function logout() { localStorage.clear(); barba.go('/landing'); }    
+    function logout() { localStorage.clear(); barba.go('/landing'); }
     document.getElementById('logout-btn')?.addEventListener('click', logout);
 
     // ============================= THREEJS ==============================
@@ -773,7 +818,7 @@ function space() {
     const bloomLayer = new THREE.Layers();
     bloomLayer.set(BLOOM_SCENE);
 
-    
+
 
     // Size
     const size = {
@@ -787,15 +832,15 @@ function space() {
     scene.add(camera);
 
     // GLTF Loader
-    const loader = new GLTFLoader();   
-    
+    const loader = new GLTFLoader();
+
     // Points shader  ✅ crisp disc + bright core
     const shaderMaterial = new THREE.ShaderMaterial({
-    uniforms: {
-        uColor: { value: new THREE.Color(0xffffff) },
-        uSize:  { value: 200.0 }
-    },
-    vertexShader: `
+        uniforms: {
+            uColor: { value: new THREE.Color(0xffffff) },
+            uSize: { value: 200.0 }
+        },
+        vertexShader: `
         uniform float uSize;
         void main(){
         vec4 mv = modelViewMatrix * vec4(position,1.0);
@@ -804,7 +849,7 @@ function space() {
         gl_PointSize = sized;
         gl_Position  = projectionMatrix * mv;
         }`,
-    fragmentShader: `
+        fragmentShader: `
         uniform vec3 uColor;
         void main(){
         vec2 uv = gl_PointCoord - 0.5;
@@ -821,28 +866,28 @@ function space() {
 
         gl_FragColor = vec4(glow, alpha);
         }`,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
     });
 
     const modelURL = new URL('./cloud.glb', import.meta.url);
-    loader.load(        
+    loader.load(
         modelURL.href,
-        function (gltf) {            
+        function (gltf) {
             // Build a clean root with Points using the shared shader
             const root = new THREE.Group();
             gltf.scene.traverse((n) => {
-            if (n.isPoints) {
-                const geo = n.geometry.clone();
-                const pts = new THREE.Points(geo, shaderMaterial);
-                pts.position.copy(n.position);
-                pts.rotation.copy(n.rotation);
-                pts.scale.copy(n.scale);
-                root.add(pts);
+                if (n.isPoints) {
+                    const geo = n.geometry.clone();
+                    const pts = new THREE.Points(geo, shaderMaterial);
+                    pts.position.copy(n.position);
+                    pts.rotation.copy(n.rotation);
+                    pts.scale.copy(n.scale);
+                    root.add(pts);
 
-                n.material?.dispose?.(); // free original
-            }
+                    n.material?.dispose?.(); // free original
+                }
             });
 
             // Center once
@@ -854,7 +899,7 @@ function space() {
             // Wrap in a group for rotation
             object = new THREE.Group();
             object.add(root);
-            object.position.set(200,0,1)
+            object.position.set(200, 0, 1)
             scene.add(object);
         },
         null,
@@ -866,13 +911,13 @@ function space() {
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
-    alpha: true,
-    antialias: true,
-    depth: true,
-    stencil: false,
-    powerPreference: 'high-performance',
-    failIfMajorPerformanceCaveat: true
+        canvas: canvas,
+        alpha: true,
+        antialias: true,
+        depth: true,
+        stencil: false,
+        powerPreference: 'high-performance',
+        failIfMajorPerformanceCaveat: true
     });
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ReinhardToneMapping;
@@ -891,7 +936,7 @@ function space() {
     // Render passes
     const renderScene = new RenderPass(scene, camera);
 
-    
+
 
     // Half-res bloom composer
     const bloomComposer = new EffectComposer(renderer);
@@ -904,17 +949,17 @@ function space() {
 
     // Shader to mix bloom with scene
     const mixPass = new ShaderPass(
-    new THREE.ShaderMaterial({
-        uniforms: {
-        baseTexture:  { value: null },
-        bloomTexture: { value: bloomComposer.renderTarget2.texture },
-        bloomGain:    { value: 0.7 }
-        },
-        vertexShader: `
+        new THREE.ShaderMaterial({
+            uniforms: {
+                baseTexture: { value: null },
+                bloomTexture: { value: bloomComposer.renderTarget2.texture },
+                bloomGain: { value: 0.7 }
+            },
+            vertexShader: `
         varying vec2 vUv;
         void main(){ vUv=uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
         `,
-        fragmentShader: `
+            fragmentShader: `
         uniform sampler2D baseTexture, bloomTexture;
         uniform float bloomGain;
         varying vec2 vUv;
@@ -924,8 +969,8 @@ function space() {
             gl_FragColor = min(base + bloom, 1.0);
         }
         `
-    }),
-    'baseTexture'
+        }),
+        'baseTexture'
     );
     mixPass.needsSwap = true;
 
@@ -947,14 +992,14 @@ function space() {
     let rotateThreeModel = true;
 
     function tick() {
-    const dt = clock.getDelta();
-    if (object && rotateThreeModel) {
-        object.rotation.y += (ROT_SPEED * Math.PI / 180) * dt;
+        const dt = clock.getDelta();
+        if (object && rotateThreeModel) {
+            object.rotation.y += (ROT_SPEED * Math.PI / 180) * dt;
+        }
+        bloomComposer.render();
+        finalComposer.render();
     }
-    bloomComposer.render();
-    finalComposer.render();
-    }
-    
+
     spaceRenderer = renderer;
     spaceTick = tick;
 
@@ -971,7 +1016,7 @@ function space() {
 
         renderer.setSize(size.width, size.height);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        
+
         bloomComposer.setSize(size.width, size.height);
         finalComposer.setSize(size.width, size.height);
     });
@@ -983,11 +1028,12 @@ function space() {
 
     if (localStorage.getItem(key) == 0) {
         // Creating scroller
-        const scroller = Object.assign(document.createElement('div'), {className: 'scroller'
+        const scroller = Object.assign(document.createElement('div'), {
+            className: 'scroller'
         });
-        document.querySelector('#menu').setAttribute('hidden','');
+        document.querySelector('#menu').setAttribute('hidden', '');
         menuLayout(localStorage.getItem(key));
-        
+
         // Caching Constants
 
         const logoFill = document.querySelector('#logo-fill');
@@ -996,18 +1042,18 @@ function space() {
         return new Promise((resolve) => {
             const root = document.querySelector('[data-barba="container"][data-barba-namespace="space"]');
             if (!root) {
-            resolve();
-            return;
+                resolve();
+                return;
             }
 
             const userGreeting = localStorage.getItem('userGreeting');
             const userMessage = localStorage.getItem('userMessage');
             const message = root.querySelector('#user_message');
             const greeting = root.querySelector('#user_greeting');
-                
+
             message.textContent = '';
-            greeting.textContent = '';  
-            
+            greeting.textContent = '';
+
             // --- Create Message Block with Character Elements
             {
                 let chars = '01';
@@ -1059,8 +1105,8 @@ function space() {
                 }
 
                 message.appendChild(fragment);
-                document.querySelector('#user_message').setAttribute('style','--char-count:' + userMessage.length);
-            }       
+                document.querySelector('#user_message').setAttribute('style', '--char-count:' + userMessage.length);
+            }
 
             // Build Cue Animation
 
@@ -1079,76 +1125,75 @@ function space() {
                 const cue = host.appendChild(Object.assign(document.createElement('div'), { className: 'cue' }));
 
                 const tlCue = gsap.timeline({
-                paused: true,
-                repeat: -1,
-                delay: offset,                     // reapplies each repeat
-                defaults: { ease: 'power2.inOut' }
+                    paused: true,
+                    repeat: -1,
+                    delay: offset,                     // reapplies each repeat
+                    defaults: { ease: 'power2.inOut' }
                 })
-                .set(cue, { top: '0%', bottom: '100%' })
-                .to(cue, { bottom: '0%', duration: GROW })
-                .to(cue, { top: '100%', duration: GROW }, `>-${OVERLAP}`)
-                .set(cue, { top: '0%', bottom: '100%' });
+                    .set(cue, { top: '0%', bottom: '100%' })
+                    .to(cue, { bottom: '0%', duration: GROW })
+                    .to(cue, { top: '100%', duration: GROW }, `>-${OVERLAP}`)
+                    .set(cue, { top: '0%', bottom: '100%' });
 
                 return { cue, tl: tlCue };
             });
 
-            const tl = gsap.timeline({ 
-            defaults: { ease: 'power2.out' },
-            onComplete: () => {                
-                resolve();
-            }
-            });            
+            const tl = gsap.timeline({
+                defaults: { ease: 'power2.out' },
+                onComplete: () => {
+                    resolve();
+                }
+            });
 
             // Logo fades in
-            tl.from(logoFill, { 
-            scale: 0, 
-            duration: 1
-            }, '+=0.5');    
-            
+            tl.from(logoFill, {
+                scale: 0,
+                duration: 1
+            }, '+=0.5');
+
             // --- Typewriter: GREETING
             {
-            let last = 0;
-            let acc = '';
-            const total = userGreeting.length;
+                let last = 0;
+                let acc = '';
+                const total = userGreeting.length;
 
-            tl.to({ value: 0 }, {
-                value: total,
-                duration: Math.max(0.2, total * 0.1),
-                ease: 'none',
-                onUpdate: function () {
-                const i = Math.floor(this.targets()[0].value);
-                if (i > last) {
-                    acc += userGreeting.slice(last, i);
-                    if (greeting) greeting.textContent = acc + (i < total ? '_' : '');
-                    last = i;
-                }
-                },
-                onComplete: () => { if (greeting) greeting.textContent = userGreeting; }
-            });
+                tl.to({ value: 0 }, {
+                    value: total,
+                    duration: Math.max(0.2, total * 0.1),
+                    ease: 'none',
+                    onUpdate: function () {
+                        const i = Math.floor(this.targets()[0].value);
+                        if (i > last) {
+                            acc += userGreeting.slice(last, i);
+                            if (greeting) greeting.textContent = acc + (i < total ? '_' : '');
+                            last = i;
+                        }
+                    },
+                    onComplete: () => { if (greeting) greeting.textContent = userGreeting; }
+                });
             }
 
             // --- Decode Reveal: MESSAGE
 
+            tl.add(() => {
+                renderer.setAnimationLoop(tick); isRunning = true; startThree
+            }, '>');
             tl.to('#user_message .coded-char', {
                 className: 'coded-char animated',
                 stagger: 0.003,
-                duration: userMessage.length * 0.043 - 2.5
+                duration: userMessage.length * 0.043
             }, '>')
 
             // Cue Animation
-            
-            tl.add(() => { host._cueLoops?.forEach(({ tl }) => tl.play())}, '>');
 
-            tl.from(scrollHint, { 
-            autoAlpha: 0, duration: 0.5 
+            tl.add(() => { host._cueLoops?.forEach(({ tl }) => tl.play()) }, '>-9');
+
+            tl.from(scrollHint, {
+                autoAlpha: 0, duration: 0.5
             }, '>1');
-
-            tl.add(() => {
-                renderer.setAnimationLoop(tick);isRunning = true;startThree
-            },'<');
             tl.from(root.querySelector('#space'), {
-                    autoAlpha: 0, duration: 3
-            }, '>');
+                autoAlpha: 0, duration: 3
+            }, '<-1');
 
             // After intro timeline completes, set up scroll trigger for menu
             tl.add(() => { // Append Scroller
@@ -1157,7 +1202,7 @@ function space() {
                 window.scrollTo(0, 0);
                 scroller.scrollTop = 0;
                 ScrollTrigger.refresh();
-            }, '-=4')
+            }, '<-3')
 
             // TIMELINE
             tl.add(() => {
@@ -1166,45 +1211,45 @@ function space() {
                 const items = root.querySelectorAll('.menu-item');
                 gsap.set(items, { autoAlpha: 0, yPercent: 100 });
 
-                
+
                 const scrubTl = gsap.timeline({
-                defaults: { ease: 'power2.out' },
-                scrollTrigger: {
-                    trigger: '#segment-2',
-                    scroller,
-                    start: 'top bottom',
-                    end: 'top top',
-                    scrub: true,
-                    invalidateOnRefresh: true,
-                    
-                    onLeave(self) {
-                        if (scrubTl.data === 'done') return;
-                        scrubTl.data = 'done';
+                    defaults: { ease: 'power2.out' },
+                    scrollTrigger: {
+                        trigger: '#segment-2',
+                        scroller,
+                        start: 'top bottom',
+                        end: 'top top',
+                        scrub: true,
+                        invalidateOnRefresh: true,
 
-                        const welcome = document.querySelector('#welcome');
-                        const scrollerEl = document.querySelector('.scroller');
-                        self.kill(false);
+                        onLeave(self) {
+                            if (scrubTl.data === 'done') return;
+                            scrubTl.data = 'done';
 
-                        gsap.timeline().add(() => {  welcome?.remove(); scrollerEl?.remove(); ScrollTrigger.refresh(); });
-                        ROT_SPEED = 0.5; // slow rotation down
-                        localStorage.setItem(localStorage.getItem('userId'), 1);
+                            const welcome = document.querySelector('#welcome');
+                            const scrollerEl = document.querySelector('.scroller');
+                            self.kill(false);
+
+                            gsap.timeline().add(() => { welcome?.remove(); scrollerEl?.remove(); ScrollTrigger.refresh(); });
+                            ROT_SPEED = 0.5; // slow rotation down
+                            localStorage.setItem(localStorage.getItem('userId'), 1);
+                        }
+
                     }
-                    
-                }
-            });
-            scrubTl.to('#welcome', { autoAlpha: 0, duration: 1 }, 0)
-            scrubTl.to(logoFill, { scale: 0, duration: 1 }, 0)
-            scrubTl.to({}, { duration: 0.6 })
-            scrubTl.to(items, {
-                yPercent: 0, autoAlpha: 1, duration: 1, ease: "power2.out"
-            }, '>');
-            scrubTl.to(camera.position, {
-                x: 200, y: 50, z: 200, duration: 5, ease: 'power4.inOut'
-            }, 0);
-            scrubTl.to(camera.rotation, {
-                x: THREE.MathUtils.degToRad(-20), duration: 3, ease: 'power4.inOut', onUpdate: () => camera.updateProjectionMatrix()
-            }, 0);
-            });
+                });
+                scrubTl.to('#welcome', { autoAlpha: 0, duration: 1 }, 0)
+                scrubTl.to(logoFill, { scale: 0, duration: 1 }, 0)
+                scrubTl.to({}, { duration: 0.6 })
+                scrubTl.to(items, {
+                    yPercent: 0, autoAlpha: 1, duration: 1, ease: "power2.out"
+                }, '>');
+                scrubTl.to(camera.position, {
+                    x: 200, y: 50, z: 200, duration: 5, ease: 'power4.inOut'
+                }, 0);
+                scrubTl.to(camera.rotation, {
+                    x: THREE.MathUtils.degToRad(-20), duration: 3, ease: 'power4.inOut', onUpdate: () => camera.updateProjectionMatrix()
+                }, 0);
+            }, '<');
         })
     }
 
@@ -1218,14 +1263,14 @@ function space() {
         const menu = root.querySelector('#menu');
         const items = root.querySelectorAll('.menu-item');
 
-        
+
         menu?.removeAttribute('hidden');
         ROT_SPEED = 0.5;
         gsap.set(camera.position, { x: 200, y: 50, z: 200 });
         gsap.set(camera.rotation, {
             x: THREE.MathUtils.degToRad(-20),
             onUpdate: () => camera.updateProjectionMatrix()
-        });   
+        });
 
         gsap.set(items, { autoAlpha: 0, yPercent: 100 });
 
@@ -1233,7 +1278,7 @@ function space() {
             defaults: { ease: 'power2.out' }
         });
 
-        gsap.set(root.querySelector('#logo-holder'), {autoAlpha: 0})
+        gsap.set(root.querySelector('#logo-holder'), { autoAlpha: 0 })
 
         tl.add(() => startThree(), 0);
         tl.to(items, {
@@ -1252,25 +1297,99 @@ function space() {
     // ================================ OUR THESIS ===================================
 
     function thesis() {
-        if (localStorage.getItem(key) < 1) return;        
+        if (localStorage.getItem(key) < 1) return; // Guard
+
+        // THREE JS FUNCTION
+        function createThesisScene(canvas) {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(55, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
+            camera.position.set(-1, 0, 6);
+
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+            renderer.setClearColor(0x000000, 0); // transparent background
+
+            // Geometry
+            const glowSphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+            const glowSphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const glowSphere = new THREE.Mesh(glowSphereGeometry, glowSphereMaterial);
+
+            const sphereGeometry = new THREE.SphereGeometry(3, 64, 32);
+            const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            sphere.position.set(-1,0,-4);
+
+            scene.add(glowSphere, sphere);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+            const hemi = new THREE.HemisphereLight(0xffeeff, 0x222233, 0.6);
+            scene.add(ambient, hemi);
+
+            let running = false;
+
+            const resize = () => {
+                const { clientWidth: w, clientHeight: h } = canvas;
+                renderer.setSize(w, h, false);
+                camera.aspect = w / Math.max(1, h);
+                camera.updateProjectionMatrix();
+            };
+
+            let frameId = null;
+
+            const animate = () => {
+                if (!running) return;
+                renderer.render(scene, camera);
+                frameId = requestAnimationFrame(animate);
+            };
+
+            return {
+                start() {
+                    if (running) return;
+                    running = true;
+                    resize();
+                    window.addEventListener('resize', resize);
+                    animate();
+                },
+                stop() {
+                    running = false;
+                    window.removeEventListener('resize', resize);
+                    if (frameId) {
+                        cancelAnimationFrame(frameId);
+                        frameId = null;
+                    }
+                    renderer.dispose();
+                    geometry.dispose();
+                    material.dispose();
+                }
+            };
+        }
+
+        // PAGE
         const page = document.querySelector('#page-thesis');
         const btn = page.querySelector('.backBtn');
         btn.textContent = localStorage.getItem(key) == 1 ? 'Continue' : 'Back';
+
+        const thesisCanvas = Object.assign(document.createElement('canvas'), { id: 'thesis-canvas' });
+        document.body.appendChild(thesisCanvas);
+
+        const thesis3D = canvas ? createThesisScene(thesisCanvas) : null;
 
         // show page
         page.removeAttribute('hidden');
         page.setAttribute('style', 'position: absolute; inset: 0');
 
         //creating scroller
-        const scroller = Object.assign(document.createElement('div'), {className: 'scroller'
+        const scroller = Object.assign(document.createElement('div'), {
+            className: 'scroller'
         });
-        
+
         // ============================== TIMELINE
 
-        const tl = gsap.timeline({defaults: { ease: "power2.out" }});
+        const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
         // Set initial states
-        gsap.set('#thesis-title', {fontSize: '8rem', xPercent: 100, autoAlpha: 0, bottom: '2em' });
+        gsap.set('#thesis-title', { fontSize: '8rem', xPercent: 100, autoAlpha: 0, bottom: '2em' });
         gsap.set('#page-thesis .section>*', { visibility: 'hidden' });
 
         // Definition timeline
@@ -1283,74 +1402,74 @@ function space() {
         tl.to(renderer.domElement, {
             autoAlpha: 0, duration: 1, ease: 'power2.out'
             // onComplete: swapScene(); // add your replacement logic here when ready
-        }, '<');  
+        }, '<');
         tl.set('#thesis-section-1 *', { visibility: 'visible' })
 
         if (localStorage.getItem(key) < 2) {
             {   // Typewriter for "liminal"
                 const txt = document.querySelector('#liminal-title');
                 if (txt) {
-                const full = txt.textContent;
-                const proxy = { index: 0 };
+                    const full = txt.textContent;
+                    const proxy = { index: 0 };
 
-                txt.textContent = '';
+                    txt.textContent = '';
 
-                tl.to(proxy, {
-                    index: full.length,
-                    duration: Math.max(0.2, full.length * 0.08),
-                    ease: 'none',
-                    onUpdate() {
-                    const i = Math.floor(proxy.index);
-                    txt.textContent = full.slice(0, i) + (i < full.length ? '_' : '');
-                    },
-                    onComplete() {
-                    txt.textContent = full;
-                    }
-                }, '>'); 
+                    tl.to(proxy, {
+                        index: full.length,
+                        duration: Math.max(0.2, full.length * 0.08),
+                        ease: 'none',
+                        onUpdate() {
+                            const i = Math.floor(proxy.index);
+                            txt.textContent = full.slice(0, i) + (i < full.length ? '_' : '');
+                        },
+                        onComplete() {
+                            txt.textContent = full;
+                        }
+                    }, '>');
                 }
             }
             {   // Typewriter for phonetics
                 const txt = document.querySelector('#liminal-phonetic');
                 if (txt) {
-                const full = txt.innerHTML;
-                const proxy = { index: 0 };
+                    const full = txt.innerHTML;
+                    const proxy = { index: 0 };
 
-                txt.innerHTML = '';
+                    txt.innerHTML = '';
 
-                tl.to(proxy, {
-                    index: full.length,
-                    duration: Math.max(0.2, full.length * 0.05),
-                    ease: 'none',
-                    onUpdate() {
-                    const i = Math.floor(proxy.index);
-                    txt.innerHTML = full.slice(0, i) + (i < full.length ? '_' : '');
-                    },
-                    onComplete() {
-                    txt.innerHTML = full;
-                    }
-                }, '>'); 
+                    tl.to(proxy, {
+                        index: full.length,
+                        duration: Math.max(0.2, full.length * 0.05),
+                        ease: 'none',
+                        onUpdate() {
+                            const i = Math.floor(proxy.index);
+                            txt.innerHTML = full.slice(0, i) + (i < full.length ? '_' : '');
+                        },
+                        onComplete() {
+                            txt.innerHTML = full;
+                        }
+                    }, '>');
                 }
             }
             {   // Typewriter for definition
                 const txt = document.querySelector('#liminal-def');
                 if (txt) {
-                const full = txt.textContent;
-                const proxy = { index: 0 };
+                    const full = txt.textContent;
+                    const proxy = { index: 0 };
 
-                txt.textContent = '';
+                    txt.textContent = '';
 
-                tl.to(proxy, {
-                    index: full.length,
-                    duration: Math.max(1, full.length * 0.01),
-                    ease: 'none',
-                    onUpdate() {
-                    const i = Math.floor(proxy.index);
-                    txt.textContent = full.slice(0, i) + (i < full.length ? '_' : '');
-                    },
-                    onComplete() {
-                    txt.textContent = full;
-                    }
-                }, '+=1'); 
+                    tl.to(proxy, {
+                        index: full.length,
+                        duration: Math.max(1, full.length * 0.05),
+                        ease: 'none',
+                        onUpdate() {
+                            const i = Math.floor(proxy.index);
+                            txt.textContent = full.slice(0, i) + (i < full.length ? '_' : '');
+                        },
+                        onComplete() {
+                            txt.textContent = full;
+                        }
+                    }, '+=1');
                 }
             }
             tl.from('#liminal-desc', {
@@ -1363,7 +1482,7 @@ function space() {
             }, '+=0.5');
         }
         else {
-            tl.set(['#liminal-title', '#liminal-phonetic', '#liminal-def', '#liminal-desc', '.scroll-hint'], {autoAlpha: 0});
+            tl.set(['#liminal-title', '#liminal-phonetic', '#liminal-def', '#liminal-desc', '.scroll-hint'], { autoAlpha: 0 });
             tl.to('#liminal-title', {
                 autoAlpha: 1, duration: 0.5
             });
@@ -1380,6 +1499,10 @@ function space() {
                 autoAlpha: 1, duration: 0.5
             }, '-=0.2');
         }
+        tl.add(() => { thesis3D?.start(); }, '>-2');
+        tl.from('canvas#thesis-canvas', {
+            autoAlpha: 0, duration: 2
+        }, '<')
 
         tl.add(() => { // Append Scroller
             document.body.appendChild(scroller);
@@ -1387,7 +1510,7 @@ function space() {
             window.scrollTo(0, 0);
             scroller.scrollTop = 0;
             ScrollTrigger.refresh();
-        },'-=1')
+        }, '-=1')
 
         tl.add(() => { // Our Core Belief timeline
             const segmentTl = gsap.timeline({
@@ -1395,28 +1518,28 @@ function space() {
                     trigger: '#segment-2',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',                    
+                    end: 'top top',
                     scrub: true,
                     invalidateOnRefresh: true,
                 }
             });
             segmentTl.to('#liminal-title', {
-                xPercent: -100, autoAlpha: 0                
+                xPercent: -100, autoAlpha: 0
             }, 0);
             segmentTl.to('#liminal-phonetic', {
-                xPercent: -100, autoAlpha: 0                
+                xPercent: -100, autoAlpha: 0
             }, '-=0.5');
             segmentTl.to('#liminal-def', {
-                xPercent: -100, autoAlpha: 0                
+                xPercent: -100, autoAlpha: 0
             }, '-=0.5');
             segmentTl.to('#liminal-desc', {
-                xPercent: -100, autoAlpha: 0                
+                xPercent: -100, autoAlpha: 0
             }, '-=0.5');
             segmentTl.to('.scroll-hint', {
-                autoAlpha: 0                
+                autoAlpha: 0
             }, '-=0.5');
             segmentTl.to('#thesis-title', {
-                xPercent: 0, autoAlpha: 1                
+                xPercent: 0, autoAlpha: 1
             }, '-=0.5');
         });
 
@@ -1426,19 +1549,19 @@ function space() {
                     trigger: '#segment-3',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',          
+                    end: 'top top',
                     scrub: true,
                     invalidateOnRefresh: true,
                 }
-            });            
+            });
             segmentTl.to('#thesis-title', {
-                fontSize: '2rem', top: '4rem', bottom: 'unset'               
+                fontSize: '2rem', top: '4rem', bottom: 'unset'
             }, 0);
             segmentTl.to('#who-what', {
-                xPercent: 0, autoAlpha: 1 
+                xPercent: 0, autoAlpha: 1
             }, '+=0.2');
             segmentTl.to('#who-what-content', {
-                autoAlpha: 1 
+                autoAlpha: 1
             }, '>');
         });
 
@@ -1448,22 +1571,22 @@ function space() {
                     trigger: '#segment-4',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',          
+                    end: 'top top',
                     scrub: true,
                     invalidateOnRefresh: true,
                 }
-            });            
+            });
             segmentTl.to('#who-what', {
-                xPercent: -100, autoAlpha: 0 
+                xPercent: -100, autoAlpha: 0
             }, 0);
             segmentTl.to('#who-what-content', {
-                xPercent: -100, autoAlpha: 0 
+                xPercent: -100, autoAlpha: 0
             }, 0);
             segmentTl.to('#unlock-potential', {
-                autoAlpha: 1 
+                autoAlpha: 1
             }, 0);
             segmentTl.to('#unlock-potential-content', {
-                autoAlpha: 1 
+                autoAlpha: 1
             }, 0);
         });
 
@@ -1473,11 +1596,11 @@ function space() {
                     trigger: '#segment-5',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',      
+                    end: 'top top',
                     scrub: true,
                     invalidateOnRefresh: true,
                 }
-            });            
+            });
             segmentTl.to('#unlock-potential', {
                 autoAlpha: 0
             });
@@ -1504,13 +1627,13 @@ function space() {
 
         tl.add(() => {
             btn?.addEventListener('click', (e) => back(1, e), { once: true });
-        });        
+        });
     };
 
     // ============================ WHAT WE ARE
 
     function what() {
-        if (localStorage.getItem(key) < 2) return;        
+        if (localStorage.getItem(key) < 2) return;
         const page = document.querySelector('#page-what');
 
         // show page
@@ -1521,15 +1644,16 @@ function space() {
         btn.textContent = localStorage.getItem(key) == 2 ? 'Continue' : 'Back';
 
         //creating scroller
-        const scroller = Object.assign(document.createElement('div'), {className: 'scroller'
+        const scroller = Object.assign(document.createElement('div'), {
+            className: 'scroller'
         });
-        
+
         // ============================== TIMELINE
 
-        const tl = gsap.timeline({defaults: { ease: "power2.out" }});
+        const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
         // Set initial states
-        gsap.set('#what-title', {fontSize: '8rem', top: '50%', yPercent: 500, autoAlpha: 0 });
+        gsap.set('#what-title', { fontSize: '8rem', top: '50%', yPercent: 500, autoAlpha: 0 });
         gsap.set('.section>*', { visibility: 'hidden' });
 
         // Definition timeline
@@ -1542,7 +1666,7 @@ function space() {
         tl.to(renderer.domElement, {
             autoAlpha: 0, duration: 1, ease: 'power2.out'
             // onComplete: swapScene(); // add your replacement logic here when ready
-        }, '<');          
+        }, '<');
         tl.to('#what-title', {
             yPercent: 0, autoAlpha: 1, duration: 1
         }, 0)
@@ -1561,22 +1685,22 @@ function space() {
                     trigger: '#segment-2',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',                    
+                    end: 'top top',
                     scrub: true,
                     invalidateOnRefresh: true,
                 }
             });
             segmentTl.to('#what-title', {
-                fontSize: '2rem', top: '4rem'          
+                fontSize: '2rem', top: '4rem'
             }, 0);
             segmentTl.to('#vc', {
-                autoAlpha: 1                
+                autoAlpha: 1
             }, '>');
             segmentTl.to('#vc-def', {
-                autoAlpha: 1                
+                autoAlpha: 1
             }, '>');
             segmentTl.to('#vc-content', {
-                autoAlpha: 1                
+                autoAlpha: 1
             }, '>');
         });
         tl.add(() => { // VS timeline
@@ -1585,34 +1709,34 @@ function space() {
                     trigger: '#segment-3',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',                    
+                    end: 'top top',
                     scrub: true,
                     invalidateOnRefresh: true,
                 }
-            });            
+            });
             segmentTl.to('#vc', {
-                autoAlpha: 0, xPercent: 10                
+                autoAlpha: 0, xPercent: 10
             });
             segmentTl.fromTo('#vs', {
-                autoAlpha: 0, xPercent: -10                
-            },{
-                autoAlpha: 1, xPercent: 0                
+                autoAlpha: 0, xPercent: -10
+            }, {
+                autoAlpha: 1, xPercent: 0
             }, '>');
             segmentTl.to('#vc-def', {
-                autoAlpha: 0, xPercent: 10                
+                autoAlpha: 0, xPercent: 10
             }, '<');
             segmentTl.fromTo('#vs-def', {
-                autoAlpha: 0, xPercent: -10                
-            },{
-                autoAlpha: 1, xPercent: 0                
+                autoAlpha: 0, xPercent: -10
+            }, {
+                autoAlpha: 1, xPercent: 0
             }, '>');
             segmentTl.to('#vc-content', {
-                autoAlpha: 0, xPercent: 10                
+                autoAlpha: 0, xPercent: 10
             }, '<');
             segmentTl.fromTo('#vs-content', {
-                autoAlpha: 0, xPercent: -10               
-            },{
-                autoAlpha: 1, xPercent: 0                
+                autoAlpha: 0, xPercent: -10
+            }, {
+                autoAlpha: 1, xPercent: 0
             }, '>');
         });
         tl.add(() => { // Accelerator timeline
@@ -1621,34 +1745,34 @@ function space() {
                     trigger: '#segment-4',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',                    
+                    end: 'top top',
                     scrub: true,
                     invalidateOnRefresh: true,
                 }
-            });            
+            });
             segmentTl.to('#vs', {
-                autoAlpha: 0, xPercent: 10                
+                autoAlpha: 0, xPercent: 10
             });
             segmentTl.fromTo('#acc', {
-                autoAlpha: 0, xPercent: -10                
-            },{
-                autoAlpha: 1, xPercent: 0                
+                autoAlpha: 0, xPercent: -10
+            }, {
+                autoAlpha: 1, xPercent: 0
             }, '>');
             segmentTl.to('#vs-def', {
-                autoAlpha: 0, xPercent: 10                
+                autoAlpha: 0, xPercent: 10
             }, '<');
             segmentTl.fromTo('#acc-def', {
-                autoAlpha: 0, xPercent: -10                
-            },{
-                autoAlpha: 1, xPercent: 0                
+                autoAlpha: 0, xPercent: -10
+            }, {
+                autoAlpha: 1, xPercent: 0
             }, '>');
             segmentTl.to('#vs-content', {
-                autoAlpha: 0, xPercent: 10                
+                autoAlpha: 0, xPercent: 10
             }, '<');
             segmentTl.fromTo('#acc-content', {
-                autoAlpha: 0, xPercent: -10               
-            },{
-                autoAlpha: 1, xPercent: 0                
+                autoAlpha: 0, xPercent: -10
+            }, {
+                autoAlpha: 1, xPercent: 0
             }, '>');
         });
         tl.add(() => { // We Are Liminal timeline
@@ -1657,41 +1781,41 @@ function space() {
                     trigger: '#segment-5',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',                    
+                    end: 'top top',
                     scrub: true,
                     invalidateOnRefresh: true,
                 }
             });
             segmentTl.to('#what-title', {
-                autoAlpha: 0, xPercent: -10, duration: 0.01               
-            });            
+                autoAlpha: 0, xPercent: -10, duration: 0.01
+            });
             segmentTl.to('#acc', {
-                autoAlpha: 0, xPercent: -10, duration: 0.5               
+                autoAlpha: 0, xPercent: -10, duration: 0.5
             }, '<');
             segmentTl.to('#acc-def', {
-                autoAlpha: 0, xPercent: -10, duration: 0.5                
+                autoAlpha: 0, xPercent: -10, duration: 0.5
             }, '<');
             segmentTl.to('#acc-content', {
-                autoAlpha: 0, xPercent: -10, duration: 0.5               
+                autoAlpha: 0, xPercent: -10, duration: 0.5
             }, '<');
-            segmentTl.add(gsap.to({}, { duration: 2 }, '>'));            
+            segmentTl.add(gsap.to({}, { duration: 2 }, '>'));
             segmentTl.fromTo('#we-are-liminal', {
-                autoAlpha: 0, scale: 0                
-            },{
-                autoAlpha: 1, scale: 1, duration: 0.5               
+                autoAlpha: 0, scale: 0
+            }, {
+                autoAlpha: 1, scale: 1, duration: 0.5
             }, '-=0.5');
             segmentTl.fromTo('#we-are-liminal-content', {
-                autoAlpha: 0                
-            },{
-                autoAlpha: 1            
+                autoAlpha: 0
+            }, {
+                autoAlpha: 1
             }, '>');
             segmentTl.fromTo('.backBtn', {
-                autoAlpha: 0                
-            },{
-                autoAlpha: 1            
+                autoAlpha: 0
+            }, {
+                autoAlpha: 1
             }, '+=1');
         });
-        tl.add(() => {            
+        tl.add(() => {
             btn?.addEventListener('click', (e) => back(2, e), { once: true });
         });
 
@@ -1710,7 +1834,7 @@ function space() {
         const btn = page.querySelector('.backBtn');
         btn.textContent = localStorage.getItem(key) == 3 ? 'Continue' : 'Back';
 
-        const tl = gsap.timeline({defaults: { ease: "power4.out" }});
+        const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
         gsap.set('#page-profile', { '--pseudo-opacity': 0 });
 
         // TIMELINE
@@ -1724,7 +1848,7 @@ function space() {
         tl.to(renderer.domElement, {
             autoAlpha: 0, duration: 1, ease: 'power2.out'
             // onComplete: swapScene(); // add your replacement logic here when ready
-        }, '<');  
+        }, '<');
 
         tl.from('#page-profile>i:nth-child(1)', {
             scaleX: 0, duration: 0.5
@@ -1738,8 +1862,8 @@ function space() {
         tl.from('#page-profile>i:nth-child(4)', {
             scaleY: 0, duration: 0.5
         }, '<');
-        tl.to('#page-profile', { 
-            '--pseudo-opacity': 1, duration: 0.5 
+        tl.to('#page-profile', {
+            '--pseudo-opacity': 1, duration: 0.5
         }, '>');
         tl.from('#profile-name', {
             autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
@@ -1758,11 +1882,11 @@ function space() {
         }, '-=0.25');
         tl.fromTo('.backBtn', {
             autoAlpha: 0
-        },{
+        }, {
             autoAlpha: 1, duration: 0.5
         }, '+=0.5');
 
-        tl.add(() => {            
+        tl.add(() => {
             btn?.addEventListener('click', (e) => back(3, e), { once: true });
         });
 
@@ -1779,7 +1903,7 @@ function space() {
         page.setAttribute('style', 'position: absolute; inset: 0');
         const btn = page.querySelector('.backBtn');
 
-        const tl = gsap.timeline({defaults: { ease: "power4.out" }});
+        const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
 
         // TIMELINE
 
@@ -1792,7 +1916,7 @@ function space() {
         tl.to(renderer.domElement, {
             autoAlpha: 0, duration: 1, ease: 'power2.out'
             // onComplete: swapScene(); // add your replacement logic here when ready
-        }, '<');  
+        }, '<');
 
         tl.from('#page-portfolio>i:nth-child(1)', {
             scaleX: 0, duration: 0.5
@@ -1814,12 +1938,12 @@ function space() {
         }, '-=0.5');
         tl.from('#portfolio-desc', {
             autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
-        }, '-=0.25');        
+        }, '-=0.25');
         tl.from('.backBtn', {
             autoAlpha: 0, duration: 0.5
         }, '+=0.5');
 
-        tl.add(() => {            
+        tl.add(() => {
             btn?.addEventListener('click', (e) => back(4, e), { once: true });
         });
     };
@@ -1830,10 +1954,11 @@ function space() {
     function appendSegments(number) {
         const scroller = document.querySelector('.scroller');
         for (let i = 0; i < number; i++)
-            scroller.appendChild(Object.assign(document.createElement('div'), { className: 'segment', id: `segment-${i + 1}`
- }));
+            scroller.appendChild(Object.assign(document.createElement('div'), {
+                className: 'segment', id: `segment-${i + 1}`
+            }));
     }
-       
+
     // Back Button
     function back(ref, e) {
         const page = e.currentTarget.closest('.page');
@@ -1845,14 +1970,14 @@ function space() {
         const value = Number(localStorage.getItem(key)) || 0;
 
         if (value === ref) menuLayout(value + 1);
-        const lastMenuItem = menu?.querySelector('.menu-item:last-child'); 
+        const lastMenuItem = menu?.querySelector('.menu-item:last-child');
 
         const tl = gsap.timeline({
             defaults: { ease: 'power2.out' },
             onComplete() {
-            ScrollTrigger.getAll().forEach(st => {
-                const scrollEl = st.scroller || st.vars?.scroller || ScrollTrigger.defaultScroller || window;
-                if (scrollEl === scroller || scroller?.contains(st.trigger)) st.kill();
+                ScrollTrigger.getAll().forEach(st => {
+                    const scrollEl = st.scroller || st.vars?.scroller || ScrollTrigger.defaultScroller || window;
+                    if (scrollEl === scroller || scroller?.contains(st.trigger)) st.kill();
                 });
                 gsap.killTweensOf(page);
                 gsap.killTweensOf(page.querySelectorAll('*'));
@@ -1863,25 +1988,27 @@ function space() {
                 scroller?.remove();
                 window.scrollTo(0, 0);
 
-                if (value === ref) {localStorage.setItem(key, value + 1)};                
+                if (value === ref) { localStorage.setItem(key, value + 1) };
             }
         });
-        tl.to(page, { 
-            autoAlpha: 0, duration: 1 
+        tl.to(page, {
+            autoAlpha: 0, duration: 1
         }, 0);
         tl.to(menu, {
             autoAlpha: 1, duration: 1
         }, '>');
-        if (value === ref && lastMenuItem) { tl.fromTo( lastMenuItem, { 
-            opacity: 0, yPercent: 20 
-            }, { opacity: 1, yPercent: 0, duration: 0.6                 
+        if (value === ref && lastMenuItem) {
+            tl.fromTo(lastMenuItem, {
+                opacity: 0, yPercent: 20
+            }, {
+                opacity: 1, yPercent: 0, duration: 0.6
             }, '>');
         }
         tl.to('#space', {
             autoAlpha: 1, duration: 1
         }, '>');
     };
-    
+
     // Conditional Menu
     function menuLayout(state) {
         const menu = document.querySelector('#menu');
@@ -1905,12 +2032,12 @@ function space() {
 // -----------------------------------------------------
 let landingInit = false, unlockInit = false, spaceInit = false;
 const nextFrame = () => new Promise(r => requestAnimationFrame(r));
-const pin = el => gsap.set(el, { position:'absolute', inset:0, width:'100%', height:'100%', overflow:'hidden' });
-const unpin = el => gsap.set(el, { clearProps:'position,inset,width,height,overflow,zIndex' });
+const pin = el => gsap.set(el, { position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'hidden' });
+const unpin = el => gsap.set(el, { clearProps: 'position,inset,width,height,overflow,zIndex' });
 
 // default fallback anims
 const defaultLeave = ({ current }) => gsap.to(current.container, { autoAlpha: 0, duration: 0.3, ease: 'power1.out' });
-const defaultEnter = ({ next })    => gsap.fromTo(next.container, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: 'power1.out' });
+const defaultEnter = ({ next }) => gsap.fromTo(next.container, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: 'power1.out' });
 
 
 // -----------------------------------------------------
@@ -1919,113 +2046,113 @@ const defaultEnter = ({ next })    => gsap.fromTo(next.container, { autoAlpha: 0
 
 
 const Page = {
-  landing: { // LANDING PAGE ---------------------------
-    build: () => { landing(); updateLanding(); },
-    // -------------------------------------------------
-    once: ({ next }) => {
-        const tl = gsap.timeline({ defaults:{ ease:'power2.out' } });
-        tl.set(next.container.querySelector('#entrance'), {scaleX:0, scaleY:0});
-        tl.set(next.container.querySelector('.window'), {scaleX:0, scaleY:0});
-        tl.from(next.container.querySelector('.grid-viewport'), { 
-            scale:0, duration:0.5 
-        }, 0);
-        tl.to(next.container.querySelector('.window'), {
-            scaleX:1, duration:0.2
-        }, '-=0.5');
-        tl.to(next.container.querySelector('#entrance'), {
-            scaleX:1, duration:0.2
-        }, '<');
-        tl.to(next.container.querySelector('.window'), {
-            scaleY:1, duration:0.2
-        }, '>');
-        tl.to(next.container.querySelector('#entrance'), {
-            scaleY:1, duration:0.2
-        }, '<');
-        tl.from(next.container.querySelector('.tagline'), {
-            autoAlpha:0, duration: 0.2
-        }, '>');
-        tl.from(next.container.querySelector('.copyright-text'), {
-            autoAlpha:0, duration: 0.2
-        }, '<');
-        return tl;
+    landing: { // LANDING PAGE ---------------------------
+        build: () => { landing(); updateLanding(); },
+        // -------------------------------------------------
+        once: ({ next }) => {
+            const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+            tl.set(next.container.querySelector('#entrance'), { scaleX: 0, scaleY: 0 });
+            tl.set(next.container.querySelector('.window'), { scaleX: 0, scaleY: 0 });
+            tl.from(next.container.querySelector('.grid-viewport'), {
+                scale: 0, duration: 0.5
+            }, 0);
+            tl.to(next.container.querySelector('.window'), {
+                scaleX: 1, duration: 0.2
+            }, '-=0.5');
+            tl.to(next.container.querySelector('#entrance'), {
+                scaleX: 1, duration: 0.2
+            }, '<');
+            tl.to(next.container.querySelector('.window'), {
+                scaleY: 1, duration: 0.2
+            }, '>');
+            tl.to(next.container.querySelector('#entrance'), {
+                scaleY: 1, duration: 0.2
+            }, '<');
+            tl.from(next.container.querySelector('.tagline'), {
+                autoAlpha: 0, duration: 0.2
+            }, '>');
+            tl.from(next.container.querySelector('.copyright-text'), {
+                autoAlpha: 0, duration: 0.2
+            }, '<');
+            return tl;
+        },
+        // -------------------------------------------------
+        enter: ({ next }) => {
+            const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+            tl.from(next.container, {
+                scale: 1.5, autoAlpha: 0, duration: 0.5
+            }, 0);
+            return tl;
+        },
+        // -------------------------------------------------
+        leave: ({ current }) => {
+            landingInit = false;
+            const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } });
+            tl.to(current.container.querySelectorAll('#entrance, .window'), {
+                width: '100vw', height: '100vh', backgroundColor: '#0000', borderColor: '#fff', boxShadow: 'none', duration: 0.5
+            }, 0);
+            tl.to(current.container.querySelectorAll('#entrance'), {
+                borderColor: 'transparent', duration: 0.5
+            }, '>');
+            tl.to(current.container.querySelectorAll('.tagline, .copyright-text, #outline, #grid-bg'),
+                { autoAlpha: 0, duration: 0.5 }, 0);
+            tl.to(current.container.querySelector('canvas'), { autoAlpha: 0, duration: 0.4 }, 0);
+            return tl;
+        }
     },
-    // -------------------------------------------------
-    enter: ({ next }) => {
-        const tl = gsap.timeline({ defaults:{ ease:'power2.out' } });
-        tl.from(next.container, { 
-            scale:1.5, autoAlpha: 0, duration: 0.5
-        }, 0);
-        return tl;
-    },
-    // -------------------------------------------------
-    leave: ({ current }) => {
-        landingInit = false;
-        const tl = gsap.timeline({ defaults:{ ease:'power2.inOut' } });
-        tl.to(current.container.querySelectorAll('#entrance, .window'), {
-            width:'100vw', height:'100vh', backgroundColor:'#0000', borderColor:'#fff', boxShadow:'none', duration:0.5
-        }, 0);
-        tl.to(current.container.querySelectorAll('#entrance'), {
-            borderColor:'transparent', duration:0.5
-        }, '>');
-        tl.to(current.container.querySelectorAll('.tagline, .copyright-text, #outline, #grid-bg'),
-                { autoAlpha:0, duration:0.5 }, 0);
-        tl.to(current.container.querySelector('canvas'), { autoAlpha:0, duration:0.4 }, 0);
-        return tl;
-    }
-  },
 
-  unlock: { // UNLOCK PAGE -----------------------------
-    build: () => { unlock(); },
-    // -------------------------------------------------
-    enter: ({ next }) => {        
-        const tl = gsap.timeline({ defaults:{ ease:'power2.out' } });        
-        tl.from(next.container.querySelectorAll('.line-vertical'), { 
-            autoAlpha:0, left:'50%', duration:0.4 
-        }, 0);
-        tl.from(next.container.querySelectorAll('.line-horizontal'), { 
-            autoAlpha:0, top:'50%', duration:0.4 
-        }, '<');
-        tl.from(next.container.querySelector('.code'), { 
-            autoAlpha:0, duration:0.3 
-        }, 0.5);
-        tl.from(next.container.querySelector('.button-wrapper'), { 
-            autoAlpha:0, duration:0.3 
-        }, '>');
-        tl.from(next.container.querySelectorAll('.cell'), { 
-            opacity:0, duration:0.5
-        }, 1);
-        tl.from(next.container.querySelectorAll('.text-line'), { 
-            opacity:0, duration:0.5
-        }, '>');
-        return tl;
+    unlock: { // UNLOCK PAGE -----------------------------
+        build: () => { unlock(); },
+        // -------------------------------------------------
+        enter: ({ next }) => {
+            const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+            tl.from(next.container.querySelectorAll('.line-vertical'), {
+                autoAlpha: 0, left: '50%', duration: 0.4
+            }, 0);
+            tl.from(next.container.querySelectorAll('.line-horizontal'), {
+                autoAlpha: 0, top: '50%', duration: 0.4
+            }, '<');
+            tl.from(next.container.querySelector('.code'), {
+                autoAlpha: 0, duration: 0.3
+            }, 0.5);
+            tl.from(next.container.querySelector('.button-wrapper'), {
+                autoAlpha: 0, duration: 0.3
+            }, '>');
+            tl.from(next.container.querySelectorAll('.cell'), {
+                opacity: 0, duration: 0.5
+            }, 1);
+            tl.from(next.container.querySelectorAll('.text-line'), {
+                opacity: 0, duration: 0.5
+            }, '>');
+            return tl;
+        },
+        // -------------------------------------------------
+        leave: ({ current }) => {
+            unlockInit = false;
+            const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+            tl.to(current.container, {
+                autoAlpha: 0, duration: 0.5
+            }, 0);
+            return tl;
+        }
     },
-    // -------------------------------------------------
-    leave: ({ current }) => {
-        unlockInit = false;
-        const tl = gsap.timeline({ defaults:{ ease:'power2.out' } });
-        tl.to(current.container, { 
-            autoAlpha:0, duration: 0.5
-        }, 0);
-        return tl;
-    }
-  },
 
-  space: { // MAIN PAGE --------------------------------
-    build: () => { space(); },
-    // -------------------------------------------------
-    enter: ({ next }) => {
-        const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
-        return tl;
-    },
-    // -------------------------------------------------
-    leave: ({ current }) => {
-        spaceInit = false;
-        const tl = gsap.timeline();
-        tl.to(current.container, { 
-        opacity: 0, duration: 0.5, ease: 'power2.in' 
-        }, 0);
-        return tl;
-    }
+    space: { // MAIN PAGE --------------------------------
+        build: () => { space(); },
+        // -------------------------------------------------
+        enter: ({ next }) => {
+            const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+            return tl;
+        },
+        // -------------------------------------------------
+        leave: ({ current }) => {
+            spaceInit = false;
+            const tl = gsap.timeline();
+            tl.to(current.container, {
+                opacity: 0, duration: 0.5, ease: 'power2.in'
+            }, 0);
+            return tl;
+        }
     }
 };
 
@@ -2033,41 +2160,41 @@ const Page = {
 // DEBUG PAUSE TOGGLE (press Shift+P)
 // -----------------------------------------------------
 (() => {
-  if (typeof window === 'undefined' || !gsap?.globalTimeline) return;
+    if (typeof window === 'undefined' || !gsap?.globalTimeline) return;
 
-  let paused = false;
-  let scrollState = [];
+    let paused = false;
+    let scrollState = [];
 
-  const haltScrollTriggers = () => {
-    scrollState = ScrollTrigger?.getAll?.() ?? [];
-    scrollState.forEach(st => st.disable());
-  };
+    const haltScrollTriggers = () => {
+        scrollState = ScrollTrigger?.getAll?.() ?? [];
+        scrollState.forEach(st => st.disable());
+    };
 
-  const resumeScrollTriggers = () => {
-    scrollState.forEach(st => st.enable());
-    scrollState.length = 0;
-    ScrollTrigger?.refresh?.();
-  };
+    const resumeScrollTriggers = () => {
+        scrollState.forEach(st => st.enable());
+        scrollState.length = 0;
+        ScrollTrigger?.refresh?.();
+    };
 
-  const pauseAll = () => {
-    gsap.globalTimeline.pause();
-    haltScrollTriggers();
-    stopThree?.();
-    paused = true;
-    console.info('[debug] paused');
-  };
+    const pauseAll = () => {
+        gsap.globalTimeline.pause();
+        haltScrollTriggers();
+        stopThree?.();
+        paused = true;
+        console.info('[debug] paused');
+    };
 
-  const resumeAll = () => {
-    gsap.globalTimeline.resume();
-    resumeScrollTriggers();
-    startThree?.();
-    paused = false;
-    console.info('[debug] resumed');
-  };
+    const resumeAll = () => {
+        gsap.globalTimeline.resume();
+        resumeScrollTriggers();
+        startThree?.();
+        paused = false;
+        console.info('[debug] resumed');
+    };
 
-  window.addEventListener('keydown', evt => {
-    if (evt.key.toLowerCase() !== 'p' || !evt.shiftKey) return;
-    evt.preventDefault();
-    paused ? resumeAll() : pauseAll();
-  });
+    window.addEventListener('keydown', evt => {
+        if (evt.key.toLowerCase() !== 'p' || !evt.shiftKey) return;
+        evt.preventDefault();
+        paused ? resumeAll() : pauseAll();
+    });
 })();
