@@ -6,12 +6,14 @@
 import * as THREE from 'https://esm.sh/three@0.180.0';
 
 // Three add-ons (same CDN + shared dependency)
-import { GLTFLoader }     from 'https://esm.sh/three@0.180.0/examples/jsm/loaders/GLTFLoader.js?deps=three@0.180.0';
+import { GLTFLoader } from 'https://esm.sh/three@0.180.0/examples/jsm/loaders/GLTFLoader.js?deps=three@0.180.0';
 import { EffectComposer } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/EffectComposer.js?deps=three@0.180.0';
-import { RenderPass }     from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/RenderPass.js?deps=three@0.180.0';
-import { ShaderPass }     from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/ShaderPass.js?deps=three@0.180.0';
-import { UnrealBloomPass }from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/UnrealBloomPass.js?deps=three@0.180.0';
-import { OutputPass }     from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/OutputPass.js?deps=three@0.180.0';
+import { RenderPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/RenderPass.js?deps=three@0.180.0';
+import { ShaderPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/ShaderPass.js?deps=three@0.180.0';
+import { UnrealBloomPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/UnrealBloomPass.js?deps=three@0.180.0';
+import { OutputPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/OutputPass.js?deps=three@0.180.0';
+import { RoomEnvironment } from 'https://esm.sh/three@0.180.0/examples/jsm/environments/RoomEnvironment.js?deps=three@0.180.0';
+import { CSS2DRenderer, CSS2DObject } from 'https://esm.sh/three@0.180.0/examples/jsm/renderers/CSS2DRenderer.js?deps=three@0.180.0';
 
 // GSAP
 import { gsap } from 'https://esm.sh/gsap@3.13.0?target=es2020';
@@ -142,8 +144,16 @@ function landing() {
 
 
         //===== Injecting point values into CSS
-        document.documentElement.style.setProperty('--x', `${x}px`);
-        document.documentElement.style.setProperty('--y', `${y}px`);
+        document.querySelector('#grid-bg').style.setProperty('--x', `${x}px`);
+        document.querySelector('#grid-bg').style.setProperty('--y', `${y}px`);
+
+        // Loader
+        document.querySelector('.grid-container')?.appendChild(
+            Object.assign(document.createElement('div'), { className: 'loader-glow' })
+        );
+        document.querySelector('.grid-bg')?.appendChild(
+            Object.assign(document.createElement('div'), { className: 'loader' })
+        );
 
         //===== Creating outline as SVG
         // Declaring points
@@ -403,6 +413,7 @@ function unlock() {
 
     const mincellSize = 0.5 * parseFloat(getComputedStyle(t).fontSize);
     let dimensionH, dimensionW, cellSize, innerH, innerW, cells, total, codeOffsetX, codeOffsetY, moduleOffsetX, moduleOffsetY;
+    let centersX, centersY, jitter, lastChar;
 
     function unlockGrid() {
         unlockModule.querySelectorAll('.cell').forEach(el => el.remove()); // clear previous cells if re-running    
@@ -464,6 +475,8 @@ function unlock() {
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `bottom:${paddingY}px;` }));
         }
 
+        initMatrixBuffers();
+
     }
     unlockGrid()
 
@@ -480,6 +493,24 @@ function unlock() {
     container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `bottom:${codeOffsetY}px;` }));
     container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `bottom:${paddingY}px;` }));
 
+    function initMatrixBuffers() {
+        centersX = new Float32Array(total);
+        centersY = new Float32Array(total);
+        jitter = new Float32Array(total);
+        lastChar = new Int16Array(total);
+        lastChar.fill(-1);
+
+        for (let j = 0; j < innerH; j++) {
+            for (let i = 0; i < innerW; i++) {
+                const idx = j * innerW + i;
+                centersX[idx] = (i + 0.5) * cellSize;
+                centersY[idx] = (j + 0.5) * cellSize;
+                const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
+                jitter[idx] = h * 0.03;
+            }
+        }
+    }
+
     // =============== TEXT MATRIX (single mode) ===============
 
     const RAMP = Array.from(" .:-=+*#%@");
@@ -491,21 +522,6 @@ function unlock() {
     let matrixBlocked = false;
 
     // centers & jitter
-    const centersX = new Float32Array(total);
-    const centersY = new Float32Array(total);
-    const jitter = new Float32Array(total);
-    const lastChar = new Int16Array(total); lastChar.fill(-1);
-
-    for (let j = 0; j < innerH; j++) {
-        for (let i = 0; i < innerW; i++) {
-            const idx = j * innerW + i;
-            centersX[idx] = (i + 0.5) * cellSize;
-            centersY[idx] = (j + 0.5) * cellSize;
-            const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
-            jitter[idx] = h * 0.03;
-        }
-    }
-
     // module rect / pointer
     let modRect = unlockModule.getBoundingClientRect();
     const ro = new ResizeObserver(() => { modRect = unlockModule.getBoundingClientRect(); });
@@ -554,8 +570,10 @@ function unlock() {
         };
     }
 
-    let start = performance.now();
+    let matrixStart = performance.now();
     let running = true;
+    let matrixRAF = null;
+    let matrixActive = false;
 
     const io = new IntersectionObserver((entries) => {
         running = entries.some(e => e.isIntersecting);
@@ -587,13 +605,56 @@ function unlock() {
 
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
     function tick() {
-        if (reduce?.matches) { renderFrame(0, true); return; }
-        if (!running) { requestAnimationFrame(tick); return; }
-        const t = (performance.now() - start) / 1000;
+        if (!matrixActive) { matrixRAF = null; return; }
+        if (reduce?.matches) {
+            renderFrame(0, true);
+            matrixRAF = null;
+            return;
+        }
+        if (!running) {
+            matrixRAF = requestAnimationFrame(tick);
+            return;
+        }
+        const t = (performance.now() - matrixStart) / 1000;
         renderFrame(t, false);
-        requestAnimationFrame(tick);
+        matrixRAF = requestAnimationFrame(tick);
     }
-    if (reduce?.matches) renderFrame(0, true); else tick();
+
+    function startMatrix() {
+        if (matrixActive) return;
+        matrixActive = true;
+        matrixStart = performance.now();
+        matrixRAF = requestAnimationFrame(tick);
+    }
+
+    function stopMatrix() {
+        if (!matrixActive) return;
+        matrixActive = false;
+        if (matrixRAF) {
+            cancelAnimationFrame(matrixRAF);
+            matrixRAF = null;
+        }
+    }
+
+    function updateMatrix() {
+        modRect = unlockModule.getBoundingClientRect();
+        mx = modRect.width / 2;
+        my = modRect.height / 2;
+        lastX = mx;
+        lastY = my;
+        if (!matrixActive || reduce?.matches) {
+            renderFrame(0, true);
+        }
+    }
+
+    renderFrame(0, true);
+    textMatrixControl = {
+        start: startMatrix,
+        stop: stopMatrix,
+        update: updateMatrix,
+        dissolve: dissolveTextMatrix
+    };
+    updateMatrix();
 
 
     // ---- DISSOLVE 
@@ -714,7 +775,7 @@ function unlock() {
                 // Start dissolve but don't block navigation on it
                 const MAX_WAIT = 900;
                 Promise.race([
-                    dissolveTextMatrix({ duration: 700, spread: 400 }),
+                    textMatrixControl?.dissolve?.({ duration: 700, spread: 400 }) ?? Promise.resolve(),
                     new Promise(r => setTimeout(r, MAX_WAIT))
                 ]).then(() => barba.go(PROTECTED_PAGE));
             } else {
@@ -773,7 +834,14 @@ function unlock() {
     // Show page
     document.documentElement.style.visibility = 'visible';
     unlockInit = true;
-    window.addEventListener('resize', () => { unlockInit = false; unlockGrid(); tick() });
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            unlockGrid();
+            textMatrixControl?.update();
+        }, 50);
+    });
 }
 
 
@@ -817,8 +885,7 @@ function space() {
     const BLOOM_SCENE = 1;
     const bloomLayer = new THREE.Layers();
     bloomLayer.set(BLOOM_SCENE);
-
-
+    scene.fog = new THREE.FogExp2(0x000000, 0.006); // tweak color/density
 
     // Size
     const size = {
@@ -827,8 +894,8 @@ function space() {
     }
 
     // Camera
-    const camera = new THREE.PerspectiveCamera(60, size.width / size.height, 0.5, 200);
-    camera.position.set(0, 0, 0);
+    const camera = new THREE.PerspectiveCamera(60, size.width / size.height, 0.5, 500);
+    camera.position.set(-250, 0, 0);
     scene.add(camera);
 
     // GLTF Loader
@@ -836,40 +903,140 @@ function space() {
 
     // Points shader  ✅ crisp disc + bright core
     const shaderMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-            uColor: { value: new THREE.Color(0xffffff) },
-            uSize: { value: 200.0 }
-        },
+        fog: true,
+        uniforms: THREE.UniformsUtils.merge([
+            THREE.UniformsLib.fog,
+            {
+                uColor: { value: new THREE.Color(0xffffff) },
+                uSize: { value: 200.0 }
+            }
+        ]),
         vertexShader: `
+        #include <fog_pars_vertex>
         uniform float uSize;
-        void main(){
-        vec4 mv = modelViewMatrix * vec4(position,1.0);
-        float d  = max(1.0, -mv.z);
-        float sized = clamp(uSize * (1.2 / d), 1.0, 300.0);
-        gl_PointSize = sized;
-        gl_Position  = projectionMatrix * mv;
-        }`,
+
+        void main() {
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            float d = max(1.0, -mvPosition.z);
+            float sized = clamp(uSize * (1.2 / d), 1.0, 300.0);
+            gl_PointSize = sized;
+            gl_Position = projectionMatrix * mvPosition;
+            #include <fog_vertex>
+        }
+    `,
         fragmentShader: `
+        #include <fog_pars_fragment>
         uniform vec3 uColor;
-        void main(){
-        vec2 uv = gl_PointCoord - 0.5;
-        float r = length(uv);
 
-        float edge = smoothstep(0.49, 0.5, r);
-        if (edge >= 1.0) discard;
+        void main() {
+            vec2 uv = gl_PointCoord - 0.5;
+            float r = length(uv);
 
-        float core = 1.0 - smoothstep(0.00, 0.18, r);
-        float ring = 1.0 - smoothstep(0.30, 0.49, r);
+            float edge = smoothstep(0.49, 0.5, r);
+            if (edge >= 1.0) discard;
 
-        vec3 glow  = mix(uColor * 0.9, vec3(1.0), core * 0.85);
-        float alpha = max(core * 0.9, ring * 0.6) * (1.0 - edge);
+            float core = 1.0 - smoothstep(0.00, 0.18, r);
+            float ring = 1.0 - smoothstep(0.30, 0.49, r);
 
-        gl_FragColor = vec4(glow, alpha);
-        }`,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending
+            vec3 glow = mix(uColor * 0.9, vec3(1.0), core * 0.85);
+            float alpha = max(core * 0.9, ring * 0.6) * (1.0 - edge);
+
+            gl_FragColor = vec4(glow, alpha);
+            #include <fog_fragment>
+        }
+    `
     });
+
+    // ========================= MENU CUBES
+    let labelRenderer;
+    const cubeLabels = [];
+    const labelOffset = new THREE.Vector3();
+    const labelWorld = new THREE.Vector3();
+
+    const connectorMaterial = new THREE.LineDashedMaterial({
+        color: 0xffffff,
+        scale: 1,
+        dashSize: 1,
+        gapSize: 0.5,
+    });
+
+    const cubeGeometry = new THREE.BoxGeometry(4, 4, 4);
+    cubeGeometry.computeBoundingSphere();
+    const cubeBaseRadius = cubeGeometry.boundingSphere?.radius ?? 2;
+    const cubeWorldScale = new THREE.Vector3();
+    const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+    const cubeThesis = new THREE.Mesh(cubeGeometry, cubeMaterial);
+    const cubeWhat = new THREE.Mesh(cubeGeometry, cubeMaterial);
+    const cubeUs = new THREE.Mesh(cubeGeometry, cubeMaterial);
+    const cubePortfolio = new THREE.Mesh(cubeGeometry, cubeMaterial);
+
+    // Raycaster for Interactions
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    const clickableCubes = [cubeThesis, cubeWhat, cubeUs, cubePortfolio];
+
+    // Labels
+    const attachLabel = (cube, id, text, offset, anchor = [0, 1]) => {
+        const div = Object.assign(document.createElement('div'), { className: 'label', id: id, textContent: text });
+        const label = new CSS2DObject(div);
+        label.center.set(...anchor);
+        scene.add(label);
+
+        if (id === 'menuThesis') {
+            div.addEventListener('click', (event) => {
+                event.stopPropagation();
+                focusOnCube(cubeThesis, thesis);
+            });
+        }
+        if (id === 'menuWhat') {
+            div.addEventListener('click', (event) => {
+                event.stopPropagation();
+                focusOnCube(cubeWhat, what);
+            });
+        }
+        if (id === 'menuUs') {
+            div.addEventListener('click', (event) => {
+                event.stopPropagation();
+                focusOnCube(cubeUs, us);
+            });
+        }
+        if (id === 'menuPortfolio') {
+            div.addEventListener('click', (event) => {
+                event.stopPropagation();
+                focusOnCube(cubePortfolio, portfolio);
+            });
+        }
+
+        const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+        const line = new THREE.Line(geometry, connectorMaterial);
+        cube.add(line);
+
+        cubeLabels.push({
+            cube,
+            label,
+            element: div,
+            id,
+            line,
+            positions: geometry.attributes.position,
+            offset: new THREE.Vector3().fromArray(offset)
+        });
+    };
+
+    attachLabel(cubeThesis, 'menuThesis', 'Our Thesis', [8, 6, 0], [0, 1]);
+    attachLabel(cubeWhat, 'menuWhat', 'What We Are (Not)', [8, -6, 0], [0, 0]);
+    attachLabel(cubeUs, 'menuUs', 'About Us', [-8, 6, 0], [1, 1]);
+    attachLabel(cubePortfolio, 'menuPortfolio', 'Our Portfolio', [-8, -6, 0], [1, 0]);
+
+    labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.id = 'label-container';
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0px';
+    document.querySelector('#menu-container').appendChild(labelRenderer.domElement);
+
+
+    // ===== POINT CLOUD MODEL
 
     const modelURL = new URL('./cloud.glb', import.meta.url);
     loader.load(
@@ -899,7 +1066,13 @@ function space() {
             // Wrap in a group for rotation
             object = new THREE.Group();
             object.add(root);
-            object.position.set(200, 0, 1)
+
+            cubeThesis.position.set(35, 25, -15);
+            cubeWhat.position.set(5, 1, 5);
+            cubeUs.position.set(-45, 35, 45);
+            cubePortfolio.position.set(-45, -25, -35);
+
+            object.add(cubeThesis, cubeWhat, cubeUs, cubePortfolio);
             scene.add(object);
         },
         null,
@@ -908,6 +1081,7 @@ function space() {
         }
     );
 
+    //scene.add(new THREE.AxesHelper(30));
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({
@@ -922,6 +1096,39 @@ function space() {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ReinhardToneMapping;
 
+
+    // after the renderer/canvas are created
+    canvas.addEventListener('click', (event) => {
+        pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+        pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(pointer, camera);
+        const hit = raycaster.intersectObjects(clickableCubes, false)[0];
+
+        if (hit?.object === cubeThesis) {
+            focusOnCube(cubeThesis, thesis);
+        }
+        if (hit?.object === cubeWhat) {
+            focusOnCube(cubeWhat, what);
+        }
+        if (hit?.object === cubeUs) {
+            focusOnCube(cubeUs, us);
+        }
+        if (hit?.object === cubePortfolio) {
+            focusOnCube(cubePortfolio, portfolio);
+        }
+    });
+
+    canvas.addEventListener('pointermove', (event) => {
+        pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+        pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(pointer, camera);
+        const hit = raycaster.intersectObjects(clickableCubes, false)[0];
+
+        canvas.classList.toggle('cursor-pointer', !!hit);
+    });
+
     // 🎛️ BLOOM KNOBS - Adjust these values!
     const params = {
         threshold: 0.1,      // 🎛️ 0-1: Lower = more objects bloom
@@ -935,8 +1142,6 @@ function space() {
 
     // Render passes
     const renderScene = new RenderPass(scene, camera);
-
-
 
     // Half-res bloom composer
     const bloomComposer = new EffectComposer(renderer);
@@ -996,12 +1201,92 @@ function space() {
         if (object && rotateThreeModel) {
             object.rotation.y += (ROT_SPEED * Math.PI / 180) * dt;
         }
+        cubeLabels.forEach(({ cube, label, line, positions, offset }) => {
+            cube.getWorldPosition(labelOffset);
+            labelWorld.copy(labelOffset).add(offset);
+            label.position.copy(labelWorld);
+
+            const startLocal = cube.worldToLocal(labelOffset.clone());
+            const endLocal = cube.worldToLocal(labelWorld.clone());
+
+            positions.setXYZ(0, startLocal.x, startLocal.y, startLocal.z);
+            positions.setXYZ(1, endLocal.x, endLocal.y, endLocal.z);
+            positions.needsUpdate = true;
+            line.computeLineDistances();
+        });
         bloomComposer.render();
         finalComposer.render();
+        labelRenderer?.render(scene, camera);
     }
 
     spaceRenderer = renderer;
     spaceTick = tick;
+
+    // Focus on Cube on Click
+    let focusTween = null;
+    let fovTween = null;
+    const focusTarget = new THREE.Vector3();
+    const approachDir = new THREE.Vector3();
+    const cameraDestination = new THREE.Vector3();
+    const faceCenter = new THREE.Vector3();
+    const targetQuaternion = new THREE.Quaternion();
+    const lookMatrix = new THREE.Matrix4();
+    const cubeQuaternion = new THREE.Quaternion();
+    const lookPadding = 4;
+    const defaultFov = camera.fov;
+    const focusFov = 0.1;
+
+    function focusOnCube(cube, onComplete) {
+        cube.getWorldPosition(focusTarget);
+        cube.getWorldScale(cubeWorldScale);
+
+        const radius = cubeBaseRadius * Math.max(cubeWorldScale.x, cubeWorldScale.y, cubeWorldScale.z) + lookPadding;
+        approachDir.copy(camera.position).sub(focusTarget);
+        if (approachDir.lengthSq() === 0) {
+            approachDir.set(0, 0, 1);
+        } else {
+            approachDir.normalize();
+        }
+
+        cameraDestination.copy(focusTarget).addScaledVector(approachDir, radius);
+        faceCenter.copy(focusTarget).addScaledVector(approachDir, cubeBaseRadius);
+
+        lookMatrix.lookAt(cameraDestination, faceCenter, camera.up);
+        targetQuaternion.setFromRotationMatrix(lookMatrix);
+
+        focusTween?.kill();
+        focusTween = gsap.timeline({
+            defaults: { duration: 1.2, ease: 'power2.inOut' },
+            onComplete() {
+                focusTween = null;
+                onComplete?.();
+                stopThree();
+            }
+        });
+        focusTween.to(camera.position, {
+            x: cameraDestination.x,
+            y: cameraDestination.y,
+            z: cameraDestination.z
+        }, 0);
+        focusTween.to(camera.quaternion, {
+            x: targetQuaternion.x,
+            y: targetQuaternion.y,
+            z: targetQuaternion.z,
+            w: targetQuaternion.w,
+            onUpdate: () => {
+                camera.quaternion.normalize();
+                camera.updateMatrixWorld();
+            }
+        }, 0);
+
+        fovTween?.kill();
+        fovTween = gsap.to(camera, {
+            duration: 1.2,
+            ease: 'power2.inOut',
+            fov: focusFov,
+            onUpdate: () => camera.updateProjectionMatrix()
+        });
+    }
 
     //renderer.setAnimationLoop(tick);
     //isRunning = true;
@@ -1031,8 +1316,7 @@ function space() {
         const scroller = Object.assign(document.createElement('div'), {
             className: 'scroller'
         });
-        document.querySelector('#menu').setAttribute('hidden', '');
-        menuLayout(localStorage.getItem(key));
+        document.querySelector('#menu').setAttribute('hidden', '');        
 
         // Caching Constants
 
@@ -1176,7 +1460,8 @@ function space() {
             // --- Decode Reveal: MESSAGE
 
             tl.add(() => {
-                renderer.setAnimationLoop(tick); isRunning = true; startThree
+                renderer.setAnimationLoop(tick);
+                isRunning = true;
             }, '>');
             tl.to('#user_message .coded-char', {
                 className: 'coded-char animated',
@@ -1191,6 +1476,7 @@ function space() {
             tl.from(scrollHint, {
                 autoAlpha: 0, duration: 0.5
             }, '>1');
+            tl.add(() => menuLayoutThree(localStorage.getItem(key)), '>');
             tl.from(root.querySelector('#space'), {
                 autoAlpha: 0, duration: 3
             }, '<-1');
@@ -1231,7 +1517,6 @@ function space() {
                             self.kill(false);
 
                             gsap.timeline().add(() => { welcome?.remove(); scrollerEl?.remove(); ScrollTrigger.refresh(); });
-                            ROT_SPEED = 0.5; // slow rotation down
                             localStorage.setItem(localStorage.getItem('userId'), 1);
                         }
 
@@ -1244,17 +1529,16 @@ function space() {
                     yPercent: 0, autoAlpha: 1, duration: 1, ease: "power2.out"
                 }, '>');
                 scrubTl.to(camera.position, {
-                    x: 200, y: 50, z: 200, duration: 5, ease: 'power4.inOut'
+                    x: 0, y: 0, z: 150, duration: 5, ease: 'power4.inOut'
                 }, 0);
                 scrubTl.to(camera.rotation, {
-                    x: THREE.MathUtils.degToRad(-20), duration: 3, ease: 'power4.inOut', onUpdate: () => camera.updateProjectionMatrix()
+                    x: THREE.MathUtils.degToRad(10), duration: 3, ease: 'power4.inOut', onUpdate: () => camera.updateProjectionMatrix()
                 }, 0);
             }, '<');
         })
     }
 
-    else {
-        menuLayout(localStorage.getItem(key));
+    else {        
         const root = document.querySelector('[data-barba="container"][data-barba-namespace="space"]');
         if (!root) return;
 
@@ -1265,10 +1549,9 @@ function space() {
 
 
         menu?.removeAttribute('hidden');
-        ROT_SPEED = 0.5;
-        gsap.set(camera.position, { x: 200, y: 50, z: 200 });
+        gsap.set(camera.position, { x: 0, y: 0, z: 150 });
         gsap.set(camera.rotation, {
-            x: THREE.MathUtils.degToRad(-20),
+            x: THREE.MathUtils.degToRad(10),
             onUpdate: () => camera.updateProjectionMatrix()
         });
 
@@ -1288,10 +1571,11 @@ function space() {
             stagger: 0.2,
             ease: "power2.out"
         }, 0);
-        tl.from(root.querySelector('#space'), {
-            autoAlpha: 0,
-            duration: 1
-        }, 0.5)
+        tl.add(() => menuLayoutThree(localStorage.getItem(key)), 0);
+        tl.from(root.querySelector('#menu-container'), {
+            autoAlpha: 0, duration: 1
+        }, 0.5);
+
     };
 
     // ================================ OUR THESIS ===================================
@@ -1301,72 +1585,247 @@ function space() {
 
         // THREE JS FUNCTION
         function createThesisScene(canvas) {
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(55, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
-            camera.position.set(-1, 0, 6);
+            const params = {
+                threshold: 0.0,
+                strength: 1.6,
+                radius: 1.0,
+                exposure: 1.0
+            };
 
-            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            const scene = new THREE.Scene();
+            const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
+            const camera = new THREE.PerspectiveCamera(
+                30,
+                aspect,
+                0.1,
+                200
+            );
+            camera.position.set(-3, 0, 8);
+            camera.layers.enable(1);
+
+            const renderer = new THREE.WebGLRenderer({
+                canvas,
+                alpha: true,
+                antialias: true
+            });
+            renderer.physicallyCorrectLights = true;
+            renderer.toneMapping = THREE.NeutralToneMapping;
+            renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-            renderer.setClearColor(0x000000, 0); // transparent background
+            renderer.setClearColor(0x000000, 0);
 
-            // Geometry
-            const glowSphereGeometry = new THREE.SphereGeometry(1, 32, 32);
-            const glowSphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            const glowSphere = new THREE.Mesh(glowSphereGeometry, glowSphereMaterial);
+            const pmremGenerator = new THREE.PMREMGenerator(renderer);
+            const envRT = pmremGenerator.fromScene(new RoomEnvironment(), 0.04);
+            scene.environment = envRT.texture;
 
-            const sphereGeometry = new THREE.SphereGeometry(3, 64, 32);
-            const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.position.set(-1,0,-4);
+            const BLOOM_SCENE = 1;
+            const bloomLayer = new THREE.Layers();
+            bloomLayer.set(BLOOM_SCENE);
 
-            scene.add(glowSphere, sphere);
+            const materials = {};
+            const darkMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
 
-            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
-            const hemi = new THREE.HemisphereLight(0xffeeff, 0x222233, 0.6);
-            scene.add(ambient, hemi);
+            function darkenNonBloomed(obj) {
+                if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
+                    materials[obj.uuid] = obj.material;
+                    obj.material = darkMaterial;
+                }
+            }
 
+            function restoreMaterial(obj) {
+                if (materials[obj.uuid]) {
+                    obj.material = materials[obj.uuid];
+                    delete materials[obj.uuid];
+                }
+            }
+
+            const coreGeometry = new THREE.SphereGeometry(1.5, 64, 64);
+            const coreMaterial = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(0x000000),
+                metalness: 0.5,
+                roughness: 0.9,
+                emissive: new THREE.Color(0x222222),
+                emissiveIntensity: 1.2
+            });
+            const core = new THREE.Mesh(coreGeometry, coreMaterial);
+            core.layers.enable(BLOOM_SCENE);
+            scene.add(core);
+
+            const orbLight = new THREE.PointLight(0xffffff, 20, 30, 2);
+            orbLight.position.set(0, 0, 0);
+            orbLight.castShadow = true;
+            orbLight.shadow.mapSize.set(1024, 1024);
+            orbLight.shadow.bias = -0.0005;
+            core.add(orbLight);
+
+            const pointLight = new THREE.PointLight(0xffffff, 2000, 0, 2)
+            pointLight.position.set(-5, -16, 2);
+            scene.add(pointLight);
+
+            const orangeLight = new THREE.PointLight(0xFF8B07, 500, 0, 3)
+            orangeLight.position.set(0, 0, -4);
+            scene.add(orangeLight);
+
+            const shellMaterial = new THREE.MeshStandardMaterial({
+                color: 0x333333,
+                roughness: 1,
+                metalness: 1
+            });
+            const leftShell = new THREE.Mesh(new THREE.SphereGeometry(12, 80, 80), shellMaterial.clone());
+            leftShell.position.set(-30, 0, -4);
+            scene.add(leftShell);
+            const rightShell = new THREE.Mesh(new THREE.SphereGeometry(12, 80, 80), shellMaterial.clone());
+            rightShell.position.set(30, 0, -4);
+            scene.add(rightShell);
+
+            const renderScene = new RenderPass(scene, camera);
+
+            const bloomRenderTarget = new THREE.WebGLRenderTarget(
+                canvas.clientWidth,
+                canvas.clientHeight,
+                { type: THREE.HalfFloatType }
+            );
+            const bloomComposer = new EffectComposer(renderer, bloomRenderTarget);
+            const bloomPass = new UnrealBloomPass(
+                new THREE.Vector2(canvas.clientWidth, canvas.clientHeight),
+                params.strength,
+                params.radius,
+                params.threshold
+            );
+            bloomComposer.renderToScreen = false;
+            bloomComposer.addPass(renderScene);
+            bloomComposer.addPass(bloomPass);
+
+            const mixPass = new ShaderPass(
+                new THREE.ShaderMaterial({
+                    uniforms: {
+                        baseTexture: { value: null },
+                        bloomTexture: { value: bloomComposer.renderTarget2.texture },
+                        bloomStrength: { value: params.strength }
+                    },
+                    vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+                    fragmentShader: `
+          uniform sampler2D baseTexture;
+          uniform sampler2D bloomTexture;
+          varying vec2 vUv;
+          void main() {
+            vec4 base = texture2D(baseTexture, vUv);
+            vec4 bloom = texture2D(bloomTexture, vUv);
+            gl_FragColor = base + bloom;
+          }
+        `
+                }),
+                'baseTexture'
+            );
+            mixPass.needsSwap = true;
+
+            const finalRenderTarget = new THREE.WebGLRenderTarget(
+                canvas.clientWidth,
+                canvas.clientHeight,
+                { type: THREE.HalfFloatType, samples: 4 }
+            );
+            const finalComposer = new EffectComposer(renderer, finalRenderTarget);
+            finalComposer.addPass(renderScene);
+            finalComposer.addPass(mixPass);
+            finalComposer.addPass(new OutputPass());
+
+            const clock = new THREE.Clock();
             let running = false;
 
-            const resize = () => {
-                const { clientWidth: w, clientHeight: h } = canvas;
-                renderer.setSize(w, h, false);
-                camera.aspect = w / Math.max(1, h);
+            function resize() {
+                const width = canvas.clientWidth;
+                const height = Math.max(1, canvas.clientHeight);
+                renderer.setSize(width, height, false);
+                const aspect = width / height;
+                camera.aspect = aspect;
                 camera.updateProjectionMatrix();
-            };
+                bloomComposer.setSize(width, height);
+                finalComposer.setSize(width, height);
+            }
 
-            let frameId = null;
+            window.addEventListener('resize', resize);
+            resize();
 
-            const animate = () => {
+            function renderFrame() {
+                scene.traverse(darkenNonBloomed);
+                bloomComposer.render();
+                scene.traverse(restoreMaterial);
+                finalComposer.render();
+            }
+
+            function start() {
+                if (running) return;
+                running = true;
+                clock.start();
+                renderer.setAnimationLoop(renderLoop);
+            }
+
+            function stop() {
                 if (!running) return;
-                renderer.render(scene, camera);
-                frameId = requestAnimationFrame(animate);
-            };
+                running = false;
+                renderer.setAnimationLoop(null);
+            }
+
+            function renderLoop() {
+                if (!running) return;
+                renderFrame();
+            }
 
             return {
-                start() {
-                    if (running) return;
-                    running = true;
-                    resize();
-                    window.addEventListener('resize', resize);
-                    animate();
-                },
-                stop() {
-                    running = false;
+                start,
+                stop,
+                camera,
+                scene,
+                renderer,
+                objects: { core, leftShell, rightShell, orangeLight },
+                dispose() {
+                    stop();
                     window.removeEventListener('resize', resize);
-                    if (frameId) {
-                        cancelAnimationFrame(frameId);
-                        frameId = null;
-                    }
                     renderer.dispose();
-                    geometry.dispose();
-                    material.dispose();
+                    bloomRenderTarget.dispose();
+                    finalRenderTarget.dispose();
+                    coreGeometry.dispose();
+                    [leftShell, rightShell].forEach(mesh => mesh.geometry.dispose());
+                    coreMaterial.dispose();
+                    shellMaterial.dispose();
+                    mixPass.material.dispose();
+                    bloomPass.dispose?.();
+                    scene.environment = null;
+                    envRT.dispose();
+                    pmremGenerator.dispose();
                 }
             };
+
         }
 
         // PAGE
         const page = document.querySelector('#page-thesis');
+
+        // SVGs
+        const guidesContainer = Object.assign(document.createElement('div'), {
+            className: 'guides-container'
+        });
+
+        guidesContainer.innerHTML = `
+            <svg class="guide" id="circle-1" width="100%" height="100%" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="150" cy="150" r="0" stroke="white" stroke-dasharray="12 12" vector-effect="non-scaling-stroke"/>
+            </svg>
+            <svg class="guide" id="circle-2" width="100%" height="100%" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="150" cy="150" r="0" stroke="white" stroke-dasharray="12 12" vector-effect="non-scaling-stroke"/>
+            </svg>
+            <i class="guide" id="line"></i>
+        `;
+
+        page.appendChild(guidesContainer);
+        //
+
         const btn = page.querySelector('.backBtn');
         btn.textContent = localStorage.getItem(key) == 1 ? 'Continue' : 'Back';
 
@@ -1389,21 +1848,19 @@ function space() {
         const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
         // Set initial states
-        gsap.set('#thesis-title', { fontSize: '8rem', xPercent: 100, autoAlpha: 0, bottom: '2em' });
-        gsap.set('#page-thesis .section>*', { visibility: 'hidden' });
+        tl.set('#thesis-title', { fontSize: '8rem', xPercent: 100, autoAlpha: 0, bottom: '2em' });
+        tl.set('#page-thesis .section>*', { visibility: 'hidden' });
+        tl.set('#circle-1 circle', { autoAlpha: 0 })
 
         // Definition timeline
-        tl.to('#menu', {
-            autoAlpha: 0, duration: 1
-        }, 0)
         tl.from('#page-thesis', {
             autoAlpha: 0, duration: 1
         }, '<');
         tl.to(renderer.domElement, {
             autoAlpha: 0, duration: 1, ease: 'power2.out'
-            // onComplete: swapScene(); // add your replacement logic here when ready
-        }, '<');
+        }, '<');        
         tl.set('#thesis-section-1 *', { visibility: 'visible' })
+        tl.set('#page-thesis #line', { 'transform-origin': '0% 50%' })
 
         if (localStorage.getItem(key) < 2) {
             {   // Typewriter for "liminal"
@@ -1450,6 +1907,7 @@ function space() {
                     }, '>');
                 }
             }
+            const defDur = document.querySelector('#liminal-def').textContent.length * 0.05;
             {   // Typewriter for definition
                 const txt = document.querySelector('#liminal-def');
                 if (txt) {
@@ -1460,7 +1918,7 @@ function space() {
 
                     tl.to(proxy, {
                         index: full.length,
-                        duration: Math.max(1, full.length * 0.05),
+                        duration: defDur,
                         ease: 'none',
                         onUpdate() {
                             const i = Math.floor(proxy.index);
@@ -1472,6 +1930,10 @@ function space() {
                     }, '+=1');
                 }
             }
+            tl.from('#page-thesis #line', {
+                scaleX: 0, duration: defDur, ease: 'none'
+            }, '<');
+
             tl.from('#liminal-desc', {
                 autoAlpha: 0,
                 duration: 0.5
@@ -1492,6 +1954,9 @@ function space() {
             tl.to('#liminal-def', {
                 autoAlpha: 1, duration: 0.5
             }, '-=0.2');
+            tl.fromTo('#page-thesis #line', {
+                scaleX: 0
+            }, { scaleX: 1, duration: 1 }, '<');
             tl.to('#liminal-desc', {
                 autoAlpha: 1, duration: 0.5
             }, '-=0.2');
@@ -1499,20 +1964,28 @@ function space() {
                 autoAlpha: 1, duration: 0.5
             }, '-=0.2');
         }
+
         tl.add(() => { thesis3D?.start(); }, '>-2');
         tl.from('canvas#thesis-canvas', {
             autoAlpha: 0, duration: 2
-        }, '<')
-
+        }, '<');
         tl.add(() => { // Append Scroller
             document.body.appendChild(scroller);
             appendSegments(5);
             window.scrollTo(0, 0);
             scroller.scrollTop = 0;
             ScrollTrigger.refresh();
-        }, '-=1')
+        }, '>')
 
-        tl.add(() => { // Our Core Belief timeline
+        // ========== SCROLL TRIGGER
+
+        const cam = thesis3D?.camera;
+        const leftShell = thesis3D?.objects?.leftShell;
+        const rightShell = thesis3D?.objects?.rightShell;
+        const orangeLight = thesis3D?.objects?.orangeLight;
+
+        tl.add(() => { // Our Core Belief timeline       
+
             const segmentTl = gsap.timeline({
                 scrollTrigger: {
                     trigger: '#segment-2',
@@ -1523,6 +1996,9 @@ function space() {
                     invalidateOnRefresh: true,
                 }
             });
+            segmentTl.to('#page-thesis #line', {
+                autoAlpha: 0, duration: 0.1
+            }, 0)
             segmentTl.to('#liminal-title', {
                 xPercent: -100, autoAlpha: 0
             }, 0);
@@ -1535,12 +2011,29 @@ function space() {
             segmentTl.to('#liminal-desc', {
                 xPercent: -100, autoAlpha: 0
             }, '-=0.5');
-            segmentTl.to('.scroll-hint', {
-                autoAlpha: 0
-            }, '-=0.5');
             segmentTl.to('#thesis-title', {
                 xPercent: 0, autoAlpha: 1
             }, '-=0.5');
+            if (cam && leftShell && rightShell) {
+                segmentTl.to(cam.rotation, {
+                    z: THREE.MathUtils.degToRad(45),
+                    ease: 'none',
+                    onUpdate: () => cam.updateProjectionMatrix()
+                }, 0);
+                segmentTl.to(cam.position, {
+                    x: 2, y: 2, z: 25,
+                    ease: 'none',
+                    onUpdate: () => cam.updateProjectionMatrix()
+                }, '<');
+                segmentTl.to(leftShell.position, {
+                    x: -13.5, z: 0,
+                    ease: 'none'
+                }, '<');
+                segmentTl.to(rightShell.position, {
+                    x: 13.5, z: 0,
+                    ease: 'none'
+                }, '<');
+            }
         });
 
         tl.add(() => { // Who > What timeline            
@@ -1563,6 +2056,34 @@ function space() {
             segmentTl.to('#who-what-content', {
                 autoAlpha: 1
             }, '>');
+            if (cam && leftShell && rightShell) {
+                segmentTl.to(cam.rotation, {
+                    z: THREE.MathUtils.degToRad(235),
+                    ease: 'power2.out',
+                    onUpdate: () => cam.updateProjectionMatrix()
+                }, 0);
+                segmentTl.to(cam.position, {
+                    x: 5, y: 7, z: 35,
+                    ease: 'power2.out',
+                    onUpdate: () => cam.updateProjectionMatrix()
+                }, '<');
+                segmentTl.to(leftShell.position, {
+                    x: 0, z: -30,
+                    ease: 'power2.out'
+                }, '<');
+                segmentTl.to(rightShell.position, {
+                    x: 0, z: -60,
+                    ease: 'power2.out'
+                }, '<');
+                segmentTl.to(orangeLight.position, {
+                    x: -12, y: -17, z: -30,
+                    ease: 'power2.out'
+                }, '<');
+                segmentTl.to(orangeLight, {
+                    intensity: 4000,
+                    ease: 'power2.out'
+                }, '<');
+            }
         });
 
         tl.add(() => { // Unlocked Potential timeline            
@@ -1588,6 +2109,30 @@ function space() {
             segmentTl.to('#unlock-potential-content', {
                 autoAlpha: 1
             }, 0);
+            if (cam && leftShell && rightShell) {
+                segmentTl.to(cam.rotation, {
+                    z: THREE.MathUtils.degToRad(415),
+                    ease: 'power2.out',
+                    onUpdate: () => cam.updateProjectionMatrix()
+                }, 0);
+                segmentTl.to(cam.position, {
+                    x: -0.5, y: 0.9, z: 4.5,
+                    ease: 'power2.out',
+                    onUpdate: () => cam.updateProjectionMatrix()
+                }, '<');
+                segmentTl.to(leftShell.position, {
+                    x: 0, z: -200,
+                    ease: 'power2.out'
+                }, '<');
+                segmentTl.to(rightShell.position, {
+                    x: 0, z: -200,
+                    ease: 'power2.out'
+                }, '<');
+                segmentTl.to(orangeLight, {
+                    intensity: 0,
+                    ease: 'power2.out'
+                }, '<');
+            }
         });
 
         tl.add(() => { // Domains timeline            
@@ -1617,16 +2162,31 @@ function space() {
             }, {
                 autoAlpha: 1, delay: 1
             });
+            segmentTl.to('.scroll-hint', {
+                autoAlpha: 0
+            }, '<');
             segmentTl.to({}, { duration: 5, ease: 'none' }, '>');
             segmentTl.fromTo('.backBtn', {
                 autoAlpha: 0, bottom: '2em'
             }, {
                 autoAlpha: 1
             }, '>');
+            if (cam && leftShell && rightShell) {
+                segmentTl.to(cam.rotation, {
+                    z: THREE.MathUtils.degToRad(460),
+                    ease: 'power4.out',
+                    onUpdate: () => cam.updateProjectionMatrix()
+                }, 0);
+                segmentTl.to(cam.position, {
+                    x: -4, y: 10, z: 40,
+                    ease: 'power4.out',
+                    onUpdate: () => cam.updateProjectionMatrix()
+                }, '<');
+            }
         });
 
         tl.add(() => {
-            btn?.addEventListener('click', (e) => back(1, e), { once: true });
+            btn?.addEventListener('click', (e) => back(1, e, thesis3D), { once: true });
         });
     };
 
@@ -1656,10 +2216,7 @@ function space() {
         gsap.set('#what-title', { fontSize: '8rem', top: '50%', yPercent: 500, autoAlpha: 0 });
         gsap.set('.section>*', { visibility: 'hidden' });
 
-        // Definition timeline
-        tl.to('#menu', {
-            autoAlpha: 0, duration: 1
-        }, 0)
+        // Definition timeline        
         tl.from('#page-what', {
             autoAlpha: 0, duration: 1
         }, '<');
@@ -1670,6 +2227,9 @@ function space() {
         tl.to('#what-title', {
             yPercent: 0, autoAlpha: 1, duration: 1
         }, 0)
+        tl.to('.scroll-hint', {
+            autoAlpha: 1, duration: 0.5
+        }, '>0.2');
 
         tl.add(() => { // Append Scroller
             document.body.appendChild(scroller);
@@ -1786,6 +2346,9 @@ function space() {
                     invalidateOnRefresh: true,
                 }
             });
+            segmentTl.to('.scroll-hint', {
+                autoAlpha: 0, xPercent: -10, duration: 0.01
+            });
             segmentTl.to('#what-title', {
                 autoAlpha: 0, xPercent: -10, duration: 0.01
             });
@@ -1838,16 +2401,12 @@ function space() {
         gsap.set('#page-profile', { '--pseudo-opacity': 0 });
 
         // TIMELINE
-
-        tl.to('#menu', {
-            autoAlpha: 0, duration: 1
-        }, 0)
+        
         tl.from('#page-profile', {
             autoAlpha: 0, duration: 1
         }, '<');
         tl.to(renderer.domElement, {
             autoAlpha: 0, duration: 1, ease: 'power2.out'
-            // onComplete: swapScene(); // add your replacement logic here when ready
         }, '<');
 
         tl.from('#page-profile>i:nth-child(1)', {
@@ -1906,10 +2465,7 @@ function space() {
         const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
 
         // TIMELINE
-
-        tl.to('#menu', {
-            autoAlpha: 0, duration: 1
-        }, 0)
+        
         tl.from('#page-portfolio', {
             autoAlpha: 0, duration: 1
         }, '<');
@@ -1960,17 +2516,32 @@ function space() {
     }
 
     // Back Button
-    function back(ref, e) {
+    function back(ref, e, threeInstance) {
         const page = e.currentTarget.closest('.page');
-        const menu = document.querySelector('#menu');
         const scroller = document.querySelector('.scroller')
 
         const userId = localStorage.getItem('userId');
         const key = userId;
         const value = Number(localStorage.getItem(key)) || 0;
 
-        if (value === ref) menuLayout(value + 1);
+        if (value === ref) menuLayoutThree(value + 1);
         const lastMenuItem = menu?.querySelector('.menu-item:last-child');
+
+        const instanceCanvas = threeInstance?.renderer?.domElement ?? (threeInstance instanceof HTMLCanvasElement ? threeInstance : null);
+
+        gsap.killTweensOf(camera.position);
+        gsap.killTweensOf(camera.quaternion);
+        fovTween?.kill();
+
+        gsap.set(camera.position, { x: 0, y: 0, z: 150 });
+        gsap.set(camera.rotation, {
+            x: THREE.MathUtils.degToRad(10),
+            y: 0,
+            z: 0,
+            onUpdate: () => camera.updateProjectionMatrix()
+        });
+        camera.fov = defaultFov;
+        camera.updateProjectionMatrix();
 
         const tl = gsap.timeline({
             defaults: { ease: 'power2.out' },
@@ -1987,16 +2558,22 @@ function space() {
                 menu.style.position = '';
                 scroller?.remove();
                 window.scrollTo(0, 0);
+                threeInstance?.stop?.();
+                threeInstance?.dispose?.();
+                instanceCanvas?.remove?.();
 
                 if (value === ref) { localStorage.setItem(key, value + 1) };
             }
         });
+
         tl.to(page, {
             autoAlpha: 0, duration: 1
         }, 0);
-        tl.to(menu, {
-            autoAlpha: 1, duration: 1
-        }, '>');
+        if (instanceCanvas) {
+            tl.to(instanceCanvas, {
+                autoAlpha: 0, duration: 1
+            }, '<');
+        }
         if (value === ref && lastMenuItem) {
             tl.fromTo(lastMenuItem, {
                 opacity: 0, yPercent: 20
@@ -2004,26 +2581,65 @@ function space() {
                 opacity: 1, yPercent: 0, duration: 0.6
             }, '>');
         }
+        tl.add(() => {
+            startThree();
+        }, '>')
         tl.to('#space', {
             autoAlpha: 1, duration: 1
         }, '>');
+
+        document.querySelector('.guides-container')?.remove();
     };
 
     // Conditional Menu
-    function menuLayout(state) {
-        const menu = document.querySelector('#menu');
-        menu.innerHTML = `
-            <div class="menu-item" id="menu-thesis">${state < 2 ? 'Start Here' : 'Our Thesis'}</div>
-            ${state >= 2 ? '<div class="menu-item" id="menu-what">What We Are (Not)</div>' : ''}
-            ${state >= 3 ? '<div class="menu-item" id="menu-us">About Us</div>' : ''}
-            ${state >= 4 ? '<div class="menu-item" id="menu-portfolio">Our Portfolio</div>' : ''}`;
+    // function menuLayout(state) {
+    //     const menu = document.querySelector('#menu');
 
-        document.querySelector('#menu-thesis')?.addEventListener('click', thesis);
-        document.querySelector('#menu-what')?.addEventListener('click', what);
-        document.querySelector('#menu-us')?.addEventListener('click', us);
-        document.querySelector('#menu-portfolio')?.addEventListener('click', portfolio);
+    //     // HTML Menu for backup
+    //     menu.innerHTML = `
+    //         <div class="menu-item" id="menu-thesis">${state < 2 ? 'Start Here' : 'Our Thesis'}</div>
+    //         ${state >= 2 ? '<div class="menu-item" id="menu-what">What We Are (Not)</div>' : ''}
+    //         ${state >= 3 ? '<div class="menu-item" id="menu-us">About Us</div>' : ''}
+    //         ${state >= 4 ? '<div class="menu-item" id="menu-portfolio">Our Portfolio</div>' : ''}`;
+
+    //     document.querySelector('#menu-thesis')?.addEventListener('click', thesis);
+    //     document.querySelector('#menu-what')?.addEventListener('click', what);
+    //     document.querySelector('#menu-us')?.addEventListener('click', us);
+    //     document.querySelector('#menu-portfolio')?.addEventListener('click', portfolio);
+    // }
+
+    function menuLayoutThree(state) {
+        const getLabel = (id) => cubeLabels.find(entry => entry.id === id)?.element;
+
+        const menuPortfolio = getLabel('menuPortfolio');
+        const menuUs = getLabel('menuUs');
+        const menuWhat = getLabel('menuWhat');
+        const menuThesis = getLabel('menuThesis');
+
+        menuPortfolio?.removeAttribute('hidden');
+        menuUs?.removeAttribute('hidden');
+        menuWhat?.removeAttribute('hidden');
+        menuThesis && (menuThesis.textContent = 'Our Thesis');
+
+        cubeThesis.visible = true;
+        cubeWhat.visible = true;
+        cubeUs.visible = true;
+        cubePortfolio.visible = true;
+
+        if (state < 4) {
+            menuPortfolio?.setAttribute('hidden', '');
+            cubePortfolio.visible = false;
+        }
+        if (state < 3) {
+            menuUs?.setAttribute('hidden', '');
+            cubeUs.visible = false;
+        }
+        if (state < 2) {
+            menuWhat?.setAttribute('hidden', '');
+            cubeWhat.visible = false;
+            menuThesis && (menuThesis.textContent = 'Start Here');
+        }
     }
-
 }
 
 
@@ -2031,6 +2647,7 @@ function space() {
 // ANIMATION HELPERS
 // -----------------------------------------------------
 let landingInit = false, unlockInit = false, spaceInit = false;
+let textMatrixControl = null;
 const nextFrame = () => new Promise(r => requestAnimationFrame(r));
 const pin = el => gsap.set(el, { position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'hidden' });
 const unpin = el => gsap.set(el, { clearProps: 'position,inset,width,height,overflow,zIndex' });
@@ -2053,14 +2670,73 @@ const Page = {
             const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
             tl.set(next.container.querySelector('#entrance'), { scaleX: 0, scaleY: 0 });
             tl.set(next.container.querySelector('.window'), { scaleX: 0, scaleY: 0 });
-            tl.from(next.container.querySelector('.grid-viewport'), {
-                scale: 0, duration: 0.5
+            tl.set(next.container.querySelector('.grid-viewport'), { scale: 0.1 }, 0);
+            tl.set(next.container.querySelector('.grid-bg'), {
+                '--pt1': '0% 25%',
+                '--pt2': '25% 25%',
+                '--pt3': '50% 0%',
+                '--pt4': '100% 0%',
+                '--pt5': '100% 75%',
+                '--pt6': '75% 75%',
+                '--pt7': '50% 100%',
+                '--pt8': '0% 100%'
             }, 0);
+            tl.add(() => {
+                next.container.querySelector('.loader')?.classList.add('is-active');
+                next.container.querySelector('.loader-glow')?.classList.add('is-active');// CSS animation lives on .loader.is-active
+            }, '>1');
+            tl.to({}, { duration: 2.5 });
+            tl.to(next.container.querySelector('.loader'), {
+                width: '100%', '--thickness': '25%', ease: 'expo.in', duration: 0.5
+            }, '>');
+            tl.to(next.container.querySelector('.loader-glow'), {
+                '--thickness': '0%', autoAlpha: 0, ease: 'expo.in', duration: 0.5
+            }, '<');
+            const gridBg = next.container.querySelector('.grid-bg');
+            tl.to(gridBg, {
+                clipPath: () => {
+                    const styles = getComputedStyle(gridBg);
+
+                    const xPx = parseFloat(styles.getPropertyValue('--x')) || 0;
+                    const yPx = parseFloat(styles.getPropertyValue('--y')) || 0;
+
+                    const baseW = gridBg.offsetWidth;   // unscaled width
+                    const baseH = gridBg.offsetHeight;  // unscaled height
+
+                    const x = (xPx / baseW) * 100;
+                    const y = (yPx / baseH) * 100;
+                    const toPoints = [
+                        [0, y],
+                        [x, y],
+                        [x + y, 0],
+                        [100, 0],
+                        [100, 100 - y],
+                        [100 - x, 100 - y],
+                        [100 - x - y, 100],
+                        [0, 100]
+                    ];
+                    return `polygon(${toPoints.map(([px, py]) => `${px}% ${py}%`).join(',')})`;
+                },
+                duration: 1,
+                ease: 'expo.in'
+            }, '>1');
+            tl.to(next.container.querySelector('.loader'), {
+                '--thickness': '100%', duration: 1, ease: 'power2.in'
+            }, '<');
+            tl.to(next.container.querySelector('.grid-viewport'), {
+                scale: 1, duration: 1, ease: 'power4.in'
+            }, '<');
+            tl.to(next.container.querySelector('.loader'), {
+                autoAlpha: 0, duration: 1
+            }, '>-0.1');
+            tl.from(next.container.querySelector('#outline'), {
+                autoAlpha: 0, duration: 1
+            }, '<');
             tl.to(next.container.querySelector('.window'), {
-                scaleX: 1, duration: 0.2
-            }, '-=0.5');
+                scaleX: 1, scaleY: 0.001, duration: 0.5
+            }, '>');
             tl.to(next.container.querySelector('#entrance'), {
-                scaleX: 1, duration: 0.2
+                scaleX: 1, scaleY: 0.001, duration: 0.5
             }, '<');
             tl.to(next.container.querySelector('.window'), {
                 scaleY: 1, duration: 0.2
@@ -2069,11 +2745,11 @@ const Page = {
                 scaleY: 1, duration: 0.2
             }, '<');
             tl.from(next.container.querySelector('.tagline'), {
-                autoAlpha: 0, duration: 0.2
+                autoAlpha: 0, duration: 1, ease: 'bounce.out'
             }, '>');
             tl.from(next.container.querySelector('.copyright-text'), {
-                autoAlpha: 0, duration: 0.2
-            }, '<');
+                autoAlpha: 0, duration: 1, ease: 'bounce.out'
+            }, '>');
             return tl;
         },
         // -------------------------------------------------
@@ -2124,12 +2800,14 @@ const Page = {
             tl.from(next.container.querySelectorAll('.text-line'), {
                 opacity: 0, duration: 0.5
             }, '>');
+            tl.add(() => { textMatrixControl?.start(); }, '>');
             return tl;
         },
         // -------------------------------------------------
         leave: ({ current }) => {
             unlockInit = false;
             const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+            tl.add(() => { textMatrixControl?.stop(); }, 0);
             tl.to(current.container, {
                 autoAlpha: 0, duration: 0.5
             }, 0);

@@ -55,6 +55,79 @@ body.is-transitioning {
 
 /*------------------ LANDING ------------------*/
 
+.loader,
+.loader-glow {
+    position: absolute;
+    width: 50%;
+    aspect-ratio: 1;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    --c: no-repeat linear-gradient(#fff 0 0);
+    --thickness: 33.33%;
+    background:
+        var(--c) 0 0,
+        var(--c) 100% 0,
+        var(--c) 100% 100%,
+        var(--c) 0 100%;
+    animation: l1 3s forwards;
+    animation-play-state: paused;
+    will-change: opacity;
+}
+
+.loader-glow {
+    filter: drop-shadow(0 0 40px #fff);
+}
+
+.loader.is-active,
+.loader-glow.is-active {
+    animation-play-state: running;
+}
+
+@keyframes l1 {
+    0% {
+        background-size: 0 var(--thickness),
+            var(--thickness) 0,
+            0 var(--thickness),
+            var(--thickness) 0;
+    }
+
+    20% {
+        background-size: 100% var(--thickness),
+            var(--thickness) 0,
+            0 var(--thickness),
+            var(--thickness) 0;
+    }
+
+    40% {
+        background-size: 100% var(--thickness),
+            var(--thickness) 100%,
+            0 var(--thickness),
+            var(--thickness) 0;
+    }
+
+    60% {
+        background-size: 100% var(--thickness),
+            var(--thickness) 100%,
+            100% var(--thickness),
+            var(--thickness) 0;
+    }
+
+    80% {
+        background-size: 100% var(--thickness),
+            var(--thickness) 100%,
+            100% var(--thickness),
+            var(--thickness) 100%;
+    }
+
+    100% {
+        background-size: 100% var(--thickness),
+            var(--thickness) 100%,
+            100% var(--thickness),
+            var(--thickness) 100%;
+    }
+}
+
 .grid-container {
     position: absolute;
     inset: 0;
@@ -66,6 +139,14 @@ body.is-transitioning {
 }
 
 #grid-bg {
+    --pt1: 0% var(--y);
+    --pt2: var(--x) var(--y);
+    --pt3: calc(var(--x) + var(--y)) 0%;
+    --pt4: 100% 0%;
+    --pt5: 100% calc(100% - var(--y));
+    --pt6: calc(100% - var(--x)) calc(100% - var(--y));
+    --pt7: calc(100% - var(--x) - var(--y)) 100%;
+    --pt8: 0% 100%;
     position: absolute;
     inset: 0;
     width: 100%;
@@ -75,14 +156,16 @@ body.is-transitioning {
         linear-gradient(to bottom, rgb(255 255 255 / 20%) 0 1px, #ffffff00 1px);
     background-size: var(--cell-size) var(--cell-size);
     pointer-events: none;
-    clip-path: polygon(0 var(--y),
-            var(--x) var(--y),
-            calc(var(--x) + var(--y)) 0,
-            100% 0,
-            100% calc(100% - var(--y)),
-            calc(100% - var(--x)) calc(100% - var(--y)),
-            calc(100% - var(--x) - var(--y)) 100%,
-            0 100%);
+    will-change: clip-path;
+    clip-path: polygon(var(--pt1),
+            var(--pt2),
+            var(--pt3),
+            var(--pt4),
+            var(--pt5),
+            var(--pt6),
+            var(--pt7),
+            var(--pt8));
+
 }
 
 #outline {
@@ -318,6 +401,7 @@ main#liminalspace {
     padding: 0;
     inset: 5rem;
     position: fixed;
+    z-index: 2;
 }
 
 #logo-holder #logo-mask {
@@ -386,6 +470,8 @@ div:has(>#user_message) {
 
 #welcome {
     min-height: 100vh;
+    z-index: 2;
+    pointer-events: none;
 }
 
 #user_message {
@@ -426,26 +512,61 @@ div:has(>#user_message) {
 }
 
 .coded-char.animated .encoded {
-  animation: hideEncoded 0.02s steps(1) 3 forwards;
-  animation-delay: calc(var(--char-count) * 0.003s + var(--char-index) * 0.02s - 0.2s);
+    animation: hideEncoded 0.02s steps(1) 3 forwards;
+    animation-delay: calc(var(--char-count) * 0.003s + var(--char-index) * 0.02s - 0.2s);
 }
 
 .coded-char.animated .decoded {
-  animation: revealDecoded 0.02s steps(1) 3 forwards;
-  animation-delay: calc(var(--char-count) * 0.003s + var(--char-index) * 0.02s - 0.1s );
+    animation: revealDecoded 0.02s steps(1) 3 forwards;
+    animation-delay: calc(var(--char-count) * 0.003s + var(--char-index) * 0.02s - 0.1s);
 }
 
 @keyframes hideEncoded {
-  0%, 40%   { visibility: visible; opacity: 1; }
-  41%, 50%  { visibility: hidden; opacity: 0; }
-  51%, 70%  { visibility: visible; opacity: 1; }
-  71%, 100% { visibility: hidden; opacity: 0; }
+
+    0%,
+    40% {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    41%,
+    50% {
+        visibility: hidden;
+        opacity: 0;
+    }
+
+    51%,
+    70% {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    71%,
+    100% {
+        visibility: hidden;
+        opacity: 0;
+    }
 }
 
 @keyframes revealDecoded {
-  0%, 60%  { visibility: hidden; opacity: 0; }
-  61%, 80% { visibility: visible; opacity: 1; }
-  81%,100% { visibility: visible; opacity: 1; }
+
+    0%,
+    60% {
+        visibility: hidden;
+        opacity: 0;
+    }
+
+    61%,
+    80% {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    81%,
+    100% {
+        visibility: visible;
+        opacity: 1;
+    }
 }
 
 #logout-btn {
@@ -468,12 +589,25 @@ div:has(>#user_message) {
     align-content: flex-end;
 }
 
-canvas#space, canvas#thesis {
+canvas#space,
+canvas#thesis-canvas {
     position: fixed;
     width: 100vw;
     height: 100vh;
     inset: 0;
+}
+
+canvas#thesis-canvas,
+canvas#what-canvas {
     z-index: -1;
+}
+
+canvas#space {
+    z-index: 1;
+}
+
+.cursor-pointer {
+    cursor: pointer;
 }
 
 #welcome .scroll-hint {
@@ -503,21 +637,81 @@ canvas#space, canvas#thesis {
     z-index: 999;
 }
 
+.guides-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    inset: 0;
+    overflow: hidden;
+}
+
+.guides-container .guide {
+    position: absolute;
+}
+
 /* Menu */
 
 #menu {
     width: 100vw;
     height: 100vh;
+    visibility: hidden;
 }
 
 .menu-item {
     cursor: pointer;
 }
 
+/* Labels */
+
+.label {
+    text-transform: uppercase;
+    font-size: 1.125rem;
+    background-clip: padding-box;
+    filter: drop-shadow(0 0 2px #fff);
+    opacity: 0.8;
+    border-style: solid;
+    border-image-slice: 1;
+    border-image-repeat: repeat;
+    border-image-source: repeating-linear-gradient(to right,
+            rgba(255, 255, 255, 0.6) 0 8px,
+            /* 3px dash */
+            transparent 8px 12px
+            /* 1px gap */
+        );
+    cursor: pointer;
+}
+
+.label#menuPortfolio {
+    border-width: 1px 0 0 0;
+}
+
+.label#menuWhat {
+    border-width: 1px 0 0 0;
+    padding: 0.5rem 0 0 2rem;
+}
+
+.label#menuThesis {
+    border-width: 0 0 1px 0;
+    padding: 0 0 0.5rem 2rem;
+}
+
+.label#menuUs {
+    border-width: 0 0 1px 0;
+}
+
+#menuThesis::before {
+    top: 0;
+    left: 0;
+}
+
 /* Our Thesis */
 
+#page-thesis .scroll-hint {
+    mix-blend-mode: difference;
+}
+
 #liminal-title {
-    height: calc(50% - 6rem);
+    height: calc(50% - 3rem);
     align-content: flex-end;
 }
 
@@ -531,7 +725,7 @@ canvas#space, canvas#thesis {
 }
 
 #liminal-def {
-    margin-top: 4rem;
+    margin-top: 3rem;
 }
 
 #liminal-desc {
@@ -549,14 +743,44 @@ canvas#space, canvas#thesis {
 #unlock-potential {
     flex: 1;
     align-content: flex-end;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
+}
+
+#unlock-potential-content {
+    margin-bottom: 4rem;
 }
 
 #whitespaces {
     margin-top: 4rem;
 }
 
+#page-thesis #circle-1 {
+    top: 50%;
+    left: 100%;
+    transform: translate(-50%, -50%);
+}
+
+#page-thesis #line {
+    height: 1px;
+    width: 100%;
+    rotate: none;
+    transform: rotate(0deg) translate(0, 0);
+    background: #fff;
+    top: 50%;
+    left: 0;
+    mix-blend-mode: difference;
+}
+
+#thesis-section-3 {
+    mix-blend-mode: difference;
+}
+
 /* What we are not */
+
+#page-what .scroll-hint {
+    position: absolute;
+    bottom: 4rem;
+}
 
 #what-title {
     position: fixed;
@@ -572,6 +796,10 @@ canvas#space, canvas#thesis {
 #vs-def,
 #acc-def {
     flex: 1;
+}
+
+#vc-content, #vs-content, #acc-content {
+    margin-bottom: 4rem;
 }
 
 #what-section-4 {
