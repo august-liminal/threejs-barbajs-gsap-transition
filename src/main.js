@@ -2560,13 +2560,6 @@ function space() {
                 autoAlpha: 0, duration: 1
             }, '<');
         }
-        if (value === ref && lastMenuItem) {
-            tl.fromTo(lastMenuItem, {
-                opacity: 0, yPercent: 20
-            }, {
-                opacity: 1, yPercent: 0, duration: 0.6
-            }, '>');
-        }
         tl.add(() => {
             startThree();
         }, '>')
