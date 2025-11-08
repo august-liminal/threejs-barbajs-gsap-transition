@@ -1316,7 +1316,6 @@ function space() {
         const scroller = Object.assign(document.createElement('div'), {
             className: 'scroller'
         });
-        document.querySelector('#menu').setAttribute('hidden', '');        
 
         // Caching Constants
 
@@ -1491,12 +1490,7 @@ function space() {
             }, '<-3')
 
             // TIMELINE
-            tl.add(() => {
-                const menu = root.querySelector('#menu');
-                menu.removeAttribute('hidden');
-                const items = root.querySelectorAll('.menu-item');
-                gsap.set(items, { autoAlpha: 0, yPercent: 100 });
-
+            tl.add(() => { 
 
                 const scrubTl = gsap.timeline({
                     defaults: { ease: 'power2.out' },
@@ -1524,10 +1518,7 @@ function space() {
                 });
                 scrubTl.to('#welcome', { autoAlpha: 0, duration: 1 }, 0)
                 scrubTl.to(logoFill, { scale: 0, duration: 1 }, 0)
-                scrubTl.to({}, { duration: 0.6 })
-                scrubTl.to(items, {
-                    yPercent: 0, autoAlpha: 1, duration: 1, ease: "power2.out"
-                }, '>');
+                scrubTl.to({}, { duration: 0.6 })                
                 scrubTl.to(camera.position, {
                     x: 0, y: 0, z: 150, duration: 5, ease: 'power4.inOut'
                 }, 0);
@@ -1542,10 +1533,7 @@ function space() {
         const root = document.querySelector('[data-barba="container"][data-barba-namespace="space"]');
         if (!root) return;
 
-        root.querySelector('#welcome').remove();
-
-        const menu = root.querySelector('#menu');
-        const items = root.querySelectorAll('.menu-item');
+        root.querySelector('#welcome').remove();      
 
 
         menu?.removeAttribute('hidden');
@@ -2525,7 +2513,6 @@ function space() {
         const value = Number(localStorage.getItem(key)) || 0;
 
         if (value === ref) menuLayoutThree(value + 1);
-        const lastMenuItem = menu?.querySelector('.menu-item:last-child');
 
         const instanceCanvas = threeInstance?.renderer?.domElement ?? (threeInstance instanceof HTMLCanvasElement ? threeInstance : null);
 
