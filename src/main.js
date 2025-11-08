@@ -854,7 +854,6 @@ function space() {
     if (!location.pathname.endsWith('/space') || spaceInit || !localStorage.getItem('userId')) return;
 
     const key = localStorage.getItem('userId');
-    console.log(key, 'RUNNING')
 
     // Protection from parachuting
     (function () {
