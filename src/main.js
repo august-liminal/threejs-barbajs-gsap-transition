@@ -1533,17 +1533,13 @@ function space() {
         const root = document.querySelector('[data-barba="container"][data-barba-namespace="space"]');
         if (!root) return;
 
-        root.querySelector('#welcome').remove();      
+        root.querySelector('#welcome').remove(); 
 
-
-        menu?.removeAttribute('hidden');
         gsap.set(camera.position, { x: 0, y: 0, z: 150 });
         gsap.set(camera.rotation, {
             x: THREE.MathUtils.degToRad(10),
             onUpdate: () => camera.updateProjectionMatrix()
         });
-
-        gsap.set(items, { autoAlpha: 0, yPercent: 100 });
 
         const tl = gsap.timeline({
             defaults: { ease: 'power2.out' }
@@ -1551,14 +1547,7 @@ function space() {
 
         gsap.set(root.querySelector('#logo-holder'), { autoAlpha: 0 })
 
-        tl.add(() => startThree(), 0);
-        tl.to(items, {
-            yPercent: 0,
-            autoAlpha: 1,
-            duration: 1,
-            stagger: 0.2,
-            ease: "power2.out"
-        }, 0);
+        tl.add(() => startThree(), 0);        
         tl.add(() => menuLayoutThree(localStorage.getItem(key)), 0);
         tl.from(root.querySelector('#menu-container'), {
             autoAlpha: 0, duration: 1
