@@ -2542,7 +2542,6 @@ function space() {
                 gsap.set(page.querySelectorAll('*'), { clearProps: 'all' });
                 gsap.set(page, { clearProps: 'all' });
                 page.hidden = true;
-                menu.style.position = '';
                 scroller?.remove();
                 window.scrollTo(0, 0);
                 threeInstance?.stop?.();
