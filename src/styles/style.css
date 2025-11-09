@@ -683,6 +683,7 @@ canvas#space {
 
 .label#menuPortfolio {
     border-width: 1px 0 0 0;
+    padding: 0.5rem 2rem 0 0;
 }
 
 .label#menuWhat {
@@ -697,6 +698,7 @@ canvas#space {
 
 .label#menuUs {
     border-width: 0 0 1px 0;
+    padding: 0 2rem 0.5rem 0;
 }
 
 #menuThesis::before {
@@ -839,9 +841,6 @@ canvas#space {
     opacity: var(--pseudo-opacity);
 }
 
-#page-profile>div {
-    padding: 2rem;
-}
 
 #page-profile>i:nth-child(1) {
     grid-area: 2 / 1 / 6 / 6;
@@ -889,17 +888,37 @@ canvas#space {
     grid-area: 2 / 2 / 2 / 2;
     align-content: center;
     border-bottom: 1px solid #454545;
+    display: flex;
+}
+
+#profile-name>span {
+    align-content: flex-end;
+    padding-left: 2rem;
+    padding-bottom: 1rem;
 }
 
 #profile-title {
     position: relative;
     grid-area: 3 / 2 / 3 / 2;
     border-bottom: 1px solid #454545;
+    display: flex;
+}
+
+#profile-title>span {
+    align-content: center;
+    padding-left: 2rem;
 }
 
 #profile-desc {
     position: relative;
     grid-area: 4 / 2 / 4 / 2;
+    display: flex;
+}
+
+#profile-desc>span {
+    align-content: flex-start;
+    padding-left: 2rem;
+    padding-top: 2rem;
 }
 
 #profile-toggle {
@@ -909,15 +928,39 @@ canvas#space {
     gap: 1em;
     border-top: 1px solid #454545;
     position: relative;
+    padding: 0 2rem;
 }
 
 #profile-toggle>a {
     color: #fff9;
-    padding: 0.5em;
+    padding: 2rem 0.5em;
     text-decoration: none;
     text-transform: uppercase;
     cursor: pointer;
     transition: color 0.2s;
+    z-index: 999;
+    position: relative;
+}
+
+#profile-toggle>a::after{
+    content: '';
+    position: absolute;
+    width: 0%;
+    height: 0.25rem;
+    background: #fff;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: width 0.2s ease-out;
+}
+
+#profile-toggle>a[current] {
+    color: #fff;
+    filter: drop-shadow(0 0 2px #fff);
+}
+
+#profile-toggle>a[current]::after {
+    width: 100%;
 }
 
 #profile-toggle>a:hover {
@@ -957,7 +1000,7 @@ canvas#space {
 }
 
 #profile-desc::after {
-    inset: auto -0.725rem -0.725rem auto;
+    inset: auto auto -0.725rem -0.725rem;
 }
 
 #profile-toggle::before {

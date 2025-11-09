@@ -18,7 +18,8 @@ import { CSS2DRenderer, CSS2DObject } from 'https://esm.sh/three@0.180.0/example
 // GSAP
 import { gsap } from 'https://esm.sh/gsap@3.13.0?target=es2020';
 import { ScrollTrigger } from 'https://esm.sh/gsap@3.13.0/ScrollTrigger?target=es2020&external=gsap';
-gsap.registerPlugin(ScrollTrigger);
+import { ScrambleTextPlugin } from 'https://esm.sh/gsap@3.13.0/ScrambleTextPlugin?target=es2020&external=gsap';
+gsap.registerPlugin(ScrollTrigger, ScrambleTextPlugin);
 
 // Barba
 import barba from 'https://esm.sh/@barba/core@2.9.7?target=es2020';
@@ -965,6 +966,7 @@ function space() {
     const cubeBaseRadius = cubeGeometry.boundingSphere?.radius ?? 2;
     const cubeWorldScale = new THREE.Vector3();
     const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    cubeMaterial.fog = false;
 
     const cubeThesis = new THREE.Mesh(cubeGeometry, cubeMaterial);
     const cubeWhat = new THREE.Mesh(cubeGeometry, cubeMaterial);
@@ -1067,10 +1069,12 @@ function space() {
             object = new THREE.Group();
             object.add(root);
 
-            cubeThesis.position.set(35, 25, -15);
-            cubeWhat.position.set(5, 1, 5);
-            cubeUs.position.set(-45, 35, 45);
-            cubePortfolio.position.set(-45, -25, -35);
+            const layoutScale = Math.min(window.innerWidth / 1600, 2);
+
+            cubeThesis.position.set(35 * layoutScale, 55, -15 * layoutScale);
+            cubeWhat.position.set(5 * layoutScale, 5, 5 * layoutScale);
+            cubeUs.position.set(-45 * layoutScale, 45, 45 * layoutScale);
+            cubePortfolio.position.set(-45 * layoutScale, -5, -35 * layoutScale);
 
             object.add(cubeThesis, cubeWhat, cubeUs, cubePortfolio);
             scene.add(object);
@@ -1231,12 +1235,37 @@ function space() {
     const faceCenter = new THREE.Vector3();
     const targetQuaternion = new THREE.Quaternion();
     const lookMatrix = new THREE.Matrix4();
-    const cubeQuaternion = new THREE.Quaternion();
     const lookPadding = 4;
     const defaultFov = camera.fov;
     const focusFov = 0.1;
 
     function focusOnCube(cube, onComplete) {
+        const allCubes = [cubeThesis, cubeWhat, cubeUs, cubePortfolio];
+        allCubes.forEach(c => {
+            if (!c.material.userData?.isCloned) {
+                c.material = c.material.clone();
+                c.material.transparent = true;
+                c.material.userData.isCloned = true;
+            }
+            const opacityTarget = c === cube ? 1 : 0;
+            gsap.to(c.material, { duration: 0.5, opacity: opacityTarget, ease: 'power2.out' });
+        });
+        cubeLabels.forEach(({ element, line }) => {
+            gsap.to(element, { duration: 0.5, opacity: 0, ease: 'power2.out' });
+            if (line?.material) {
+                line.material.transparent = true;
+                gsap.to(line.material, { duration: 1, opacity: 0, ease: 'power2.out' });
+            }
+        });
+        if (scene.fog) {
+            const fogProxy = { value: scene.fog.density };
+            gsap.to(fogProxy, {
+                duration: 2,
+                value: 0.05,
+                onUpdate: () => { scene.fog.density = fogProxy.value; }
+            });
+        }
+
         cube.getWorldPosition(focusTarget);
         cube.getWorldScale(cubeWorldScale);
 
@@ -1287,9 +1316,6 @@ function space() {
             onUpdate: () => camera.updateProjectionMatrix()
         });
     }
-
-    //renderer.setAnimationLoop(tick);
-    //isRunning = true;
 
     // Resize Event Listener
     window.addEventListener('resize', () => {
@@ -1490,7 +1516,7 @@ function space() {
             }, '<-3')
 
             // TIMELINE
-            tl.add(() => { 
+            tl.add(() => {
 
                 const scrubTl = gsap.timeline({
                     defaults: { ease: 'power2.out' },
@@ -1518,7 +1544,7 @@ function space() {
                 });
                 scrubTl.to('#welcome', { autoAlpha: 0, duration: 1 }, 0)
                 scrubTl.to(logoFill, { scale: 0, duration: 1 }, 0)
-                scrubTl.to({}, { duration: 0.6 })                
+                scrubTl.to({}, { duration: 0.6 })
                 scrubTl.to(camera.position, {
                     x: 0, y: 0, z: 150, duration: 5, ease: 'power4.inOut'
                 }, 0);
@@ -1529,11 +1555,11 @@ function space() {
         })
     }
 
-    else {        
+    else {
         const root = document.querySelector('[data-barba="container"][data-barba-namespace="space"]');
         if (!root) return;
 
-        root.querySelector('#welcome').remove(); 
+        root.querySelector('#welcome').remove();
 
         gsap.set(camera.position, { x: 0, y: 0, z: 150 });
         gsap.set(camera.rotation, {
@@ -1547,7 +1573,7 @@ function space() {
 
         gsap.set(root.querySelector('#logo-holder'), { autoAlpha: 0 })
 
-        tl.add(() => startThree(), 0);        
+        tl.add(() => startThree(), 0);
         tl.add(() => menuLayoutThree(localStorage.getItem(key)), 0);
         tl.from(root.querySelector('#menu-container'), {
             autoAlpha: 0, duration: 1
@@ -1832,10 +1858,10 @@ function space() {
         // Definition timeline
         tl.from('#page-thesis', {
             autoAlpha: 0, duration: 1
-        }, '<');
+        }, 0);
         tl.to(renderer.domElement, {
             autoAlpha: 0, duration: 1, ease: 'power2.out'
-        }, '<');        
+        }, 0);
         tl.set('#thesis-section-1 *', { visibility: 'visible' })
         tl.set('#page-thesis #line', { 'transform-origin': '0% 50%' })
 
@@ -1921,10 +1947,10 @@ function space() {
             }, '+=0.5');
         }
         else {
-            tl.set(['#liminal-title', '#liminal-phonetic', '#liminal-def', '#liminal-desc', '.scroll-hint'], { autoAlpha: 0 });
+            tl.set(['#liminal-title', '#liminal-phonetic', '#liminal-def', '#liminal-desc', '.scroll-hint'], { autoAlpha: 0 }, 0);
             tl.to('#liminal-title', {
                 autoAlpha: 1, duration: 0.5
-            });
+            }, '>');
             tl.to('#liminal-phonetic', {
                 autoAlpha: 1, duration: 0.5
             }, '-=0.2');
@@ -2378,20 +2404,20 @@ function space() {
         gsap.set('#page-profile', { '--pseudo-opacity': 0 });
 
         // TIMELINE
-        
+
         tl.from('#page-profile', {
             autoAlpha: 0, duration: 1
-        }, '<');
+        }, 0);
         tl.to(renderer.domElement, {
             autoAlpha: 0, duration: 1, ease: 'power2.out'
-        }, '<');
+        }, 0);
 
         tl.from('#page-profile>i:nth-child(1)', {
             scaleX: 0, duration: 0.5
-        }, '>');
+        }, '>-0.5');
         tl.from('#page-profile>i:nth-child(2)', {
             scaleY: 0, duration: 0.5
-        }, '>');
+        }, '>-0.25');
         tl.from('#page-profile>i:nth-child(3)', {
             scaleX: 0, duration: 0.5
         }, '<');
@@ -2426,6 +2452,118 @@ function space() {
             btn?.addEventListener('click', (e) => back(3, e), { once: true });
         });
 
+        // Profile Toggler
+
+        (function setupProfileToggle() {
+            const sections = ['profile-name', 'profile-title', 'profile-desc'];
+            const toggles = document.querySelector('#profile-toggle');
+            if (!toggles) return;
+
+            const textCache = new WeakMap();
+            const rememberText = (nodes) => {
+                nodes.forEach((node) => {
+                    if (!textCache.has(node)) {
+                        textCache.set(node, node.textContent ?? '');
+                    }
+                });
+            };
+            const primeTextCache = () => {
+                sections.forEach((id) => {
+                    rememberText(
+                        Array.from(document.querySelectorAll(`#${id} [data-user]`))
+                    );
+                });
+            };
+
+            primeTextCache();
+
+            const showUser = (userId) => {
+                sections.forEach((id) => {
+                    document
+                        .querySelectorAll(`#${id} [data-user]`)
+                        .forEach((span) => {
+                            const isActive = span.dataset.user === userId;
+                            span.hidden = !isActive;
+                            if (isActive) {
+                                span.textContent = textCache.get(span) ?? span.textContent;
+                            }
+                        });
+                });
+                toggles.querySelectorAll('[data-user]').forEach(btn => {
+                    btn.toggleAttribute('current', btn.dataset.user === userId);
+                });
+            };
+
+            const getUserNodes = (userId) => {
+                const nodes = sections
+                    .map((id) => document.querySelector(`#${id} [data-user="${userId}"]`))
+                    .filter(Boolean);
+                rememberText(nodes);
+                return nodes;
+            };
+
+            const scrambleInConfig = (target) => ({
+                text: textCache.get(target) ?? '',
+                chars: 'upperAndLowerCase',
+                speed: 0.6,
+                revealDelay: 0.1
+            });
+
+            const scrambleOutConfig = {
+                text: '',
+                chars: 'upperAndLowerCase',
+                speed: 0.5,
+                revealDelay: 0
+            };
+
+            let activeUser = 'sonny';
+            showUser(activeUser);
+
+            const animateSwap = (nextUser) => {
+                if (nextUser === activeUser) return;
+
+                const outgoing = getUserNodes(activeUser);
+                const incoming = getUserNodes(nextUser);
+
+                const tl = gsap.timeline({ defaults: { duration: 0.35, ease: 'power2.out' } });
+                tl.to(outgoing, {
+                    autoAlpha: 0,
+                    y: 10,
+                    stagger: 0.05,
+                    scrambleText: scrambleOutConfig
+                })
+                    .add(() => {
+                        activeUser = nextUser;
+                        toggles.querySelectorAll('[data-user]').forEach((btn) =>
+                            btn.toggleAttribute('current', btn.dataset.user === nextUser)
+                        );
+                        outgoing.forEach((node) => {
+                            node.hidden = true;
+                            node.textContent = textCache.get(node) ?? node.textContent;
+                        });
+                        incoming.forEach((node) => {
+                            node.hidden = false;
+                            node.textContent = '';
+                        });
+                    })
+                    .fromTo(incoming, {
+                        autoAlpha: 0,
+                        y: -10
+                    }, {
+                        autoAlpha: 1,
+                        y: 0,
+                        stagger: 0.05,
+                        scrambleText: (_, target) => scrambleInConfig(target)
+                    }, '<');
+            };
+
+            toggles.addEventListener('click', (evt) => {
+                const btn = evt.target.closest('[data-user]');
+                if (!btn) return;
+                animateSwap(btn.dataset.user);
+            });
+        })();
+
     };
 
     // ===================== PORTFOLIO
@@ -2442,7 +2580,7 @@ function space() {
         const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
 
         // TIMELINE
-        
+
         tl.from('#page-portfolio', {
             autoAlpha: 0, duration: 1
         }, '<');
@@ -2518,6 +2656,15 @@ function space() {
         });
         camera.fov = defaultFov;
         camera.updateProjectionMatrix();
+        const allCubes = [cubeThesis, cubeWhat, cubeUs, cubePortfolio];
+        allCubes.forEach(c => {
+            c.material.opacity = 1;
+        });
+        cubeLabels.forEach(({ element, line }) => {
+            element.style.opacity = 1;
+            if (line?.material) line.material.opacity = 1;
+        });
+        if (scene.fog) scene.fog.density = 0.006;
 
         const tl = gsap.timeline({
             defaults: { ease: 'power2.out' },
