@@ -984,11 +984,11 @@ canvas#space {
 }
 
 #profile-portrait-container::before {
-    inset: -0.725rem auto auto -0.725rem;
+    inset: -0.725rem -0.725rem auto auto;
 }
 
 #profile-portrait-container::after {
-    inset: auto auto -0.725rem -0.725rem;
+    inset: auto -0.725rem -0.725rem auto;
 }
 
 #profile-name::before {
@@ -1049,11 +1049,35 @@ canvas#space {
 
 #portfolio-toggle>a {
     color: #fff9;
-    padding: 2rem;
+    padding: 1rem 2rem;
+    margin: 1rem 0;
     text-decoration: none;
     text-transform: uppercase;
     cursor: pointer;
     transition: color 0.2s;
+    z-index: 999;
+    position: relative;
+}
+
+#portfolio-toggle>a[current] {
+    color: #fff;
+    filter: drop-shadow(0 0 2px #fff);
+}
+
+#portfolio-toggle>a::after {
+    content: '';
+    position: absolute;
+    width: 0.25rem;
+    height: 0%;
+    background: #fff;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: height 0.2s ease-out;
+}
+
+#portfolio-toggle>a[current]::after {
+    height: 100%;
 }
 
 #portfolio-toggle>a:hover {

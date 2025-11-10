@@ -895,7 +895,7 @@ function space() {
     }
 
     // Camera
-    const camera = new THREE.PerspectiveCamera(60, size.width / size.height, 0.5, 500);
+    const camera = new THREE.PerspectiveCamera(60, size.width / size.height, 0.5, 1000);
     camera.position.set(-250, 0, 0);
     scene.add(camera);
 
@@ -1072,9 +1072,9 @@ function space() {
             const layoutScale = Math.min(window.innerWidth / 1600, 2);
 
             cubeThesis.position.set(35 * layoutScale, 55, -15 * layoutScale);
-            cubeWhat.position.set(5 * layoutScale, 5, 5 * layoutScale);
+            cubeWhat.position.set(5 * layoutScale, 15, 5 * layoutScale);
             cubeUs.position.set(-45 * layoutScale, 45, 45 * layoutScale);
-            cubePortfolio.position.set(-45 * layoutScale, -5, -35 * layoutScale);
+            cubePortfolio.position.set(-45 * layoutScale, -10, -35 * layoutScale);
 
             object.add(cubeThesis, cubeWhat, cubeUs, cubePortfolio);
             scene.add(object);
@@ -2591,10 +2591,10 @@ function space() {
 
         tl.from('#page-portfolio>i:nth-child(1)', {
             scaleX: 0, duration: 0.5
-        }, '>');
+        }, '>-0.5');
         tl.from('#page-portfolio>i:nth-child(2)', {
             scaleY: 0, duration: 0.5
-        }, '>');
+        }, '>-0.3');
         tl.from('#page-portfolio>i:nth-child(3)', {
             scaleY: 0, duration: 0.5
         }, '<');
@@ -2617,6 +2617,117 @@ function space() {
         tl.add(() => {
             btn?.addEventListener('click', (e) => back(4, e), { once: true });
         });
+
+        (function setupPortfolioToggle() {
+            const sections = ['portfolio-name', 'portfolio-desc'];
+            const toggles = document.querySelector('#portfolio-toggle');
+            if (!toggles) return;
+
+            const textCache = new WeakMap();
+            const rememberText = (nodes) => {
+                nodes.forEach((node) => {
+                    if (!textCache.has(node)) {
+                        textCache.set(node, node.textContent ?? '');
+                    }
+                });
+            };
+            const primeTextCache = () => {
+                sections.forEach((id) => {
+                    rememberText(
+                        Array.from(document.querySelectorAll(`#${id} [data-user]`))
+                    );
+                });
+            };
+
+            primeTextCache();
+
+            const showUser = (userId) => {
+                sections.forEach((id) => {
+                    document
+                        .querySelectorAll(`#${id} [data-user]`)
+                        .forEach((span) => {
+                            const isActive = span.dataset.user === userId;
+                            span.hidden = !isActive;
+                            if (isActive) {
+                                span.textContent = textCache.get(span) ?? span.textContent;
+                            }
+                        });
+                });
+                toggles.querySelectorAll('[data-user]').forEach(btn => {
+                    btn.toggleAttribute('current', btn.dataset.user === userId);
+                });
+            };
+
+            const getUserNodes = (userId) => {
+                const nodes = sections
+                    .map((id) => document.querySelector(`#${id} [data-user="${userId}"]`))
+                    .filter(Boolean);
+                rememberText(nodes);
+                return nodes;
+            };
+
+            const scrambleInConfig = (target) => ({
+                text: textCache.get(target) ?? '',
+                chars: 'upperAndLowerCase',
+                speed: 0.6,
+                revealDelay: 0.1
+            });
+
+            const scrambleOutConfig = {
+                text: '',
+                chars: 'upperAndLowerCase',
+                speed: 0.5,
+                revealDelay: 0
+            };
+
+            const defaultUser = toggles.querySelector('[data-user]')?.dataset.user || 'xweave';
+            let activeUser = defaultUser;
+            showUser(activeUser);
+
+            const animateSwap = (nextUser) => {
+                if (nextUser === activeUser) return;
+
+                const outgoing = getUserNodes(activeUser);
+                const incoming = getUserNodes(nextUser);
+
+                const tl = gsap.timeline({ defaults: { duration: 0.35, ease: 'power2.out' } });
+                tl.to(outgoing, {
+                    autoAlpha: 0,
+                    y: 10,
+                    stagger: 0.05,
+                    scrambleText: scrambleOutConfig
+                })
+                    .add(() => {
+                        outgoing.forEach((node) => {
+                            node.hidden = true;
+                            node.textContent = textCache.get(node) ?? node.textContent;
+                        });
+                        incoming.forEach((node) => {
+                            node.hidden = false;
+                            node.textContent = '';
+                        });
+                        activeUser = nextUser;
+                        toggles.querySelectorAll('[data-user]').forEach((btn) =>
+                            btn.toggleAttribute('current', btn.dataset.user === nextUser)
+                        );
+                    })
+                    .fromTo(incoming, {
+                        autoAlpha: 0,
+                        y: -10
+                    }, {
+                        autoAlpha: 1,
+                        y: 0,
+                        stagger: 0.05,
+                        scrambleText: (_, target) => scrambleInConfig(target)
+                    });
+            };
+
+            toggles.addEventListener('click', (evt) => {
+                const btn = evt.target.closest('[data-user]');
+                if (!btn) return;
+                animateSwap(btn.dataset.user);
+            });
+        })();
     };
 
     // ========== HELPERS
