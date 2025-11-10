@@ -977,6 +977,7 @@ function space() {
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
     const clickableCubes = [cubeThesis, cubeWhat, cubeUs, cubePortfolio];
+    let hoveredCube = null;
 
     // Labels
     const attachLabel = (cube, id, text, offset, anchor = [0, 1]) => {
@@ -1014,14 +1015,23 @@ function space() {
         const line = new THREE.Line(geometry, connectorMaterial);
         cube.add(line);
 
-        cubeLabels.push({
+        const labelEntry = {
             cube,
             label,
             element: div,
             id,
             line,
             positions: geometry.attributes.position,
-            offset: new THREE.Vector3().fromArray(offset)
+            offset: new THREE.Vector3().fromArray(offset),
+            hoverSources: { cube: false, label: false }
+        };
+        cubeLabels.push(labelEntry);
+
+        div.addEventListener('pointerenter', () => {
+            setLabelHoverState(cube, true, 'label');
+        });
+        div.addEventListener('pointerleave', () => {
+            setLabelHoverState(cube, false, 'label');
         });
     };
 
@@ -1123,14 +1133,36 @@ function space() {
         }
     });
 
+    function setLabelHoverState(cube, isHover, source = 'cube') {
+        const labelEntry = cubeLabels.find(entry => entry.cube === cube);
+        if (!labelEntry) return;
+        labelEntry.hoverSources[source] = isHover;
+        const active = labelEntry.hoverSources.cube || labelEntry.hoverSources.label;
+        labelEntry.element.classList.toggle('hovered', active);
+    }
+
     canvas.addEventListener('pointermove', (event) => {
         pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
         pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
         raycaster.setFromCamera(pointer, camera);
-        const hit = raycaster.intersectObjects(clickableCubes, false)[0];
+        const hitCube = raycaster.intersectObjects(clickableCubes, false)[0]?.object ?? null;
 
-        canvas.classList.toggle('cursor-pointer', !!hit);
+        if (hitCube !== hoveredCube) {
+            if (hoveredCube) setLabelHoverState(hoveredCube, false);
+            if (hitCube) setLabelHoverState(hitCube, true);
+            hoveredCube = hitCube;
+        }
+
+        canvas.classList.toggle('cursor-pointer', !!hitCube);
+    });
+
+    canvas.addEventListener('pointerleave', () => {
+        if (hoveredCube) {
+            setLabelHoverState(hoveredCube, false);
+            hoveredCube = null;
+        }
+        canvas.classList.remove('cursor-pointer');
     });
 
     // 🎛️ BLOOM KNOBS - Adjust these values!

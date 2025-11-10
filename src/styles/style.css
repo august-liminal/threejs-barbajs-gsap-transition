@@ -681,24 +681,67 @@ canvas#space {
     cursor: pointer;
 }
 
+.label#menuPortfolio::after,
+.label#menuWhat::after,
+.label#menuThesis::after,
+.label#menuUs::after {
+    content: '';
+    position: absolute;
+    background: #fff;
+    width: 0%;
+    height: calc(100% + 2px);
+    inset: -1px 0;
+    transition: width 0.1s ease-out;
+    z-index: -1;
+}
+
+.label#menuUs::after,
+.label#menuPortfolio::after {
+    transform-origin: 100% 50%;
+}
+
+.label#menuThesis::after,
+.label#menuWhat::after {
+    transform-origin: 0% 50%;
+}
+
+.label.hovered#menuUs::after,
+.label.hovered#menuPortfolio::after,
+.label.hovered#menuThesis::after,
+.label.hovered#menuWhat::after {
+    width: 100%;
+}
+
+.label.hovered#menuUs,
+.label.hovered#menuPortfolio,
+.label.hovered#menuThesis,
+.label.hovered#menuWhat {
+    color: #000;
+    transition: color 0.1s ease-out 0.05s;
+}
+
 .label#menuPortfolio {
+    position: relative;
     border-width: 1px 0 0 0;
-    padding: 0.5rem 2rem 0 0;
+    padding: 0.5rem 2rem 0.5rem 0.5rem;
 }
 
 .label#menuWhat {
+    position: relative;
     border-width: 1px 0 0 0;
-    padding: 0.5rem 0 0 2rem;
+    padding: 0.5rem 0.5rem 0.5rem 2rem;
 }
 
 .label#menuThesis {
+    position: relative;
     border-width: 0 0 1px 0;
-    padding: 0 0 0.5rem 2rem;
+    padding: 0.5rem 0.5rem 0.5rem 2rem;
 }
 
 .label#menuUs {
+    position: relative;
     border-width: 0 0 1px 0;
-    padding: 0 2rem 0.5rem 0;
+    padding: 0.5rem 2rem 0.5rem 0.5rem;
 }
 
 #menuThesis::before {
@@ -800,7 +843,9 @@ canvas#space {
     flex: 1;
 }
 
-#vc-content, #vs-content, #acc-content {
+#vc-content,
+#vs-content,
+#acc-content {
     margin-bottom: 4rem;
 }
 
@@ -831,7 +876,7 @@ canvas#space {
 
 .page#page-profile {
     display: grid;
-    grid-template-columns: 4rem 1fr 1fr 4rem;
+    grid-template-columns: 4rem 3fr 5fr 4rem;
     grid-template-rows: 4rem 3fr 1fr 7fr 1fr 4rem;
     padding: 0;
 }
@@ -942,7 +987,7 @@ canvas#space {
     position: relative;
 }
 
-#profile-toggle>a::after{
+#profile-toggle>a::after {
     content: '';
     position: absolute;
     width: 0%;
