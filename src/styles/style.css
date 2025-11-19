@@ -382,6 +382,14 @@ div:has(#unlock-module) {
     transform: translateX(-50%);
 }
 
+#user_greeting {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    color: #fff;
+    text-shadow: 0 0 8px #fff;
+}
+
 /*------------------ MAIN ------------------*/
 
 [hidden] {
@@ -478,6 +486,7 @@ div:has(>#user_message) {
     white-space: pre-wrap;
     overflow-wrap: break-word;
     word-break: break-word;
+    color: #fffc;
 }
 
 .coded-word,
@@ -688,10 +697,12 @@ canvas#space {
     content: '';
     position: absolute;
     background: #fff;
-    width: 0%;
+    width: 100%;
+    scale: 50% 100%;
+    opacity: 0;
     height: calc(100% + 2px);
     inset: -1px 0;
-    transition: width 0.1s ease-out;
+    transition: scale 0.15s ease-out, opacity 0.1s ease-out;
     z-index: -1;
 }
 
@@ -709,7 +720,8 @@ canvas#space {
 .label.hovered#menuPortfolio::after,
 .label.hovered#menuThesis::after,
 .label.hovered#menuWhat::after {
-    width: 100%;
+    scale: 100% 100%;
+    opacity: 1;
 }
 
 .label.hovered#menuUs,
@@ -717,7 +729,7 @@ canvas#space {
 .label.hovered#menuThesis,
 .label.hovered#menuWhat {
     color: #000;
-    transition: color 0.1s ease-out 0.05s;
+    transition: color 0.15s ease-out 0.05s;
 }
 
 .label#menuPortfolio {
@@ -758,6 +770,7 @@ canvas#space {
 #liminal-title {
     height: calc(50% - 3rem);
     align-content: flex-end;
+    text-shadow: 0 0 8px #fff;
 }
 
 #thesis-title {
@@ -799,12 +812,6 @@ canvas#space {
     margin-top: 4rem;
 }
 
-#page-thesis #circle-1 {
-    top: 50%;
-    left: 100%;
-    transform: translate(-50%, -50%);
-}
-
 #page-thesis #line {
     height: 1px;
     width: 100%;
@@ -827,6 +834,41 @@ canvas#space {
     bottom: 4rem;
 }
 
+#page-what>.section-container {
+    display: flex;
+    position: absolute;
+    inset: 0;
+}
+
+#page-what>.section-container .section {
+    flex: 1 1 0;
+    min-width: 0;
+    transition: flex 0.3s ease;
+    position: relative;
+    pointer-events: auto;
+}
+
+#page-what>.section-container .section > div {
+    opacity: 0;
+    transition: opacity 0.5s ease-out;
+}
+
+#page-what>.section-container.hovered .section {
+    flex: 1 1 0;    
+}
+
+#page-what>.section-container .section.hovered {
+    flex: 2 1 0;
+}
+
+#page-what>.section-container .section.hovered > div {
+    opacity: 1;
+}
+
+#what-section-1, #what-section-2 {
+    border-right: 1px solid #fffa ;
+}
+
 #what-title {
     position: fixed;
 }
@@ -847,6 +889,7 @@ canvas#space {
 #vs-content,
 #acc-content {
     margin-bottom: 4rem;
+    max-width: 32ch;
 }
 
 #what-section-4 {

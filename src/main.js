@@ -14,6 +14,8 @@ import { UnrealBloomPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postp
 import { OutputPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/OutputPass.js?deps=three@0.180.0';
 import { RoomEnvironment } from 'https://esm.sh/three@0.180.0/examples/jsm/environments/RoomEnvironment.js?deps=three@0.180.0';
 import { CSS2DRenderer, CSS2DObject } from 'https://esm.sh/three@0.180.0/examples/jsm/renderers/CSS2DRenderer.js?deps=three@0.180.0';
+import { HorizontalBlurShader } from 'https://esm.sh/three@0.180.0/examples/jsm/shaders/HorizontalBlurShader.js?deps=three@0.180.0';
+import { VerticalBlurShader } from 'https://esm.sh/three@0.180.0/examples/jsm/shaders/VerticalBlurShader.js?deps=three@0.180.0';
 
 // GSAP
 import { gsap } from 'https://esm.sh/gsap@3.13.0?target=es2020';
@@ -886,7 +888,9 @@ function space() {
     const BLOOM_SCENE = 1;
     const bloomLayer = new THREE.Layers();
     bloomLayer.set(BLOOM_SCENE);
-    scene.fog = new THREE.FogExp2(0x000000, 0.006); // tweak color/density
+
+    const FOG_DENSITY = 0.008;
+    scene.fog = new THREE.FogExp2(0x000000, FOG_DENSITY); // tweak color/density
 
     // Size
     const size = {
@@ -1095,7 +1099,6 @@ function space() {
         }
     );
 
-    //scene.add(new THREE.AxesHelper(30));
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({
@@ -1391,6 +1394,7 @@ function space() {
             const userMessage = localStorage.getItem('userMessage');
             const message = root.querySelector('#user_message');
             const greeting = root.querySelector('#user_greeting');
+            greeting.dataset.text = userGreeting;
 
             message.textContent = '';
             greeting.textContent = '';
@@ -1687,30 +1691,92 @@ function space() {
             core.layers.enable(BLOOM_SCENE);
             scene.add(core);
 
-            const orbLight = new THREE.PointLight(0xffffff, 20, 30, 2);
+            const orbLight = new THREE.PointLight(0xffffff, 50, 0, 2);
             orbLight.position.set(0, 0, 0);
             orbLight.castShadow = true;
             orbLight.shadow.mapSize.set(1024, 1024);
             orbLight.shadow.bias = -0.0005;
             core.add(orbLight);
 
-            const pointLight = new THREE.PointLight(0xffffff, 2000, 0, 2)
-            pointLight.position.set(-5, -16, 2);
+            const pointLight = new THREE.PointLight(0xffffff, 100000, 0, 2)
+            pointLight.position.set(-5, -50, 40);
             scene.add(pointLight);
 
-            const orangeLight = new THREE.PointLight(0xFF8B07, 500, 0, 3)
+            const orangeLight = new THREE.PointLight(0xFF8B07, 300, 0, 3)
             orangeLight.position.set(0, 0, -4);
             scene.add(orangeLight);
 
-            const shellMaterial = new THREE.MeshStandardMaterial({
-                color: 0x333333,
-                roughness: 1,
-                metalness: 1
+            // scene.add(new THREE.AxesHelper(30));
+
+            const normalMap = new THREE.TextureLoader().load(new URL('./textures/sphereNormal.jpg', import.meta.url));
+            const roughnessMap = new THREE.TextureLoader().load(new URL('./textures/sphereRoughness.jpg', import.meta.url));
+
+            const coneGeometry = new THREE.ConeGeometry(1.4, 3, 64);
+            const coneMaterial = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(0x222222),
+                metalness: 0.85,
+                roughness: 0.55,
+                normalMap: normalMap,
+                roughnessMap: roughnessMap,
+                transparent: true,
+                opacity: 0
             });
-            const leftShell = new THREE.Mesh(new THREE.SphereGeometry(12, 80, 80), shellMaterial.clone());
+            const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+            cone.castShadow = true;
+            cone.receiveShadow = true;
+            cone.position.set(-1, 10, 10);
+            cone.rotation.set(
+                THREE.MathUtils.degToRad(0),
+                THREE.MathUtils.degToRad(90),
+                THREE.MathUtils.degToRad(90)
+            );
+
+            const cylinderGeometry = new THREE.CylinderGeometry(1.4, 1.4, 3, 64);
+            const cylinderMaterial = coneMaterial.clone();
+            cylinderMaterial.color = new THREE.Color(0x222222);
+            const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+            cylinder.castShadow = true;
+            cylinder.receiveShadow = true;
+            cylinder.position.set(-1, 20, 10);
+            cylinder.rotation.set(
+                THREE.MathUtils.degToRad(5),
+                THREE.MathUtils.degToRad(90),
+                THREE.MathUtils.degToRad(90)
+            );
+            scene.add(cone, cylinder);
+
+            const coneOverlay = core.clone();
+            coneOverlay.material = core.material.clone();
+            coneOverlay.material.transparent = true;
+            coneOverlay.material.opacity = 0;
+            coneOverlay.position.set(0, 10, 0);
+            scene.add(coneOverlay);
+
+            const cylinderOverlay = core.clone();
+            cylinderOverlay.material = cylinderOverlay.material.clone();
+            cylinderOverlay.material.transparent = true;
+            cylinderOverlay.material.opacity = 0;
+            cylinderOverlay.position.set(0, 20, 0);
+            scene.add(cylinderOverlay);
+
+            const shellGeometry = new THREE.SphereGeometry(12, 80, 80);
+
+            shellGeometry.computeTangents?.();
+            const shellMaterial = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(0x111111),
+                roughness: 0.95,
+                metalness: 1,
+                // map: shellColorMap,
+                // displacementMap: shellDispMap,
+                // displacementScale: 0.08,
+                // displacementBias: -0.01,
+                normalMap: normalMap,
+                roughnessMap: roughnessMap
+            });
+            const leftShell = new THREE.Mesh(shellGeometry.clone(), shellMaterial.clone());
             leftShell.position.set(-30, 0, -4);
             scene.add(leftShell);
-            const rightShell = new THREE.Mesh(new THREE.SphereGeometry(12, 80, 80), shellMaterial.clone());
+            const rightShell = new THREE.Mesh(shellGeometry.clone(), shellMaterial.clone());
             rightShell.position.set(30, 0, -4);
             scene.add(rightShell);
 
@@ -1819,7 +1885,7 @@ function space() {
                 camera,
                 scene,
                 renderer,
-                objects: { core, leftShell, rightShell, orangeLight },
+                objects: { core, leftShell, rightShell, orangeLight, pointLight, cone, cylinder, coneOverlay, cylinderOverlay },
                 dispose() {
                     stop();
                     window.removeEventListener('resize', resize);
@@ -1830,6 +1896,10 @@ function space() {
                     [leftShell, rightShell].forEach(mesh => mesh.geometry.dispose());
                     coreMaterial.dispose();
                     shellMaterial.dispose();
+                    coneGeometry.dispose();
+                    coneMaterial.dispose();
+                    cylinderGeometry.dispose();
+                    cylinderMaterial.dispose();
                     mixPass.material.dispose();
                     bloomPass.dispose?.();
                     scene.environment = null;
@@ -1849,14 +1919,16 @@ function space() {
         });
 
         guidesContainer.innerHTML = `
-            <svg class="guide" id="circle-1" width="100%" height="100%" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg class="guide" id="circle-1" width="100%" height="100%" viewBox="0 0 ${window.innerWidth} ${window.innerHeight}" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="150" cy="150" r="0" stroke="white" stroke-dasharray="12 12" vector-effect="non-scaling-stroke"/>
             </svg>
-            <svg class="guide" id="circle-2" width="100%" height="100%" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg class="guide" id="circle-2" width="100%" height="100%" viewBox="0 0 ${window.innerWidth} ${window.innerHeight}" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="150" cy="150" r="0" stroke="white" stroke-dasharray="12 12" vector-effect="non-scaling-stroke"/>
             </svg>
             <i class="guide" id="line"></i>
         `;
+        const circle1 = guidesContainer.querySelector('#circle-1 circle');
+        const circle2 = guidesContainer.querySelector('#circle-2 circle');
 
         page.appendChild(guidesContainer);
         //
@@ -1885,7 +1957,6 @@ function space() {
         // Set initial states
         tl.set('#thesis-title', { fontSize: '8rem', xPercent: 100, autoAlpha: 0, bottom: '2em' });
         tl.set('#page-thesis .section>*', { visibility: 'hidden' });
-        tl.set('#circle-1 circle', { autoAlpha: 0 })
 
         // Definition timeline
         tl.from('#page-thesis', {
@@ -2018,6 +2089,10 @@ function space() {
         const leftShell = thesis3D?.objects?.leftShell;
         const rightShell = thesis3D?.objects?.rightShell;
         const orangeLight = thesis3D?.objects?.orangeLight;
+        const cone = thesis3D?.objects?.cone;
+        const cylinder = thesis3D?.objects?.cylinder;
+        const coneOverlay = thesis3D?.objects?.coneOverlay;
+        const cylinderOverlay = thesis3D?.objects?.cylinderOverlay;
 
         tl.add(() => { // Our Core Belief timeline       
 
@@ -2055,8 +2130,11 @@ function space() {
                     ease: 'none',
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, 0);
+                segmentTl.to(cam, {
+                    fov: 10
+                }, '<');
                 segmentTl.to(cam.position, {
-                    x: 2, y: 2, z: 25,
+                    x: 2, y: 2, z: 70,
                     ease: 'none',
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, '<');
@@ -2068,6 +2146,50 @@ function space() {
                     x: 13.5, z: 0,
                     ease: 'none'
                 }, '<');
+                let circleSetup = false;
+                segmentTl.add(() => {
+                    if (circleSetup == true) return;
+                    const rect = thesisCanvas.getBoundingClientRect();
+                    const center = new THREE.Vector3();
+                    const edgeWorld = new THREE.Vector3();
+                    const edgeScreen = new THREE.Vector3();
+                    const pairs = [
+                        { mesh: rightShell, circle: circle2 },
+                        { mesh: leftShell, circle: circle1 }
+                    ];
+
+                    pairs.forEach(({ mesh, circle }) => {
+                        if (!mesh || !circle) return;
+
+                        mesh.getWorldPosition(center);
+                        center.project(cam);
+                        const cx = (center.x * 0.5 + 0.5) * rect.width;
+                        const cy = (-center.y * 0.5 + 0.5) * rect.height;
+
+                        const radius = mesh.geometry.boundingSphere?.radius ?? 1;
+                        edgeWorld.set(radius, 0, 0).applyMatrix4(mesh.matrixWorld);
+                        edgeScreen.copy(edgeWorld).project(cam);
+
+                        const ex = (edgeScreen.x * 0.5 + 0.5) * rect.width;
+                        const ey = (-edgeScreen.y * 0.5 + 0.5) * rect.height;
+                        const screenRadius = Math.hypot(ex - cx, ey - cy);
+
+                        circle.setAttribute('cx', cx);
+                        circle.setAttribute('cy', cy);
+                        circle.setAttribute('r', screenRadius);
+                    });
+                    circleSetup = true;
+                }, '>');
+                segmentTl.to({}, {
+                    onComplete:(() => {
+                        segmentTl.from(circle2, {
+                            autoAlpha: 0, attr: { r: 0 }, duration: 1, ease: 'power2.out'
+                        }, 0);
+                        segmentTl.from(circle1, {
+                            autoAlpha: 0, attr: { r: 0 }, duration: 1, ease: 'power2.out'
+                        }, '<');
+                    })
+                }, '>+0.1')
             }
         });
 
@@ -2093,29 +2215,29 @@ function space() {
             }, '>');
             if (cam && leftShell && rightShell) {
                 segmentTl.to(cam.rotation, {
-                    z: THREE.MathUtils.degToRad(235),
+                    z: THREE.MathUtils.degToRad(225),
                     ease: 'power2.out',
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, 0);
                 segmentTl.to(cam.position, {
-                    x: 5, y: 7, z: 35,
+                    x: 5, y: 5, z: 100,
                     ease: 'power2.out',
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, '<');
                 segmentTl.to(leftShell.position, {
-                    x: 0, z: -30,
-                    ease: 'power2.out'
-                }, '<');
-                segmentTl.to(rightShell.position, {
                     x: 0, z: -60,
                     ease: 'power2.out'
                 }, '<');
+                segmentTl.to(rightShell.position, {
+                    x: 0, z: -100,
+                    ease: 'power2.out'
+                }, '<');
                 segmentTl.to(orangeLight.position, {
-                    x: -12, y: -17, z: -30,
+                    x: -20, y: -20, z: -50,
                     ease: 'power2.out'
                 }, '<');
                 segmentTl.to(orangeLight, {
-                    intensity: 4000,
+                    intensity: 100000,
                     ease: 'power2.out'
                 }, '<');
             }
@@ -2151,7 +2273,7 @@ function space() {
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, 0);
                 segmentTl.to(cam.position, {
-                    x: -0.5, y: 0.9, z: 4.5,
+                    x: -0.4, y: 1, z: 10,
                     ease: 'power2.out',
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, '<');
@@ -2170,7 +2292,63 @@ function space() {
             }
         });
 
-        tl.add(() => { // Domains timeline            
+        tl.add(() => { // Domains timeline 
+            const nestedTl = gsap.timeline({ paused: true });
+
+            nestedTl.to(cone.material, {
+                opacity: 1, duration: 0.5
+            }, 0);
+            nestedTl.to(cylinder.material, {
+                opacity: 1, duration: 0.5
+            }, 0);
+            nestedTl.to(cone.rotation, {
+                y: THREE.MathUtils.degToRad(-45),
+                ease: 'power2.out',
+                duration: 0.7
+            }, '<');
+            nestedTl.to(cylinder.rotation, {
+                y: THREE.MathUtils.degToRad(-45),
+                ease: 'power2.out',
+                duration: 0.7
+            }, '<');
+            nestedTl.to(cone.rotation, {
+                y: THREE.MathUtils.degToRad(270),
+                ease: 'power4.inOut',
+                duration: 1.2
+            }, '>');
+            nestedTl.to(cone.position, {
+                x: 0, z: -1.5,
+                ease: 'power4.inOut',
+                duration: 1.2
+            }, '<');
+            nestedTl.to(cylinder.rotation, {
+                y: THREE.MathUtils.degToRad(270),
+                ease: 'power4.inOut',
+                duration: 1.2
+            }, '<+0.1');
+            nestedTl.to(cylinder.position, {
+                x: 0, y: 20.2, z: -1.5,
+                ease: 'power4.inOut',
+                duration: 1.2
+            }, '<');
+            nestedTl.to(coneOverlay.material, {
+                opacity: 1, duration: 0.5
+            }, '>+0.1');
+            nestedTl.to(cylinderOverlay.material, {
+                opacity: 1, duration: 0.5
+            }, '<');
+            nestedTl.to(cone.material, {
+                opacity: 0, duration: 0.5
+            }, '<');
+            nestedTl.to(cylinder.material, {
+                opacity: 0, duration: 0.5
+            }, '<');
+            nestedTl.fromTo('.backBtn', {
+                autoAlpha: 0, bottom: '2em'
+            }, {
+                autoAlpha: 1
+            }, '>');
+
             const segmentTl = gsap.timeline({
                 scrollTrigger: {
                     trigger: '#segment-5',
@@ -2179,9 +2357,14 @@ function space() {
                     end: 'top top',
                     scrub: true,
                     invalidateOnRefresh: true,
+                    onEnter: () => nestedTl.play(0),
+                    onLeaveBack: () => nestedTl.reverse()
                 }
             });
             segmentTl.to('#unlock-potential', {
+                autoAlpha: 0
+            });
+            segmentTl.to('#unlock-potential-content', {
                 autoAlpha: 0
             });
             segmentTl.to('#unlock-potential-content', {
@@ -2201,23 +2384,24 @@ function space() {
                 autoAlpha: 0
             }, '<');
             segmentTl.to({}, { duration: 5, ease: 'none' }, '>');
-            segmentTl.fromTo('.backBtn', {
-                autoAlpha: 0, bottom: '2em'
-            }, {
-                autoAlpha: 1
-            }, '>');
             if (cam && leftShell && rightShell) {
                 segmentTl.to(cam.rotation, {
-                    z: THREE.MathUtils.degToRad(460),
+                    z: THREE.MathUtils.degToRad(450),
                     ease: 'power4.out',
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, 0);
                 segmentTl.to(cam.position, {
-                    x: -4, y: 10, z: 40,
+                    x: -1, y: 10, z: 100,
                     ease: 'power4.out',
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, '<');
             }
+            segmentTl.to({}, {
+                duration: 0,
+                onComplete() {
+
+                }
+            }, 0);
         });
 
         tl.add(() => {
@@ -2241,15 +2425,339 @@ function space() {
         //creating scroller
         const scroller = Object.assign(document.createElement('div'), {
             className: 'scroller'
+        });        
+
+        // ============================== THREEJS
+        function createWhatScene(canvas) {
+            const getCanvasSize = () => {
+                const bounds = page.getBoundingClientRect();
+                return {
+                    width: Math.max(1, bounds.width),
+                    height: Math.max(1, bounds.height)
+                };
+            };
+
+            const scene = new THREE.Scene();
+            scene.background = null;
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 55);
+            scene.add(camera);
+
+            const renderer = new THREE.WebGLRenderer({
+                canvas,
+                alpha: true,
+                antialias: true
+            });
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            renderer.setClearColor(0x000000, 0);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            const baseComposer = new EffectComposer(renderer);
+            const baseRenderPass = new RenderPass(scene, camera);
+            baseComposer.addPass(baseRenderPass);
+
+            const blurComposer = new EffectComposer(renderer);
+            const blurRenderPass = new RenderPass(scene, camera);
+            blurComposer.addPass(blurRenderPass);
+            const hBlurPass = new ShaderPass(HorizontalBlurShader);
+            const vBlurPass = new ShaderPass(VerticalBlurShader);
+            blurComposer.addPass(hBlurPass);
+            blurComposer.addPass(vBlurPass);
+
+            const compositePass = new ShaderPass(new THREE.ShaderMaterial({
+                uniforms: {
+                    baseTexture: { value: null },
+                    blurTexture: { value: blurComposer.renderTarget2.texture },
+                    blurMix: { value: 0 }
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform sampler2D baseTexture;
+                    uniform sampler2D blurTexture;
+                    uniform float blurMix;
+                    varying vec2 vUv;
+                    void main() {
+                        vec4 baseColor = texture2D(baseTexture, vUv);
+                        vec4 blurColor = texture2D(blurTexture, vUv);
+                        gl_FragColor = baseColor + blurColor * blurMix;
+                    }
+                `
+            }), 'baseTexture');
+            compositePass.needsSwap = true;
+            baseComposer.addPass(compositePass);
+            baseComposer.addPass(new OutputPass());
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+            scene.add(ambient);
+            const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            keyLight.position.set(18, 28, 12);
+            scene.add(keyLight);
+            const rimLight = new THREE.DirectionalLight(0x7fc5ff, 0.75);
+            rimLight.position.set(-22, -8, -10);
+            scene.add(rimLight);
+
+            const loader = new GLTFLoader();
+            const mixers = [];
+            const mixersByName = {};
+            const holdersByName = {};
+            const nodesByName = {};
+            const blurTargets = new Set();
+            const clock = new THREE.Clock();
+            const targetSize = 12;
+            let blurStrength = 0;
+            const modelNames = ['sheep', 'clownfish', 'lynx'];
+            const primaryPosition = new THREE.Vector3(0, 0, 20);
+            const circleRadius = 20;
+            const layoutPositions = modelNames.map((_, index) => {
+                if (index === 0) return primaryPosition.clone();
+                const otherCount = Math.max(1, modelNames.length - 1);
+                const angle = ((index - 1) / otherCount) * Math.PI * 2;
+                return primaryPosition.clone().add(new THREE.Vector3(
+                    Math.cos(angle) * circleRadius,
+                    0,
+                    Math.sin(angle) * circleRadius
+                ));
+            });
+            const loadModel = (name, index) => new Promise((resolve) => {
+                const modelURL = new URL(`./${name}.glb`, import.meta.url);
+                loader.load(modelURL.href, (gltf) => {
+                    const root = gltf.scene;
+                    const holder = new THREE.Group();
+                    holder.name = `${name}-holder`;
+
+                    const box = new THREE.Box3().setFromObject(root);
+                    const size = new THREE.Vector3();
+                    box.getSize(size);
+                    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+                    const scale = targetSize / maxDim;
+                    root.scale.multiplyScalar(scale);
+                    const basePosition = layoutPositions[index] ?? primaryPosition;
+                    holder.position.copy(basePosition);
+                    const offsets = {
+                        sheep: { holderPosition: { y: -5 }, holderScale: 1 },
+                        clownfish: { holderPosition: { y: 0 }, holderScale: 1 },
+                        lynx: { holderPosition: { y: 0 }, holderScale: 1 }
+                    };
+
+                    const config = offsets[name];
+                    if (config?.holderPosition) {
+                        holder.position.add(new THREE.Vector3(
+                            config.holderPosition.x ?? 0,
+                            config.holderPosition.y ?? 0,
+                            config.holderPosition.z ?? 0
+                        ));
+                    }
+                    if (config?.holderScale) holder.scale.setScalar(config.holderScale);
+
+                    holder.add(root);
+                    scene.add(holder);
+                    holdersByName[name] = holder;
+                    nodesByName[name] = root;
+
+                    root.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+
+                    if (gltf.animations?.length) {
+                        const mixer = new THREE.AnimationMixer(root);
+                        gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
+                        mixers.push(mixer);
+                        mixersByName[name] = mixer;
+                    }
+                    resolve();
+                }, undefined, (error) => {
+                    console.error(`[whatScene] Failed to load ${name}.glb`, error);
+                    resolve();
+                });
+            });
+
+            Promise.all(modelNames.map((name, index) => loadModel(name, index))).catch((error) => {
+                console.error('[whatScene] Error loading models', error);
+            });
+
+            const renderBlurLayer = () => {
+                if (blurTargets.size === 0 || blurStrength <= 0) {
+                    compositePass.material.uniforms.blurMix.value = 0;
+                    return;
+                }
+                const toggled = [];
+                Object.values(holdersByName).forEach((child) => {
+                    toggled.push({ child, visible: child.visible });
+                    child.visible = blurTargets.has(child);
+                });
+                blurComposer.render();
+                toggled.forEach(({ child, visible }) => child.visible = visible);
+                compositePass.material.uniforms.blurMix.value = 1;
+            };
+
+            const render = () => {
+                const delta = clock.getDelta();
+                mixers.forEach((mixer) => mixer.update(delta));
+                renderBlurLayer();
+                baseComposer.render();
+            };
+
+            let running = false;
+            const start = () => {
+                if (running) return;
+                running = true;
+                renderer.setAnimationLoop(render);
+            };
+
+            const stop = () => {
+                if (!running) return;
+                running = false;
+                renderer.setAnimationLoop(null);
+            };
+
+            const updateBlurUniforms = () => {
+                const { width, height } = getCanvasSize();
+                hBlurPass.uniforms.h.value = blurStrength / width;
+                vBlurPass.uniforms.v.value = blurStrength / height;
+            };
+
+            const setBlurStrength = (value) => {
+                blurStrength = Math.max(0, value);
+                updateBlurUniforms();
+            };
+
+            const resolveHolder = (target) => {
+                if (!target) return null;
+                return typeof target === 'string' ? holdersByName[target] ?? null : target;
+            };
+
+            const resolveNode = (target) => {
+                if (!target) return null;
+                return typeof target === 'string' ? nodesByName[target] ?? null : target;
+            };
+
+            const setObjectBlur = (target, enabled = true) => {
+                const holder = resolveHolder(target);
+                if (!holder) return;
+                if (enabled) blurTargets.add(holder);
+                else blurTargets.delete(holder);
+            };
+
+            const setAnimationSpeed = (target, speed = 1) => {
+                const mixer = typeof target === 'string' ? mixersByName[target] : target;
+                if (!mixer) return;
+                mixer.timeScale = speed;
+            };
+
+            const setModelOpacity = (target, value = 1) => {
+                const node = resolveNode(target);
+                if (!node) return;
+                const opacity = THREE.MathUtils.clamp(value, 0, 1);
+                node.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        const materials = Array.isArray(child.material) ? child.material : [child.material];
+                        materials.forEach((mat) => {
+                            mat.transparent = opacity < 1 || mat.transparent;
+                            mat.opacity = opacity;
+                        });
+                    }
+                });
+            };
+
+            const setModelTransform = (name, {
+                holderPosition,
+                holderScale,
+                modelPosition,
+                modelScale
+            } = {}) => {
+                const holder = resolveHolder(name);
+                const node = resolveNode(name);
+                const applyVector = (target, source) => {
+                    if (!target || !source) return;
+                    if (source.isVector3) {
+                        target.copy(source);
+                    } else {
+                        const { x = target.x, y = target.y, z = target.z } = source;
+                        target.set(x, y, z);
+                    }
+                };
+                if (holder && holderPosition) {
+                    applyVector(holder.position, holderPosition);
+                }
+                if (holder && holderScale) {
+                    if (typeof holderScale === 'number') holder.scale.setScalar(holderScale);
+                    else applyVector(holder.scale, holderScale);
+                }
+                if (node && modelPosition) {
+                    applyVector(node.position, modelPosition);
+                }
+                if (node && modelScale) {
+                    if (typeof modelScale === 'number') node.scale.setScalar(modelScale);
+                    else applyVector(node.scale, modelScale);
+                }
+            };
+
+            const handleResize = () => {
+                const { width, height } = getCanvasSize();
+                renderer.setSize(width, height, false);
+                baseComposer.setSize(width, height);
+                blurComposer.setSize(width, height);
+                compositePass.material.uniforms.blurTexture.value = blurComposer.renderTarget2.texture;
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+                updateBlurUniforms();
+            };
+            window.addEventListener('resize', handleResize);
+            handleResize();
+
+            return {
+                start,
+                stop,
+                holders: holdersByName,
+                models: nodesByName,
+                mixers: mixersByName,
+                setBlurStrength,
+                setObjectBlur,
+                setAnimationSpeed,
+                setModelOpacity,
+                setModelTransform,
+                dispose() {
+                    stop();
+                    window.removeEventListener('resize', handleResize);
+                    baseComposer.dispose();
+                    blurComposer.dispose();
+                    renderer.dispose();
+                    canvas.remove();
+                }
+            };
+        }
+
+        page.querySelector('#what-canvas')?.remove();
+        const whatCanvas = Object.assign(document.createElement('canvas'), { id: 'what-canvas' });
+        Object.assign(whatCanvas.style, {
+            position: 'absolute',
+            inset: '0',
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none'
         });
+        page.prepend(whatCanvas);
+        const what3D = createWhatScene(whatCanvas);
+        what3D?.start();
 
         // ============================== TIMELINE
 
         const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
         // Set initial states
-        gsap.set('#what-title', { fontSize: '8rem', top: '50%', yPercent: 500, autoAlpha: 0 });
-        gsap.set('.section>*', { visibility: 'hidden' });
+        gsap.set('#what-title', { fontSize: '8rem', top: '50%', yPercent: 500, autoAlpha: 0 });        
+        gsap.set('#what-canvas', { autoAlpha: 0 });
+        gsap.set('#what-section-4', { autoAlpha: 0 });
 
         // Definition timeline        
         tl.from('#page-what', {
@@ -2268,13 +2776,13 @@ function space() {
 
         tl.add(() => { // Append Scroller
             document.body.appendChild(scroller);
-            appendSegments(5);
+            appendSegments(3);
             window.scrollTo(0, 0);
             scroller.scrollTop = 0;
             ScrollTrigger.refresh();
         })
 
-        tl.add(() => { // VC timeline
+        tl.add(() => { // Three-section timeline
             const segmentTl = gsap.timeline({
                 scrollTrigger: {
                     trigger: '#segment-2',
@@ -2288,92 +2796,45 @@ function space() {
             segmentTl.to('#what-title', {
                 fontSize: '2rem', top: '4rem'
             }, 0);
-            segmentTl.to('#vc', {
-                autoAlpha: 1
-            }, '>');
-            segmentTl.to('#vc-def', {
-                autoAlpha: 1
-            }, '>');
-            segmentTl.to('#vc-content', {
-                autoAlpha: 1
-            }, '>');
-        });
-        tl.add(() => { // VS timeline
-            const segmentTl = gsap.timeline({
-                scrollTrigger: {
-                    trigger: '#segment-3',
-                    scroller,
-                    start: 'top bottom',
-                    end: 'top top',
-                    scrub: true,
-                    invalidateOnRefresh: true,
-                }
-            });
-            segmentTl.to('#vc', {
-                autoAlpha: 0, xPercent: 10
-            });
-            segmentTl.fromTo('#vs', {
-                autoAlpha: 0, xPercent: -10
-            }, {
-                autoAlpha: 1, xPercent: 0
-            }, '>');
-            segmentTl.to('#vc-def', {
-                autoAlpha: 0, xPercent: 10
+            segmentTl.to('#what-canvas', {
+                autoAlpha: 1, duration: 0.5
+            }, 0)
+            segmentTl.to('#page-what>.section-container .section', {
+                zIndex: 9
+            }, 0)
+            segmentTl.add(() => {
+                document.querySelector('.scroller').style.pointerEvents = 'none';
+            }, '>')
+            segmentTl.to('.scroll-hint', {
+                opacity: 0, duration: 0.5
             }, '<');
-            segmentTl.fromTo('#vs-def', {
-                autoAlpha: 0, xPercent: -10
-            }, {
-                autoAlpha: 1, xPercent: 0
-            }, '>');
-            segmentTl.to('#vc-content', {
-                autoAlpha: 0, xPercent: 10
-            }, '<');
-            segmentTl.fromTo('#vs-content', {
-                autoAlpha: 0, xPercent: -10
-            }, {
-                autoAlpha: 1, xPercent: 0
-            }, '>');
-        });
-        tl.add(() => { // Accelerator timeline
-            const segmentTl = gsap.timeline({
-                scrollTrigger: {
-                    trigger: '#segment-4',
-                    scroller,
-                    start: 'top bottom',
-                    end: 'top top',
-                    scrub: true,
-                    invalidateOnRefresh: true,
-                }
-            });
-            segmentTl.to('#vs', {
-                autoAlpha: 0, xPercent: 10
-            });
-            segmentTl.fromTo('#acc', {
-                autoAlpha: 0, xPercent: -10
-            }, {
-                autoAlpha: 1, xPercent: 0
-            }, '>');
-            segmentTl.to('#vs-def', {
-                autoAlpha: 0, xPercent: 10
-            }, '<');
-            segmentTl.fromTo('#acc-def', {
-                autoAlpha: 0, xPercent: -10
-            }, {
-                autoAlpha: 1, xPercent: 0
-            }, '>');
-            segmentTl.to('#vs-content', {
-                autoAlpha: 0, xPercent: 10
-            }, '<');
-            segmentTl.fromTo('#acc-content', {
-                autoAlpha: 0, xPercent: -10
-            }, {
-                autoAlpha: 1, xPercent: 0
-            }, '>');
-        });
+            segmentTl.add(() => {
+                // hoverable sections
+                const sections = document.querySelectorAll('#page-what > .section-container .section');
+                sections.forEach(section => {
+                    section.addEventListener('mouseenter', () => {
+                        sections.forEach(s => {
+                            s.classList.remove('hovered');
+                            s.style.zIndex = '9';
+                        });
+
+                        section.classList.add('hovered');
+                        section.style.zIndex = '0';
+                        if (section.id === 'what-section-3') {
+                            scroller.style.pointerEvents = 'auto';
+                            document.querySelector('.scroll-hint').style.opacity = '1'
+                        } else {
+                            scroller.style.pointerEvents = 'none';
+                            document.querySelector('.scroll-hint').style.opacity = '0'
+                        }
+                    });
+                });
+            }, '>')
+        });        
         tl.add(() => { // We Are Liminal timeline
             const segmentTl = gsap.timeline({
                 scrollTrigger: {
-                    trigger: '#segment-5',
+                    trigger: '#segment-3',
                     scroller,
                     start: 'top bottom',
                     end: 'top top',
@@ -2414,7 +2875,7 @@ function space() {
             }, '+=1');
         });
         tl.add(() => {
-            btn?.addEventListener('click', (e) => back(2, e), { once: true });
+            btn?.addEventListener('click', (e) => back(2, e, what3D), { once: true });
         });
 
     };
@@ -2807,7 +3268,7 @@ function space() {
             element.style.opacity = 1;
             if (line?.material) line.material.opacity = 1;
         });
-        if (scene.fog) scene.fog.density = 0.006;
+        if (scene.fog) scene.fog.density = FOG_DENSITY;
 
         const tl = gsap.timeline({
             defaults: { ease: 'power2.out' },
@@ -3003,11 +3464,11 @@ const Page = {
                 scaleY: 1, duration: 0.2
             }, '<');
             tl.from(next.container.querySelector('.tagline'), {
-                autoAlpha: 0, duration: 1, ease: 'bounce.out'
+                autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
             }, '>');
             tl.from(next.container.querySelector('.copyright-text'), {
-                autoAlpha: 0, duration: 1, ease: 'bounce.out'
-            }, '>');
+                autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
+            }, '>-0.3');
             return tl;
         },
         // -------------------------------------------------
