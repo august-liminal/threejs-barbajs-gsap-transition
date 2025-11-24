@@ -17,6 +17,7 @@ import { RoomEnvironment } from 'https://esm.sh/three@0.180.0/examples/jsm/envir
 import { CSS2DRenderer, CSS2DObject } from 'https://esm.sh/three@0.180.0/examples/jsm/renderers/CSS2DRenderer.js?deps=three@0.180.0';
 import { HorizontalBlurShader } from 'https://esm.sh/three@0.180.0/examples/jsm/shaders/HorizontalBlurShader.js?deps=three@0.180.0';
 import { VerticalBlurShader } from 'https://esm.sh/three@0.180.0/examples/jsm/shaders/VerticalBlurShader.js?deps=three@0.180.0';
+import { OrbitControls } from 'https://esm.sh/three@0.180.0/examples/jsm/controls/OrbitControls.js?deps=three@0.180.0';
 
 // GSAP
 import { gsap } from 'https://esm.sh/gsap@3.13.0?target=es2020';
@@ -3568,6 +3569,16 @@ const Page = {
             }, 0);
             return tl;
         }
+    },
+
+    cloud: { // CLOUD PAGE --------------------------------
+        build: () => { cloud(); },
+        enter: ({ next }) => gsap.timeline(),
+        leave: ({ current }) => {
+            const tl = gsap.timeline();
+            tl.to(current.container, { autoAlpha: 0, duration: 0.3 });
+            return tl;
+        }
     }
 };
 
@@ -3579,11 +3590,23 @@ function cloud() {
     if (!location.pathname.endsWith('/cloud')) return;
 
     const canvas = document.querySelector('#cloud-canvas') || Object.assign(document.createElement('canvas'), { id: 'cloud-canvas' });
+    Object.assign(canvas.style, {
+        position: 'fixed',
+        inset: '0',
+        width: '100vw',
+        height: '100vh',
+        display: 'block',
+        zIndex: '0',
+        pointerEvents: 'auto'
+    });
     if (!canvas.parentElement) document.body.appendChild(canvas);
 
     const scene = new THREE.Scene();
+    const FOG_DENSITY = 0.008;
+    scene.fog = new THREE.FogExp2(0x000000, FOG_DENSITY);
+
     const camera = new THREE.PerspectiveCamera(60, 1, 0.5, 1000);
-    camera.position.set(0, 0, 150);
+    camera.position.set(-250, 0, 0);
     scene.add(camera);
 
     const renderer = new THREE.WebGLRenderer({
@@ -3597,6 +3620,8 @@ function cloud() {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ReinhardToneMapping;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMappingExposure = 1.35;
+    renderer.setClearColor(0x000000, 1);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -3604,12 +3629,16 @@ function cloud() {
     controls.enableZoom = true;
 
     const shaderMaterial = new THREE.ShaderMaterial({
-        fog: false,
-        uniforms: {
-            uColor: { value: new THREE.Color(0xffffff) },
-            uSize: { value: 200.0 }
-        },
+        fog: true,
+        uniforms: THREE.UniformsUtils.merge([
+            THREE.UniformsLib.fog,
+            {
+                uColor: { value: new THREE.Color(0xffffff) },
+                uSize: { value: 200.0 }
+            }
+        ]),
         vertexShader: `
+        #include <fog_pars_vertex>
         uniform float uSize;
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -3617,9 +3646,11 @@ function cloud() {
             float sized = clamp(uSize * (1.2 / d), 1.0, 300.0);
             gl_PointSize = sized;
             gl_Position = projectionMatrix * mvPosition;
+            #include <fog_vertex>
         }
         `,
         fragmentShader: `
+        #include <fog_pars_fragment>
         uniform vec3 uColor;
         void main() {
             vec2 uv = gl_PointCoord - 0.5;
@@ -3631,9 +3662,11 @@ function cloud() {
             vec3 glow = mix(uColor * 0.9, vec3(1.0), core * 0.85);
             float alpha = max(core * 0.9, ring * 0.6) * (1.0 - edge);
             gl_FragColor = vec4(glow, alpha);
+            #include <fog_fragment>
         }
         `
     });
+    shaderMaterial.transparent = true;
 
     const loader = new GLTFLoader();
     let root = null;
@@ -3659,21 +3692,180 @@ function cloud() {
         scene.add(root);
     });
 
+    const params = {
+        threshold: 0.1,
+        strength: 0.3,
+        radius: 0.3,
+        exposure: 2
+    };
+
+    const renderScene = new RenderPass(scene, camera);
+    const halfW = Math.max(256, window.innerWidth >> 1);
+    const halfH = Math.max(256, window.innerHeight >> 1);
+    const bloomComposer = new EffectComposer(renderer);
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(halfW, halfH), params.strength, params.radius, params.threshold);
+    bloomComposer.renderToScreen = false;
+    bloomComposer.addPass(renderScene);
+    bloomComposer.addPass(bloomPass);
+
+    const mixPass = new ShaderPass(
+        new THREE.ShaderMaterial({
+            uniforms: {
+                baseTexture: { value: null },
+                bloomTexture: { value: bloomComposer.renderTarget2.texture },
+                bloomGain: { value: 0.7 }
+            },
+            vertexShader: `
+        varying vec2 vUv;
+        void main(){ vUv=uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+        `,
+            fragmentShader: `
+        uniform sampler2D baseTexture, bloomTexture;
+        uniform float bloomGain;
+        varying vec2 vUv;
+        void main(){
+            vec4 base  = texture2D(baseTexture,  vUv);
+            vec4 bloom = texture2D(bloomTexture, vUv) * bloomGain;
+            gl_FragColor = min(base + bloom, 1.0);
+        }
+        `
+        }),
+        'baseTexture'
+    );
+    mixPass.needsSwap = true;
+    const outputPass = new OutputPass();
+
+    const finalComposer = new EffectComposer(renderer);
+    finalComposer.setSize(window.innerWidth, window.innerHeight);
+    finalComposer.addPass(renderScene);
+    finalComposer.addPass(mixPass);
+    finalComposer.addPass(outputPass);
+
+    // Minimal HUD for fog control
+    const hud = document.getElementById('cloud-fog-hud') || (() => {
+        const wrap = Object.assign(document.createElement('div'), { id: 'cloud-fog-hud' });
+        Object.assign(wrap.style, {
+            position: 'fixed',
+            top: '1rem',
+            right: '1rem',
+            padding: '0.5rem 0.75rem',
+            background: '#000c',
+            color: '#fff',
+            fontSize: '0.9rem',
+            fontFamily: 'sans-serif',
+            borderRadius: '6px',
+            zIndex: 10
+        });
+        const label = Object.assign(document.createElement('label'), { textContent: 'Fog' });
+        label.style.display = 'block';
+        label.style.marginBottom = '0.25rem';
+        const input = Object.assign(document.createElement('input'), {
+            type: 'range',
+            min: '0',
+            max: '0.02',
+            step: '0.0002',
+            value: String(FOG_DENSITY)
+        });
+        input.style.width = '140px';
+        const valueSpan = Object.assign(document.createElement('span'), { textContent: FOG_DENSITY.toFixed(4) });
+        valueSpan.style.marginLeft = '0.5rem';
+        input.addEventListener('input', () => {
+            const v = parseFloat(input.value);
+            if (scene.fog) scene.fog.density = v;
+            valueSpan.textContent = v.toFixed(4);
+        });
+        wrap.append(label, input, valueSpan);
+
+        const bgLabel = Object.assign(document.createElement('label'), { textContent: 'Transparent BG' });
+        bgLabel.style.display = 'inline';
+        bgLabel.style.marginTop = '0.5rem';
+        const bgCheckbox = Object.assign(document.createElement('input'), { type: 'checkbox' });
+        bgCheckbox.style.marginRight = '0.4rem';
+        bgCheckbox.addEventListener('change', () => {
+            const alpha = bgCheckbox.checked ? 0 : 1;
+            renderer.setClearColor(0x000000, alpha);
+        });
+        const bgWrapper = document.createElement('div');
+        bgWrapper.append(bgCheckbox, bgLabel);
+        wrap.append(bgWrapper);
+
+        const saveBtn = Object.assign(document.createElement('button'), { textContent: 'Save PNG' });
+        Object.assign(saveBtn.style, {
+            marginTop: '0.5rem',
+            width: '100%',
+            background: '#222',
+            color: '#fff',
+            border: '1px solid #444',
+            borderRadius: '4px',
+            padding: '0.35rem 0.5rem',
+            cursor: 'pointer'
+        });
+        saveBtn.addEventListener('click', () => {
+            const origFog = scene.fog ? scene.fog.density : null;
+            const origPR = renderer.getPixelRatio();
+            const origSize = renderer.getSize(new THREE.Vector2());
+            const origClear = renderer.getClearColor(new THREE.Color());
+            const origAlpha = renderer.getClearAlpha();
+            const origUSize = shaderMaterial.uniforms.uSize.value;
+
+            const exportScale = 2;
+
+            renderer.setPixelRatio(origPR * exportScale);
+            renderer.setSize(origSize.x, origSize.y, false);
+            bloomComposer.setSize(origSize.x * exportScale, origSize.y * exportScale);
+            finalComposer.setSize(origSize.x * exportScale, origSize.y * exportScale);
+            shaderMaterial.uniforms.uSize.value = origUSize * exportScale;
+
+            finalComposer.render();
+            const url = renderer.domElement.toDataURL('image/png');
+
+            if (scene.fog && origFog != null) scene.fog.density = origFog;
+            renderer.setPixelRatio(origPR);
+            renderer.setSize(origSize.x, origSize.y, false);
+            bloomComposer.setSize(origSize.x, origSize.y);
+            finalComposer.setSize(origSize.x, origSize.y);
+            renderer.setClearColor(origClear, origAlpha);
+            shaderMaterial.uniforms.uSize.value = origUSize;
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cloud.png';
+            a.click();
+        });
+        wrap.append(saveBtn);
+        document.body.appendChild(wrap);
+        return wrap;
+    })();
+
     function resize() {
-        const width = canvas.clientWidth || window.innerWidth;
-        const height = canvas.clientHeight || window.innerHeight;
+        const width = window.innerWidth;
+        const height = window.innerHeight;
         renderer.setSize(width, height, false);
         camera.aspect = width / Math.max(1, height);
         camera.updateProjectionMatrix();
+        bloomComposer.setSize(width, height);
+        finalComposer.setSize(width, height);
     }
 
     resize();
     window.addEventListener('resize', resize);
 
     const clock = new THREE.Clock();
-    renderer.setAnimationLoop(() => {
+    const api = {
+        renderer,
+        scene,
+        camera,
+        controls,
+        start() { renderer.setAnimationLoop(renderLoop); },
+        stop() { renderer.setAnimationLoop(null); }
+    };
+    window.cloudInstance = api;
+
+    function renderLoop() {
         clock.getDelta();
         controls.update();
-        renderer.render(scene, camera);
-    });
+        bloomComposer.render();
+        finalComposer.render();
+    }
+    renderer.setAnimationLoop(renderLoop);
 }
