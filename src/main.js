@@ -3572,44 +3572,108 @@ const Page = {
 };
 
 // -----------------------------------------------------
-// DEBUG PAUSE TOGGLE (press Shift+P)
+// CLOUD
 // -----------------------------------------------------
-(() => {
-    if (typeof window === 'undefined' || !gsap?.globalTimeline) return;
 
-    let paused = false;
-    let scrollState = [];
+function cloud() {
+    if (!location.pathname.endsWith('/cloud')) return;
 
-    const haltScrollTriggers = () => {
-        scrollState = ScrollTrigger?.getAll?.() ?? [];
-        scrollState.forEach(st => st.disable());
-    };
+    const canvas = document.querySelector('#cloud-canvas') || Object.assign(document.createElement('canvas'), { id: 'cloud-canvas' });
+    if (!canvas.parentElement) document.body.appendChild(canvas);
 
-    const resumeScrollTriggers = () => {
-        scrollState.forEach(st => st.enable());
-        scrollState.length = 0;
-        ScrollTrigger?.refresh?.();
-    };
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.5, 1000);
+    camera.position.set(0, 0, 150);
+    scene.add(camera);
 
-    const pauseAll = () => {
-        gsap.globalTimeline.pause();
-        haltScrollTriggers();
-        stopThree?.();
-        paused = true;
-        console.info('[debug] paused');
-    };
-
-    const resumeAll = () => {
-        gsap.globalTimeline.resume();
-        resumeScrollTriggers();
-        startThree?.();
-        paused = false;
-        console.info('[debug] resumed');
-    };
-
-    window.addEventListener('keydown', evt => {
-        if (evt.key.toLowerCase() !== 'p' || !evt.shiftKey) return;
-        evt.preventDefault();
-        paused ? resumeAll() : pauseAll();
+    const renderer = new THREE.WebGLRenderer({
+        canvas,
+        alpha: true,
+        antialias: true,
+        depth: true,
+        stencil: false,
+        powerPreference: 'high-performance'
     });
-})();
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ReinhardToneMapping;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enablePan = true;
+    controls.enableZoom = true;
+
+    const shaderMaterial = new THREE.ShaderMaterial({
+        fog: false,
+        uniforms: {
+            uColor: { value: new THREE.Color(0xffffff) },
+            uSize: { value: 200.0 }
+        },
+        vertexShader: `
+        uniform float uSize;
+        void main() {
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            float d = max(1.0, -mvPosition.z);
+            float sized = clamp(uSize * (1.2 / d), 1.0, 300.0);
+            gl_PointSize = sized;
+            gl_Position = projectionMatrix * mvPosition;
+        }
+        `,
+        fragmentShader: `
+        uniform vec3 uColor;
+        void main() {
+            vec2 uv = gl_PointCoord - 0.5;
+            float r = length(uv);
+            float edge = smoothstep(0.49, 0.5, r);
+            if (edge >= 1.0) discard;
+            float core = 1.0 - smoothstep(0.00, 0.18, r);
+            float ring = 1.0 - smoothstep(0.30, 0.49, r);
+            vec3 glow = mix(uColor * 0.9, vec3(1.0), core * 0.85);
+            float alpha = max(core * 0.9, ring * 0.6) * (1.0 - edge);
+            gl_FragColor = vec4(glow, alpha);
+        }
+        `
+    });
+
+    const loader = new GLTFLoader();
+    let root = null;
+
+    loader.load(new URL('./cloud.glb', import.meta.url).href, (gltf) => {
+        const group = new THREE.Group();
+        gltf.scene.traverse((n) => {
+            if (n.isPoints) {
+                const geo = n.geometry.clone();
+                const pts = new THREE.Points(geo, shaderMaterial);
+                pts.position.copy(n.position);
+                pts.rotation.copy(n.rotation);
+                pts.scale.copy(n.scale);
+                group.add(pts);
+                n.material?.dispose?.();
+            }
+        });
+        const box = new THREE.Box3().setFromObject(group);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        group.position.sub(center);
+        root = group;
+        scene.add(root);
+    });
+
+    function resize() {
+        const width = canvas.clientWidth || window.innerWidth;
+        const height = canvas.clientHeight || window.innerHeight;
+        renderer.setSize(width, height, false);
+        camera.aspect = width / Math.max(1, height);
+        camera.updateProjectionMatrix();
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+
+    const clock = new THREE.Clock();
+    renderer.setAnimationLoop(() => {
+        clock.getDelta();
+        controls.update();
+        renderer.render(scene, camera);
+    });
+}
