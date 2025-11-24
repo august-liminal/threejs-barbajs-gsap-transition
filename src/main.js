@@ -7,6 +7,7 @@ import * as THREE from 'https://esm.sh/three@0.180.0';
 
 // Three add-ons (same CDN + shared dependency)
 import { GLTFLoader } from 'https://esm.sh/three@0.180.0/examples/jsm/loaders/GLTFLoader.js?deps=three@0.180.0';
+import { DRACOLoader } from 'https://esm.sh/three@0.180.0/examples/jsm/loaders/DRACOLoader.js?deps=three@0.180.0';
 import { EffectComposer } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/EffectComposer.js?deps=three@0.180.0';
 import { RenderPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/RenderPass.js?deps=three@0.180.0';
 import { ShaderPass } from 'https://esm.sh/three@0.180.0/examples/jsm/postprocessing/ShaderPass.js?deps=three@0.180.0';
@@ -22,6 +23,9 @@ import { gsap } from 'https://esm.sh/gsap@3.13.0?target=es2020';
 import { ScrollTrigger } from 'https://esm.sh/gsap@3.13.0/ScrollTrigger?target=es2020&external=gsap';
 import { ScrambleTextPlugin } from 'https://esm.sh/gsap@3.13.0/ScrambleTextPlugin?target=es2020&external=gsap';
 gsap.registerPlugin(ScrollTrigger, ScrambleTextPlugin);
+
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
 
 // Barba
 import barba from 'https://esm.sh/@barba/core@2.9.7?target=es2020';
@@ -230,6 +234,7 @@ function landing() {
 
     // GLTF Loader
     const loader = new GLTFLoader();
+    loader.setDRACOLoader(dracoLoader);
     const modelURL = new URL('./cloud.glb', import.meta.url);
     //Load the file
     loader.load(
@@ -767,7 +772,7 @@ function unlock() {
                 })();
 
                 document.querySelectorAll('.text-line').forEach(el => { el.style.opacity = '0'; });
-                message.innerHTML = `<span class="welcome">${result.user_greeting}. Redirecting...</span>`;
+                message.innerHTML = `<span class="welcome">Transitioning...</span>`;
 
                 //Set state management. Only uncomment after states are done
                 //if(!localStorage.getItem(code)) {
@@ -854,7 +859,7 @@ function unlock() {
 
 function space() {
     // =================== CHECKS AND PROTECTIONS ===================
-    if (!location.pathname.endsWith('/space') || spaceInit || !localStorage.getItem('userId')) return;
+    if (!location.pathname.endsWith('/space') || spaceInit) return;
 
     const key = localStorage.getItem('userId');
 
@@ -866,7 +871,7 @@ function space() {
         const accessTime = parseInt(localStorage.getItem('accessTime'));
 
         // Check if session is valid
-        if (!(sessionToken && accessTime && (Date.now() - accessTime) < validDuration)) {
+        if (!(key && sessionToken && accessTime && (Date.now() - accessTime) < validDuration)) {
             // Invalid session - redirect to landing
             logout();
             return;
@@ -1706,8 +1711,6 @@ function space() {
             orangeLight.position.set(0, 0, -4);
             scene.add(orangeLight);
 
-            // scene.add(new THREE.AxesHelper(30));
-
             const normalMap = new THREE.TextureLoader().load(new URL('./textures/sphereNormal.jpg', import.meta.url));
             const roughnessMap = new THREE.TextureLoader().load(new URL('./textures/sphereRoughness.jpg', import.meta.url));
 
@@ -2146,50 +2149,92 @@ function space() {
                     x: 13.5, z: 0,
                     ease: 'none'
                 }, '<');
+
+                const circleTargets = {
+                    circle1: { cx: 0, cy: 0, r: 0 },
+                    circle2: { cx: 0, cy: 0, r: 0 }
+                };
                 let circleSetup = false;
+                const tempCenter = new THREE.Vector3();
+                const tempEdge = new THREE.Vector3();
+                const tempClip = new THREE.Vector3();
+                const tempScale = new THREE.Vector3();
                 segmentTl.add(() => {
-                    if (circleSetup == true) return;
+                    if (circleSetup) return;
                     const rect = thesisCanvas.getBoundingClientRect();
-                    const center = new THREE.Vector3();
-                    const edgeWorld = new THREE.Vector3();
-                    const edgeScreen = new THREE.Vector3();
+                    const viewWidth = window.innerWidth;
+                    const viewHeight = window.innerHeight;
                     const pairs = [
-                        { mesh: rightShell, circle: circle2 },
-                        { mesh: leftShell, circle: circle1 }
+                        { mesh: rightShell, circle: circle2, key: 'circle2' },
+                        { mesh: leftShell, circle: circle1, key: 'circle1' }
                     ];
 
-                    pairs.forEach(({ mesh, circle }) => {
+                    pairs.forEach(({ mesh, circle, key }) => {
                         if (!mesh || !circle) return;
+                        mesh.updateWorldMatrix(true, false);
 
-                        mesh.getWorldPosition(center);
-                        center.project(cam);
-                        const cx = (center.x * 0.5 + 0.5) * rect.width;
-                        const cy = (-center.y * 0.5 + 0.5) * rect.height;
+                        if (!mesh.geometry.boundingSphere) {
+                            mesh.geometry.computeBoundingSphere();
+                        }
+                        const sphere = mesh.geometry.boundingSphere;
+                        tempCenter.copy(sphere.center);
+                        mesh.localToWorld(tempCenter);
+                        tempClip.copy(tempCenter).project(cam);
+                        const cx = (tempClip.x * 0.5 + 0.5) * viewWidth;
+                        const cy = (-tempClip.y * 0.5 + 0.5) * viewHeight;
 
-                        const radius = mesh.geometry.boundingSphere?.radius ?? 1;
-                        edgeWorld.set(radius, 0, 0).applyMatrix4(mesh.matrixWorld);
-                        edgeScreen.copy(edgeWorld).project(cam);
-
-                        const ex = (edgeScreen.x * 0.5 + 0.5) * rect.width;
-                        const ey = (-edgeScreen.y * 0.5 + 0.5) * rect.height;
+                        mesh.getWorldScale(tempScale);
+                        const scaledRadius = sphere.radius * Math.max(tempScale.x, tempScale.y, tempScale.z);
+                        tempEdge.set(scaledRadius, 0, 0).add(sphere.center);
+                        mesh.localToWorld(tempEdge);
+                        tempClip.copy(tempEdge).project(cam);
+                        const ex = (tempClip.x * 0.5 + 0.5) * viewWidth;
+                        const ey = (-tempClip.y * 0.5 + 0.5) * viewHeight;
                         const screenRadius = Math.hypot(ex - cx, ey - cy);
 
+                        circleTargets[key].cx = cx;
+                        circleTargets[key].cy = cy;
+                        circleTargets[key].r = screenRadius;
                         circle.setAttribute('cx', cx);
                         circle.setAttribute('cy', cy);
-                        circle.setAttribute('r', screenRadius);
                     });
                     circleSetup = true;
                 }, '>');
-                segmentTl.to({}, {
-                    onComplete:(() => {
-                        segmentTl.from(circle2, {
-                            autoAlpha: 0, attr: { r: 0 }, duration: 1, ease: 'power2.out'
-                        }, 0);
-                        segmentTl.from(circle1, {
-                            autoAlpha: 0, attr: { r: 0 }, duration: 1, ease: 'power2.out'
-                        }, '<');
-                    })
-                }, '>+0.1')
+
+                segmentTl.fromTo(circle2, {
+                    autoAlpha: 0,
+                    attr: {
+                        cx: () => circleTargets.circle2.cx,
+                        cy: () => circleTargets.circle2.cy,
+                        r: 0
+                    }
+                }, {
+                    autoAlpha: 1,
+                    attr: {
+                        cx: () => circleTargets.circle2.cx,
+                        cy: () => circleTargets.circle2.cy,
+                        r: () => circleTargets.circle2.r
+                    },
+                    duration: 1,
+                    ease: 'power2.out'
+                }, '>');
+                segmentTl.fromTo(circle1, {
+                    autoAlpha: 0,
+                    attr: {
+                        cx: () => circleTargets.circle1.cx,
+                        cy: () => circleTargets.circle1.cy,
+                        r: 0
+                    }
+                }, {
+                    autoAlpha: 1,
+                    attr: {
+                        cx: () => circleTargets.circle1.cx,
+                        cy: () => circleTargets.circle1.cy,
+                        r: () => circleTargets.circle1.r
+                    },
+                    duration: 1,
+                    ease: 'power2.out'
+                }, '<');
             }
         });
 
@@ -2425,362 +2470,307 @@ function space() {
         //creating scroller
         const scroller = Object.assign(document.createElement('div'), {
             className: 'scroller'
-        });        
+        });
 
         // ============================== THREEJS
-        function createWhatScene(canvas) {
-            const getCanvasSize = () => {
-                const bounds = page.getBoundingClientRect();
-                return {
-                    width: Math.max(1, bounds.width),
-                    height: Math.max(1, bounds.height)
-                };
-            };
 
-            const scene = new THREE.Scene();
-            scene.background = null;
+        function createWhatScene() {
+            const pageElement = document.querySelector('#page-what');
+            if (!pageElement) return null;
 
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 0, 55);
-            scene.add(camera);
+            const canvas = Object.assign(document.createElement('canvas'), {
+                id: 'what-canvas',
+                className: 'what-canvas'
+            });
+            canvas.style.pointerEvents = 'none';
+            pageElement.prepend(canvas);
 
             const renderer = new THREE.WebGLRenderer({
                 canvas,
-                alpha: true,
-                antialias: true
+                antialias: true,
+                alpha: true
             });
-            renderer.outputColorSpace = THREE.SRGBColorSpace;
-            renderer.setClearColor(0x000000, 0);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setClearColor(0x000000, 0);
+            renderer.physicallyCorrectLights = true;
 
-            const baseComposer = new EffectComposer(renderer);
-            const baseRenderPass = new RenderPass(scene, camera);
-            baseComposer.addPass(baseRenderPass);
+            const scene = new THREE.Scene();
 
-            const blurComposer = new EffectComposer(renderer);
-            const blurRenderPass = new RenderPass(scene, camera);
-            blurComposer.addPass(blurRenderPass);
-            const hBlurPass = new ShaderPass(HorizontalBlurShader);
-            const vBlurPass = new ShaderPass(VerticalBlurShader);
-            blurComposer.addPass(hBlurPass);
-            blurComposer.addPass(vBlurPass);
+            const getViewportSize = () => {
+                const rect = pageElement.getBoundingClientRect();
+                const width = Math.max(1, rect.width || window.innerWidth);
+                const height = Math.max(1, rect.height || window.innerHeight);
+                return { width, height };
+            };
 
-            const compositePass = new ShaderPass(new THREE.ShaderMaterial({
-                uniforms: {
-                    baseTexture: { value: null },
-                    blurTexture: { value: blurComposer.renderTarget2.texture },
-                    blurMix: { value: 0 }
-                },
-                vertexShader: `
-                    varying vec2 vUv;
-                    void main() {
-                        vUv = uv;
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }
-                `,
-                fragmentShader: `
-                    uniform sampler2D baseTexture;
-                    uniform sampler2D blurTexture;
-                    uniform float blurMix;
-                    varying vec2 vUv;
-                    void main() {
-                        vec4 baseColor = texture2D(baseTexture, vUv);
-                        vec4 blurColor = texture2D(blurTexture, vUv);
-                        gl_FragColor = baseColor + blurColor * blurMix;
-                    }
-                `
-            }), 'baseTexture');
-            compositePass.needsSwap = true;
-            baseComposer.addPass(compositePass);
-            baseComposer.addPass(new OutputPass());
+            const { width, height } = getViewportSize();
+            renderer.setSize(width, height, false);
 
-            const ambient = new THREE.AmbientLight(0xffffff, 0.45);
-            scene.add(ambient);
-            const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
-            keyLight.position.set(18, 28, 12);
-            scene.add(keyLight);
-            const rimLight = new THREE.DirectionalLight(0x7fc5ff, 0.75);
-            rimLight.position.set(-22, -8, -10);
+            const camera = new THREE.PerspectiveCamera(
+                15,
+                width / Math.max(1, height),
+                0.1,
+                200
+            );
+            camera.position.set(0, 0, 30);
+            scene.add(camera);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x0a0a0a, 0.6));
+            const rimLight = new THREE.DirectionalLight(0xffffff, 1.4);
+            rimLight.position.set(6, 8, 10);
             scene.add(rimLight);
+            
+            scene.add(new THREE.AxesHelper(10));
+
+            const groupCount = 3;
+            const groups = Array.from({ length: groupCount }, (_, index) => {
+                const group = new THREE.Group();
+                group.name = `whatGroup${index + 1}`;
+                scene.add(group);
+                return group;
+            });
+
+            const lights = [];
+            const models = [];
+            const geometries = new Set();
+            const materials = new Set();
+            const sectionIds = ['what-section-1', 'what-section-2', 'what-section-3'];
+            const sectionMap = new Map(sectionIds.map((id, index) => [id, { group: groups[index], element: document.getElementById(id) }]));
+            const sectionResizeObserver = 'ResizeObserver' in window ? new ResizeObserver(() => syncGroupsToSections()) : null;
+            sectionIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) sectionResizeObserver?.observe(el);
+            });
 
             const loader = new GLTFLoader();
-            const mixers = [];
-            const mixersByName = {};
-            const holdersByName = {};
-            const nodesByName = {};
-            const blurTargets = new Set();
-            const clock = new THREE.Clock();
-            const targetSize = 12;
-            let blurStrength = 0;
-            const modelNames = ['sheep', 'clownfish', 'lynx'];
-            const primaryPosition = new THREE.Vector3(0, 0, 20);
-            const circleRadius = 20;
-            const layoutPositions = modelNames.map((_, index) => {
-                if (index === 0) return primaryPosition.clone();
-                const otherCount = Math.max(1, modelNames.length - 1);
-                const angle = ((index - 1) / otherCount) * Math.PI * 2;
-                return primaryPosition.clone().add(new THREE.Vector3(
-                    Math.cos(angle) * circleRadius,
-                    0,
-                    Math.sin(angle) * circleRadius
-                ));
-            });
-            const loadModel = (name, index) => new Promise((resolve) => {
-                const modelURL = new URL(`./${name}.glb`, import.meta.url);
-                loader.load(modelURL.href, (gltf) => {
-                    const root = gltf.scene;
-                    const holder = new THREE.Group();
-                    holder.name = `${name}-holder`;
+            loader.setDRACOLoader?.(dracoLoader);
+            const modelURL = new URL('./element07.glb', import.meta.url);
+            const templateSize = new THREE.Vector3(1, 1, 1);
 
-                    const box = new THREE.Box3().setFromObject(root);
-                    const size = new THREE.Vector3();
-                    box.getSize(size);
-                    const maxDim = Math.max(size.x, size.y, size.z) || 1;
-                    const scale = targetSize / maxDim;
-                    root.scale.multiplyScalar(scale);
-                    const basePosition = layoutPositions[index] ?? primaryPosition;
-                    holder.position.copy(basePosition);
-                    const offsets = {
-                        sheep: { holderPosition: { y: -5 }, holderScale: 1 },
-                        clownfish: { holderPosition: { y: 0 }, holderScale: 1 },
-                        lynx: { holderPosition: { y: 0 }, holderScale: 1 }
-                    };
+            loader.load(modelURL.href, (gltf) => {
+                const template = gltf.scene;
+                const boundingBox = new THREE.Box3().setFromObject(template);
+                const center = boundingBox.getCenter(new THREE.Vector3());
+                const size = boundingBox.getSize(new THREE.Vector3());
+                template.position.sub(center);
+                const desiredHeight = 1.5;
+                const scale = desiredHeight / Math.max(1e-3, size.y);
+                template.scale.setScalar(scale);
+                templateSize.copy(new THREE.Box3().setFromObject(template).getSize(new THREE.Vector3()));
 
-                    const config = offsets[name];
-                    if (config?.holderPosition) {
-                        holder.position.add(new THREE.Vector3(
-                            config.holderPosition.x ?? 0,
-                            config.holderPosition.y ?? 0,
-                            config.holderPosition.z ?? 0
-                        ));
+                const centerHelper = new THREE.Vector3();
+                const tempCenterWorld = new THREE.Vector3();
+                template.traverse((child) => {
+                    if (!child.isMesh) return;
+                    if (!geometries.has(child.geometry)) {
+                        child.geometry.computeBoundingBox();
+                        const box = child.geometry.boundingBox;
+                        if (box) {
+                            box.getCenter(centerHelper);
+                            child.geometry.translate(-centerHelper.x, -centerHelper.y, -centerHelper.z);
+                        }
+                        child.geometry.computeBoundingSphere?.();
                     }
-                    if (config?.holderScale) holder.scale.setScalar(config.holderScale);
+                    child.position.set(0, 0, 0);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: 0xcccccc,
+                        roughness: 0.35,
+                        metalness: 1,
+                        envMapIntensity: 1.2
+                    });
+                    material.userData.smallColor = new THREE.Color(0x888888);
+                    material.userData.largeColor = new THREE.Color(0xffffff);
+                    child.material = material;
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    geometries.add(child.geometry);
+                    materials.add(material);
+                });
 
-                    holder.add(root);
-                    scene.add(holder);
-                    holdersByName[name] = holder;
-                    nodesByName[name] = root;
-
-                    root.traverse((child) => {
-                        if (child.isMesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
+                groups.forEach((group, index) => {
+                    const clone = template.clone(true);
+                    group.add(clone);
+                    clone.updateMatrixWorld(true);
+                    clone.traverse(child => {
+                        if (child.isMesh && child.material) {
+                            const mat = child.material.clone();
+                            if (mat.userData?.smallColor) {
+                                mat.userData.smallColor = mat.userData.smallColor.clone?.() ?? new THREE.Color(mat.userData.smallColor);
+                            }
+                            if (mat.userData?.largeColor) {
+                                mat.userData.largeColor = mat.userData.largeColor.clone?.() ?? new THREE.Color(mat.userData.largeColor);
+                            }
+                            child.material = mat;
                         }
                     });
+                    const centerWorld = new THREE.Box3().setFromObject(clone).getCenter(tempCenterWorld);
+                    group.worldToLocal(centerWorld);
+                    clone.position.sub(centerWorld);
+                    models.push(clone);
 
-                    if (gltf.animations?.length) {
-                        const mixer = new THREE.AnimationMixer(root);
-                        gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
-                        mixers.push(mixer);
-                        mixersByName[name] = mixer;
-                    }
-                    resolve();
-                }, undefined, (error) => {
-                    console.error(`[whatScene] Failed to load ${name}.glb`, error);
-                    resolve();
+                    lights.push(null);
                 });
+                syncGroupsToSections();
+            }, undefined, (error) => {
+                console.error('[createWhatScene] Failed to load element07.glb', error);
             });
 
-            Promise.all(modelNames.map((name, index) => loadModel(name, index))).catch((error) => {
-                console.error('[whatScene] Error loading models', error);
-            });
-
-            const renderBlurLayer = () => {
-                if (blurTargets.size === 0 || blurStrength <= 0) {
-                    compositePass.material.uniforms.blurMix.value = 0;
-                    return;
-                }
-                const toggled = [];
-                Object.values(holdersByName).forEach((child) => {
-                    toggled.push({ child, visible: child.visible });
-                    child.visible = blurTargets.has(child);
-                });
-                blurComposer.render();
-                toggled.forEach(({ child, visible }) => child.visible = visible);
-                compositePass.material.uniforms.blurMix.value = 1;
-            };
-
-            const render = () => {
-                const delta = clock.getDelta();
-                mixers.forEach((mixer) => mixer.update(delta));
-                renderBlurLayer();
-                baseComposer.render();
-            };
-
+            const rotationSpeed = 0.2;
+            const clock = new THREE.Clock();
             let running = false;
-            const start = () => {
+            const targetZ = 0;
+            const tempVec = new THREE.Vector3();
+            const tempDir = new THREE.Vector3();
+
+            function ndcToWorldX(ndcX) {
+                tempVec.set(ndcX, 0, 0).unproject(camera);
+                tempDir.copy(tempVec).sub(camera.position).normalize();
+                const distance = (targetZ - camera.position.z) / tempDir.z;
+                return camera.position.x + tempDir.x * distance;
+            }
+
+            function syncGroupsToSections() {
+                const rect = canvas.getBoundingClientRect();
+                if (!rect.width || !rect.height) return;
+                const measurements = [];
+                sectionIds.forEach(id => {
+                    const entry = sectionMap.get(id);
+                    if (!entry) return;
+                    const section = document.getElementById(id);
+                    if (!section || !entry.group) return;
+                    if (entry.element !== section) entry.element = section;
+                    const bounds = section.getBoundingClientRect();
+                    measurements.push({ entry, bounds });
+                });
+
+                if (!measurements.length) return;
+                const maxWidth = Math.max(...measurements.map(m => m.bounds.width));
+                const minWidth = Math.min(...measurements.map(m => m.bounds.width));
+                const widthRange = Math.max(1e-6, maxWidth - minWidth);
+
+                measurements.forEach(({ entry, bounds }) => {
+                    const leftNdc = ((bounds.left - rect.left) / rect.width) * 2 - 1;
+                    const rightNdc = ((bounds.right - rect.left) / rect.width) * 2 - 1;
+                    const worldLeft = ndcToWorldX(leftNdc);
+                    const worldRight = ndcToWorldX(rightNdc);
+                    const worldWidth = Math.max(0.001, worldRight - worldLeft);
+                    entry.group.position.set((worldLeft + worldRight) / 2, 0, targetZ);
+                    const baseWidth = Math.max(0.001, templateSize.x);
+                    const targetScale = Math.max(0.4, Math.min(3, worldWidth / baseWidth));
+                    entry.group.scale.setScalar(targetScale);
+                    const colorRatio = Math.pow((bounds.width - minWidth) / widthRange, 0.4);
+                    entry.group.traverse(child => {
+                        if (child.isMesh && child.material?.userData) {
+                            const { smallColor: small, largeColor: large } = child.material.userData;
+                            if (small && large) {
+                                child.material.color.copy(small).lerp(large, colorRatio);
+                                child.material.needsUpdate = true;
+                            }
+                        }
+                    });
+                });
+            }
+
+            function resize() {
+                const size = getViewportSize();
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                renderer.setSize(size.width, size.height, false);
+                camera.aspect = size.width / Math.max(1, size.height);
+                camera.updateProjectionMatrix();
+                syncGroupsToSections();
+            }
+
+            resize();
+            window.addEventListener('resize', resize);
+            syncGroupsToSections();
+
+            function renderFrame() {
+                if (!running) return;
+                const delta = clock.getDelta();
+                groups.forEach((group) => {
+                    group.rotation.y += rotationSpeed * delta;
+                });
+                renderer.render(scene, camera);
+            }
+
+            function start() {
                 if (running) return;
                 running = true;
-                renderer.setAnimationLoop(render);
-            };
+                clock.start();
+                renderer.setAnimationLoop(renderFrame);
+            }
 
-            const stop = () => {
+            function stop() {
                 if (!running) return;
                 running = false;
                 renderer.setAnimationLoop(null);
-            };
+            }
 
-            const updateBlurUniforms = () => {
-                const { width, height } = getCanvasSize();
-                hBlurPass.uniforms.h.value = blurStrength / width;
-                vBlurPass.uniforms.v.value = blurStrength / height;
-            };
-
-            const setBlurStrength = (value) => {
-                blurStrength = Math.max(0, value);
-                updateBlurUniforms();
-            };
-
-            const resolveHolder = (target) => {
-                if (!target) return null;
-                return typeof target === 'string' ? holdersByName[target] ?? null : target;
-            };
-
-            const resolveNode = (target) => {
-                if (!target) return null;
-                return typeof target === 'string' ? nodesByName[target] ?? null : target;
-            };
-
-            const setObjectBlur = (target, enabled = true) => {
-                const holder = resolveHolder(target);
-                if (!holder) return;
-                if (enabled) blurTargets.add(holder);
-                else blurTargets.delete(holder);
-            };
-
-            const setAnimationSpeed = (target, speed = 1) => {
-                const mixer = typeof target === 'string' ? mixersByName[target] : target;
-                if (!mixer) return;
-                mixer.timeScale = speed;
-            };
-
-            const setModelOpacity = (target, value = 1) => {
-                const node = resolveNode(target);
-                if (!node) return;
-                const opacity = THREE.MathUtils.clamp(value, 0, 1);
-                node.traverse((child) => {
-                    if (child.isMesh && child.material) {
-                        const materials = Array.isArray(child.material) ? child.material : [child.material];
-                        materials.forEach((mat) => {
-                            mat.transparent = opacity < 1 || mat.transparent;
-                            mat.opacity = opacity;
-                        });
-                    }
-                });
-            };
-
-            const setModelTransform = (name, {
-                holderPosition,
-                holderScale,
-                modelPosition,
-                modelScale
-            } = {}) => {
-                const holder = resolveHolder(name);
-                const node = resolveNode(name);
-                const applyVector = (target, source) => {
-                    if (!target || !source) return;
-                    if (source.isVector3) {
-                        target.copy(source);
-                    } else {
-                        const { x = target.x, y = target.y, z = target.z } = source;
-                        target.set(x, y, z);
-                    }
-                };
-                if (holder && holderPosition) {
-                    applyVector(holder.position, holderPosition);
-                }
-                if (holder && holderScale) {
-                    if (typeof holderScale === 'number') holder.scale.setScalar(holderScale);
-                    else applyVector(holder.scale, holderScale);
-                }
-                if (node && modelPosition) {
-                    applyVector(node.position, modelPosition);
-                }
-                if (node && modelScale) {
-                    if (typeof modelScale === 'number') node.scale.setScalar(modelScale);
-                    else applyVector(node.scale, modelScale);
-                }
-            };
-
-            const handleResize = () => {
-                const { width, height } = getCanvasSize();
-                renderer.setSize(width, height, false);
-                baseComposer.setSize(width, height);
-                blurComposer.setSize(width, height);
-                compositePass.material.uniforms.blurTexture.value = blurComposer.renderTarget2.texture;
-                camera.aspect = width / height;
-                camera.updateProjectionMatrix();
-                updateBlurUniforms();
-            };
-            window.addEventListener('resize', handleResize);
-            handleResize();
+            function dispose() {
+                stop();
+                window.removeEventListener('resize', resize);
+                sectionResizeObserver?.disconnect();
+                renderer.dispose();
+                materials.forEach(material => material.dispose());
+                geometries.forEach(geometry => geometry.dispose());
+                canvas.remove();
+            }
 
             return {
                 start,
                 stop,
-                holders: holdersByName,
-                models: nodesByName,
-                mixers: mixersByName,
-                setBlurStrength,
-                setObjectBlur,
-                setAnimationSpeed,
-                setModelOpacity,
-                setModelTransform,
-                dispose() {
-                    stop();
-                    window.removeEventListener('resize', handleResize);
-                    baseComposer.dispose();
-                    blurComposer.dispose();
-                    renderer.dispose();
-                    canvas.remove();
-                }
+                scene,
+                camera,
+                renderer,
+                groups,
+                lights,
+                objects: models,
+                canvases: [canvas],
+                syncToSections: syncGroupsToSections,
+                dispose
             };
         }
 
-        page.querySelector('#what-canvas')?.remove();
-        const whatCanvas = Object.assign(document.createElement('canvas'), { id: 'what-canvas' });
-        Object.assign(whatCanvas.style, {
-            position: 'absolute',
-            inset: '0',
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none'
-        });
-        page.prepend(whatCanvas);
-        const what3D = createWhatScene(whatCanvas);
-        what3D?.start();
+        const what3D = createWhatScene();
+        window.what3D = what3D;
+        
 
         // ============================== TIMELINE
 
         const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
         // Set initial states
-        gsap.set('#what-title', { fontSize: '8rem', top: '50%', yPercent: 500, autoAlpha: 0 });        
-        gsap.set('#what-canvas', { autoAlpha: 0 });
+        gsap.set('#what-title', { fontSize: '8rem', top: '50%', yPercent: 500, autoAlpha: 0 });
+        gsap.set('.section-container', { autoAlpha: 0 });
+        gsap.set('.what-canvas', { autoAlpha: 0 });
         gsap.set('#what-section-4', { autoAlpha: 0 });
+        gsap.set('#page-what>.section-container i', { scaleY: 0 });
 
-        // Definition timeline        
-        tl.from('#page-what', {
-            autoAlpha: 0, duration: 1
-        }, '<');
-        tl.to(renderer.domElement, {
-            autoAlpha: 0, duration: 1, ease: 'power2.out'
-            // onComplete: swapScene(); // add your replacement logic here when ready
-        }, '<');
-        tl.to('#what-title', {
-            yPercent: 0, autoAlpha: 1, duration: 1
-        }, 0)
-        tl.to('.scroll-hint', {
-            autoAlpha: 1, duration: 0.5
-        }, '>0.2');
-
+        // Definition timeline    
         tl.add(() => { // Append Scroller
             document.body.appendChild(scroller);
             appendSegments(3);
             window.scrollTo(0, 0);
             scroller.scrollTop = 0;
             ScrollTrigger.refresh();
-        })
+        }, 0)
+        tl.add(() => { what3D?.start(); }, 0);
+        tl.from('#page-what', {
+            autoAlpha: 0, duration: 1
+        }, 0);
+        tl.to(renderer.domElement, {
+            autoAlpha: 0, duration: 1, ease: 'power2.out', onComplete: () => stopThree()
+        }, 0);
+        tl.to('.what-canvas', {
+            autoAlpha: 1, duration: 0.5
+        }, 0);
+        tl.to('#what-title', {
+            yPercent: 0, autoAlpha: 1, duration: 0.5
+        }, 0)
+        tl.to('#page-what .scroll-hint', {
+            autoAlpha: 1, duration: 0.5
+        }, '>0.5');
 
         tl.add(() => { // Three-section timeline
             const segmentTl = gsap.timeline({
@@ -2791,46 +2781,67 @@ function space() {
                     end: 'top top',
                     scrub: true,
                     invalidateOnRefresh: true,
+                    onComplete: () => {
+                        document.querySelector('.scroller').style.pointerEvents = 'none';
+                    }
                 }
             });
             segmentTl.to('#what-title', {
                 fontSize: '2rem', top: '4rem'
             }, 0);
-            segmentTl.to('#what-canvas', {
+            segmentTl.to('.section-container', {
                 autoAlpha: 1, duration: 0.5
-            }, 0)
+            }, 0);
             segmentTl.to('#page-what>.section-container .section', {
                 zIndex: 9
-            }, 0)
-            segmentTl.add(() => {
-                document.querySelector('.scroller').style.pointerEvents = 'none';
-            }, '>')
+            }, 0);
+            segmentTl.to('#page-what>.section-container i', {
+                scaleY: 1,
+                duration: 0.5,
+                stagger: 0.2
+            }, '<');            
             segmentTl.to('.scroll-hint', {
-                opacity: 0, duration: 0.5
-            }, '<');
+                opacity: 0, duration: 0.2, onComplete: () => {
+                    segmentTl.to('#page-what .scroll-hint', {
+                        right: '4rem', duration: 0
+                    });
+                }
+            }, '<-0.5');
+
             segmentTl.add(() => {
-                // hoverable sections
                 const sections = document.querySelectorAll('#page-what > .section-container .section');
+                const clearHovered = () => {
+                    document.querySelectorAll('#page-what > .section-container .section.hovered').forEach(s => {
+                        s.classList.remove('hovered');
+                    });
+                };
                 sections.forEach(section => {
                     section.addEventListener('mouseenter', () => {
+                        clearHovered();
                         sections.forEach(s => {
-                            s.classList.remove('hovered');
+                            s.removeAttribute('style');
+                            s.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
                             s.style.zIndex = '9';
                         });
-
+                        section.removeAttribute('style');
+                        section.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
                         section.classList.add('hovered');
                         section.style.zIndex = '0';
+
+                        what3D?.syncToSections?.();
+                        requestAnimationFrame(() => what3D?.syncToSections?.());
+
                         if (section.id === 'what-section-3') {
                             scroller.style.pointerEvents = 'auto';
-                            document.querySelector('.scroll-hint').style.opacity = '1'
+                            document.querySelector('#page-what .scroll-hint').style.opacity = '1'
                         } else {
                             scroller.style.pointerEvents = 'none';
-                            document.querySelector('.scroll-hint').style.opacity = '0'
+                            document.querySelector('#page-what .scroll-hint').style.opacity = '0'
                         }
                     });
                 });
             }, '>')
-        });        
+        });
         tl.add(() => { // We Are Liminal timeline
             const segmentTl = gsap.timeline({
                 scrollTrigger: {
@@ -2839,25 +2850,31 @@ function space() {
                     start: 'top bottom',
                     end: 'top top',
                     scrub: true,
-                    invalidateOnRefresh: true,
+                    invalidateOnRefresh: true
                 }
             });
-            segmentTl.to('.scroll-hint', {
-                autoAlpha: 0, xPercent: -10, duration: 0.01
+            segmentTl.to('#page-what .scroll-hint', {
+                autoAlpha: 0, duration: 0.01
             });
             segmentTl.to('#what-title', {
-                autoAlpha: 0, xPercent: -10, duration: 0.01
+                autoAlpha: 0, duration: 0.5
             });
-            segmentTl.to('#acc', {
-                autoAlpha: 0, xPercent: -10, duration: 0.5
+            segmentTl.to('#page-what>.section-container i', {
+                yPercent: -100, duration: 0.5
             }, '<');
-            segmentTl.to('#acc-def', {
-                autoAlpha: 0, xPercent: -10, duration: 0.5
+            segmentTl.to('#page-what>.section-container .section > div', {
+                autoAlpha: 0, duration: 0.5
             }, '<');
-            segmentTl.to('#acc-content', {
-                autoAlpha: 0, xPercent: -10, duration: 0.5
+            segmentTl.to('#page-what>.section-container .section > div', {
+                transform: 'translateY(-4rem)', duration: 1
             }, '<');
-            segmentTl.add(gsap.to({}, { duration: 2 }, '>'));
+            segmentTl.to('#page-what>.section-container .section', {
+                zIndex: 0
+            }, '<');
+            segmentTl.add(() => {
+                console.log('RUNNING');
+                gsap.to({}, { duration: 2 }, '>')
+            });
             segmentTl.fromTo('#we-are-liminal', {
                 autoAlpha: 0, scale: 0
             }, {
@@ -3246,6 +3263,7 @@ function space() {
         if (value === ref) menuLayoutThree(value + 1);
 
         const instanceCanvas = threeInstance?.renderer?.domElement ?? (threeInstance instanceof HTMLCanvasElement ? threeInstance : null);
+        const instanceCanvases = threeInstance?.canvases ?? (instanceCanvas ? [instanceCanvas] : []);
 
         gsap.killTweensOf(camera.position);
         gsap.killTweensOf(camera.quaternion);
@@ -3286,7 +3304,7 @@ function space() {
                 window.scrollTo(0, 0);
                 threeInstance?.stop?.();
                 threeInstance?.dispose?.();
-                instanceCanvas?.remove?.();
+                instanceCanvases.forEach(canvas => canvas?.remove?.());
 
                 if (value === ref) { localStorage.setItem(key, value + 1) };
             }
@@ -3295,8 +3313,8 @@ function space() {
         tl.to(page, {
             autoAlpha: 0, duration: 1
         }, 0);
-        if (instanceCanvas) {
-            tl.to(instanceCanvas, {
+        if (instanceCanvases.length) {
+            tl.to(instanceCanvases, {
                 autoAlpha: 0, duration: 1
             }, '<');
         }

@@ -606,9 +606,15 @@ canvas#thesis-canvas {
     inset: 0;
 }
 
-canvas#thesis-canvas,
-canvas#what-canvas {
+canvas#thesis-canvas {
     z-index: -1;
+}
+
+canvas#what-canvas {
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+    inset: 0;
 }
 
 canvas#space {
@@ -832,6 +838,7 @@ canvas#space {
 #page-what .scroll-hint {
     position: absolute;
     bottom: 4rem;
+    transition: opacity 0.2s;
 }
 
 #page-what>.section-container {
@@ -853,6 +860,24 @@ canvas#space {
     transition: opacity 0.5s ease-out;
 }
 
+#page-what>.section-container i {
+    height: 100%;
+    width: 1px;
+    background: #fff8;
+    transform-origin: 50% 100%;
+}
+
+#page-what>.section-container .section canvas {
+    position: absolute;
+    width: 100%;
+    aspect-ratio: 1;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
+    z-index: 10;
+    pointer-events: none;
+}
+
 #page-what>.section-container.hovered .section {
     flex: 1 1 0;    
 }
@@ -865,10 +890,6 @@ canvas#space {
     opacity: 1;
 }
 
-#what-section-1, #what-section-2 {
-    border-right: 1px solid #fffa ;
-}
-
 #what-title {
     position: fixed;
 }
@@ -876,7 +897,7 @@ canvas#space {
 #vc,
 #vs,
 #acc {
-    margin-top: 2rem;
+    margin-top: 4rem;
 }
 
 #vc-def,
