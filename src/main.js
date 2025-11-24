@@ -3605,8 +3605,8 @@ function cloud() {
     const FOG_DENSITY = 0.008;
     scene.fog = new THREE.FogExp2(0x000000, FOG_DENSITY);
 
-    const camera = new THREE.PerspectiveCamera(60, 1, 0.5, 1000);
-    camera.position.set(-250, 0, 0);
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.01, 5000);
+    camera.position.set(-1, 0, 0);
     scene.add(camera);
 
     const renderer = new THREE.WebGLRenderer({
@@ -3627,6 +3627,10 @@ function cloud() {
     controls.enableDamping = true;
     controls.enablePan = true;
     controls.enableZoom = true;
+    controls.minDistance = 0.0;
+    controls.maxDistance = 1e6;
+    controls.target.set(0, 0, 0);
+    controls.update();
 
     const shaderMaterial = new THREE.ShaderMaterial({
         fog: true,
@@ -3666,6 +3670,8 @@ function cloud() {
         }
         `
     });
+    shaderMaterial.depthWrite = false;
+    shaderMaterial.blending = THREE.AdditiveBlending;
     shaderMaterial.transparent = true;
 
     const loader = new GLTFLoader();
@@ -3690,6 +3696,16 @@ function cloud() {
         group.position.sub(center);
         root = group;
         scene.add(root);
+        const sphere = new THREE.Sphere();
+        box.getBoundingSphere(sphere);
+        const radius = sphere.radius;
+        controls.target.copy(sphere.center);
+        controls.minDistance = 0; // allow crossing through center
+        camera.near = Math.max(0.005, radius * 0.0001);
+        camera.updateProjectionMatrix();
+        const startOffset = Math.max(10, radius * 0.8);
+        camera.position.copy(sphere.center).add(new THREE.Vector3(-startOffset, 0, 0));
+        controls.update();
     });
 
     const params = {
@@ -3756,25 +3772,64 @@ function cloud() {
             borderRadius: '6px',
             zIndex: 10
         });
-        const label = Object.assign(document.createElement('label'), { textContent: 'Fog' });
-        label.style.display = 'block';
-        label.style.marginBottom = '0.25rem';
-        const input = Object.assign(document.createElement('input'), {
-            type: 'range',
-            min: '0',
-            max: '0.02',
-            step: '0.0002',
-            value: String(FOG_DENSITY)
+        const addSlider = ({ label, min, max, step, value, format = (v) => v.toFixed(3), onInput }) => {
+            const row = document.createElement('div');
+            row.style.marginBottom = '0.4rem';
+            const lbl = Object.assign(document.createElement('label'), { textContent: label });
+            lbl.style.display = 'block';
+            lbl.style.marginBottom = '0.15rem';
+            const input = Object.assign(document.createElement('input'), {
+                type: 'range', min: String(min), max: String(max), step: String(step), value: String(value)
+            });
+            input.style.width = '140px';
+            const val = Object.assign(document.createElement('span'), { textContent: format(value) });
+            val.style.marginLeft = '0.5rem';
+            input.addEventListener('input', () => {
+                const v = parseFloat(input.value);
+                onInput?.(v);
+                val.textContent = format(v);
+            });
+            row.append(lbl, input, val);
+            wrap.append(row);
+            return input;
+        };
+
+        addSlider({
+            label: 'Fog',
+            min: 0,
+            max: 0.02,
+            step: 0.0002,
+            value: FOG_DENSITY,
+            format: (v) => v.toFixed(4),
+            onInput: (v) => { if (scene.fog) scene.fog.density = v; }
         });
-        input.style.width = '140px';
-        const valueSpan = Object.assign(document.createElement('span'), { textContent: FOG_DENSITY.toFixed(4) });
-        valueSpan.style.marginLeft = '0.5rem';
-        input.addEventListener('input', () => {
-            const v = parseFloat(input.value);
-            if (scene.fog) scene.fog.density = v;
-            valueSpan.textContent = v.toFixed(4);
+
+        addSlider({
+            label: 'Bloom Radius',
+            min: 0,
+            max: 1,
+            step: 0.01,
+            value: params.radius,
+            onInput: (v) => { params.radius = v; bloomPass.radius = v; }
         });
-        wrap.append(label, input, valueSpan);
+
+        addSlider({
+            label: 'Bloom Gain',
+            min: 0,
+            max: 2,
+            step: 0.05,
+            value: mixPass.material.uniforms.bloomGain.value,
+            onInput: (v) => { mixPass.material.uniforms.bloomGain.value = v; }
+        });
+
+        addSlider({
+            label: 'Exposure',
+            min: 0.1,
+            max: 3,
+            step: 0.05,
+            value: renderer.toneMappingExposure,
+            onInput: (v) => { renderer.toneMappingExposure = v; }
+        });
 
         const bgLabel = Object.assign(document.createElement('label'), { textContent: 'Transparent BG' });
         bgLabel.style.display = 'inline';
@@ -3856,6 +3911,13 @@ function cloud() {
         scene,
         camera,
         controls,
+        get root() { return root; },
+        get radius() {
+            if (!root) return null;
+            const sphere = new THREE.Sphere();
+            new THREE.Box3().setFromObject(root).getBoundingSphere(sphere);
+            return sphere.radius;
+        },
         start() { renderer.setAnimationLoop(renderLoop); },
         stop() { renderer.setAnimationLoop(null); }
     };
