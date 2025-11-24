@@ -3590,15 +3590,6 @@ function cloud() {
     if (!location.pathname.endsWith('/cloud')) return;
 
     const canvas = document.querySelector('#cloud-canvas') || Object.assign(document.createElement('canvas'), { id: 'cloud-canvas' });
-    Object.assign(canvas.style, {
-        position: 'fixed',
-        inset: '0',
-        width: '100vw',
-        height: '100vh',
-        display: 'block',
-        zIndex: '0',
-        pointerEvents: 'auto'
-    });
     if (!canvas.parentElement) document.body.appendChild(canvas);
 
     const scene = new THREE.Scene();
@@ -3627,8 +3618,6 @@ function cloud() {
     controls.enableDamping = true;
     controls.enablePan = true;
     controls.enableZoom = true;
-    controls.minDistance = 0.0;
-    controls.maxDistance = 1e6;
     controls.target.set(0, 0, 0);
     controls.update();
 
@@ -3760,36 +3749,36 @@ function cloud() {
     // Minimal HUD for fog control
     const hud = document.getElementById('cloud-fog-hud') || (() => {
         const wrap = Object.assign(document.createElement('div'), { id: 'cloud-fog-hud' });
-        Object.assign(wrap.style, {
-            position: 'fixed',
-            top: '1rem',
-            right: '1rem',
-            padding: '0.5rem 0.75rem',
-            background: '#000c',
-            color: '#fff',
-            fontSize: '0.9rem',
-            fontFamily: 'sans-serif',
-            borderRadius: '6px',
-            zIndex: 10
-        });
+        const hint = Object.assign(document.createElement('div'), { innerHTML: 'Drag to Rotate<br>Shift + Drag to Pan' });
+        hint.className = 'cloud-hud__hint';
+        wrap.append(hint);
         const addSlider = ({ label, min, max, step, value, format = (v) => v.toFixed(3), onInput }) => {
             const row = document.createElement('div');
-            row.style.marginBottom = '0.4rem';
+            row.className = 'cloud-hud__row';
+            const header = document.createElement('div');
+            header.className = 'cloud-hud__row-header';
             const lbl = Object.assign(document.createElement('label'), { textContent: label });
-            lbl.style.display = 'block';
-            lbl.style.marginBottom = '0.15rem';
+            lbl.className = 'cloud-hud__label';
+            const val = Object.assign(document.createElement('span'), { textContent: format(value) });
+            val.className = 'cloud-hud__value';
+            header.append(lbl, val);
+
             const input = Object.assign(document.createElement('input'), {
                 type: 'range', min: String(min), max: String(max), step: String(step), value: String(value)
             });
-            input.style.width = '140px';
-            const val = Object.assign(document.createElement('span'), { textContent: format(value) });
-            val.style.marginLeft = '0.5rem';
+            input.className = 'cloud-hud__range';
+            const updateBg = (v) => {
+                const pct = ((v - min) / (max - min)) * 100;
+                input.style.setProperty('--pos', `${pct}%`);
+            };
+            updateBg(value);
             input.addEventListener('input', () => {
                 const v = parseFloat(input.value);
                 onInput?.(v);
                 val.textContent = format(v);
+                updateBg(v);
             });
-            row.append(lbl, input, val);
+            row.append(header, input);
             wrap.append(row);
             return input;
         };
@@ -3832,29 +3821,20 @@ function cloud() {
         });
 
         const bgLabel = Object.assign(document.createElement('label'), { textContent: 'Transparent BG' });
-        bgLabel.style.display = 'inline';
-        bgLabel.style.marginTop = '0.5rem';
+        bgLabel.className = 'cloud-hud__label-inline';
         const bgCheckbox = Object.assign(document.createElement('input'), { type: 'checkbox' });
-        bgCheckbox.style.marginRight = '0.4rem';
+        bgCheckbox.className = 'cloud-hud__checkbox';
         bgCheckbox.addEventListener('change', () => {
             const alpha = bgCheckbox.checked ? 0 : 1;
             renderer.setClearColor(0x000000, alpha);
         });
         const bgWrapper = document.createElement('div');
+        bgWrapper.className = 'cloud-hud__row';
         bgWrapper.append(bgCheckbox, bgLabel);
         wrap.append(bgWrapper);
 
         const saveBtn = Object.assign(document.createElement('button'), { textContent: 'Save PNG' });
-        Object.assign(saveBtn.style, {
-            marginTop: '0.5rem',
-            width: '100%',
-            background: '#222',
-            color: '#fff',
-            border: '1px solid #444',
-            borderRadius: '4px',
-            padding: '0.35rem 0.5rem',
-            cursor: 'pointer'
-        });
+        saveBtn.className = 'cloud-hud__save';
         saveBtn.addEventListener('click', () => {
             const origFog = scene.fog ? scene.fog.density : null;
             const origPR = renderer.getPixelRatio();
