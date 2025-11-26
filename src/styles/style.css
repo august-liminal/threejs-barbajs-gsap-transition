@@ -612,7 +612,7 @@ canvas#thesis-canvas {
 
 canvas#what-canvas {
     position: absolute;
-    z-index: 1;
+    z-index: 10;
     pointer-events: none;
     inset: 0;
 }

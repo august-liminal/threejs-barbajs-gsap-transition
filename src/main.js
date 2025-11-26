@@ -376,7 +376,6 @@ function updateLanding(e) {
     const entrance = document.querySelector('#entrance') || document.querySelector('.grid-container').appendChild(Object.assign(document.createElement('a'), { id: 'entrance' }));
     entrance.style.setProperty('--entrance-w', windowW);
     entrance.style.setProperty('--entrance-h', windowH);
-    //Object.assign(entrance.style,{position:'absolute', zIndex: '999', top: '50%', left: '50%', transform:'translate(-50%,-50%)', width: windowW * cellSize + 'px', height: windowH * cellSize + 'px', border: '1px solid #fff', transition: 'background 0.2s ease-out, box-shadow 0.2s ease-out'});
     if (windowH == 2 && windowW == 2) {
         Object.assign(entrance.style, { background: '#fff', boxShadow: '0 0 2rem #fff' });
         entrance.setAttribute('href', '/unlock');
@@ -2202,40 +2201,40 @@ function space() {
                     circleSetup = true;
                 }, '>');
 
-                segmentTl.fromTo(circle2, {
-                    autoAlpha: 0,
-                    attr: {
-                        cx: () => circleTargets.circle2.cx,
-                        cy: () => circleTargets.circle2.cy,
-                        r: 0
-                    }
-                }, {
-                    autoAlpha: 1,
-                    attr: {
-                        cx: () => circleTargets.circle2.cx,
-                        cy: () => circleTargets.circle2.cy,
-                        r: () => circleTargets.circle2.r
-                    },
-                    duration: 1,
-                    ease: 'power2.out'
-                }, '>');
-                segmentTl.fromTo(circle1, {
-                    autoAlpha: 0,
-                    attr: {
-                        cx: () => circleTargets.circle1.cx,
-                        cy: () => circleTargets.circle1.cy,
-                        r: 0
-                    }
-                }, {
-                    autoAlpha: 1,
-                    attr: {
-                        cx: () => circleTargets.circle1.cx,
-                        cy: () => circleTargets.circle1.cy,
-                        r: () => circleTargets.circle1.r
-                    },
-                    duration: 1,
-                    ease: 'power2.out'
-                }, '<');
+                // segmentTl.fromTo(circle2, {
+                //     autoAlpha: 0,
+                //     attr: {
+                //         cx: () => circleTargets.circle2.cx,
+                //         cy: () => circleTargets.circle2.cy,
+                //         r: 0
+                //     }
+                // }, {
+                //     autoAlpha: 1,
+                //     attr: {
+                //         cx: () => circleTargets.circle2.cx,
+                //         cy: () => circleTargets.circle2.cy,
+                //         r: () => circleTargets.circle2.r
+                //     },
+                //     duration: 1,
+                //     ease: 'power2.out'
+                // }, '>');
+                // segmentTl.fromTo(circle1, {
+                //     autoAlpha: 0,
+                //     attr: {
+                //         cx: () => circleTargets.circle1.cx,
+                //         cy: () => circleTargets.circle1.cy,
+                //         r: 0
+                //     }
+                // }, {
+                //     autoAlpha: 1,
+                //     attr: {
+                //         cx: () => circleTargets.circle1.cx,
+                //         cy: () => circleTargets.circle1.cy,
+                //         r: () => circleTargets.circle1.r
+                //     },
+                //     duration: 1,
+                //     ease: 'power2.out'
+                // }, '<');
             }
         });
 
@@ -2513,7 +2512,9 @@ function space() {
                 0.1,
                 200
             );
-            camera.position.set(0, 0, 30);
+            camera.position.set(0, 0, 60);
+            const lookAtTarget = new THREE.Vector3(0, 0, 0);
+            camera.lookAt(lookAtTarget);
             scene.add(camera);
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.85));
@@ -2521,8 +2522,8 @@ function space() {
             const rimLight = new THREE.DirectionalLight(0xffffff, 1.4);
             rimLight.position.set(6, 8, 10);
             scene.add(rimLight);
-            
-            scene.add(new THREE.AxesHelper(10));
+
+            // scene.add(new THREE.AxesHelper(10));
 
             const groupCount = 3;
             const groups = Array.from({ length: groupCount }, (_, index) => {
@@ -2537,7 +2538,7 @@ function space() {
             const geometries = new Set();
             const materials = new Set();
             const sectionIds = ['what-section-1', 'what-section-2', 'what-section-3'];
-            const sectionMap = new Map(sectionIds.map((id, index) => [id, { group: groups[index], element: document.getElementById(id) }]));
+            const sectionMap = new Map(sectionIds.map((id, index) => [id, { group: groups[index], element: document.getElementById(id), index }]));
             const sectionResizeObserver = 'ResizeObserver' in window ? new ResizeObserver(() => syncGroupsToSections()) : null;
             sectionIds.forEach(id => {
                 const el = document.getElementById(id);
@@ -2546,25 +2547,44 @@ function space() {
 
             const loader = new GLTFLoader();
             loader.setDRACOLoader?.(dracoLoader);
-            const modelURL = new URL('./element07.glb', import.meta.url);
-            const templateSize = new THREE.Vector3(1, 1, 1);
+            // Model paths (override by setting window.whatModelPaths before this runs)
+            const defaultModelPaths = [
+                './element05.glb',
+                './element07.glb',
+                './element08.glb'
+            ];
+            const modelPathStrings = Array.isArray(window.whatModelPaths) ? window.whatModelPaths : defaultModelPaths;
+            const modelPaths = modelPathStrings.map(p => p ? new URL(p, import.meta.url) : null);
+            const templateSizes = Array(groupCount).fill(null);
+            const templateSizeFallback = new THREE.Vector3(1, 1, 1);
 
-            loader.load(modelURL.href, (gltf) => {
-                const template = gltf.scene;
-                const boundingBox = new THREE.Box3().setFromObject(template);
-                const center = boundingBox.getCenter(new THREE.Vector3());
-                const size = boundingBox.getSize(new THREE.Vector3());
-                template.position.sub(center);
-                const desiredHeight = 1.5;
-                const scale = desiredHeight / Math.max(1e-3, size.y);
-                template.scale.setScalar(scale);
-                templateSize.copy(new THREE.Box3().setFromObject(template).getSize(new THREE.Vector3()));
+            const perGroupOffsets = [
+                { pos: [0, 10, 0], rot: [10, 0, 0], scale: 0.7 },
+                { pos: [0, 10, 0], rot: [0, 0, 0], scale: 1 },
+                { pos: [0, 10, 0], rot: [80, 0, 20], scale: 0.7 }
+            ];
 
-                const centerHelper = new THREE.Vector3();
-                const tempCenterWorld = new THREE.Vector3();
-                template.traverse((child) => {
-                    if (!child.isMesh) return;
-                    if (!geometries.has(child.geometry)) {
+            modelPaths.forEach((url, index) => {
+                if (!url) {
+                    console.warn(`[createWhatScene] No model path for index ${index}; skipping load`);
+                    return;
+                }
+                loader.load(url.href, (gltf) => {
+                    const template = gltf.scene;
+                    const boundingBox = new THREE.Box3().setFromObject(template);
+                    const center = boundingBox.getCenter(new THREE.Vector3());
+                    const size = boundingBox.getSize(new THREE.Vector3());
+                    template.position.sub(center);
+                    const targetNorm = 3; // normalize by largest dimension so all models start comparable
+                    const maxDim = Math.max(size.x, size.y, size.z, 1e-3);
+                    const scale = targetNorm / maxDim;
+                    template.scale.setScalar(scale);
+                    templateSizes[index] = new THREE.Box3().setFromObject(template).getSize(new THREE.Vector3());
+
+                    const centerHelper = new THREE.Vector3();
+                    const tempCenterWorld = new THREE.Vector3();
+                    template.traverse((child) => {
+                        if (!child.isMesh) return;
                         child.geometry.computeBoundingBox();
                         const box = child.geometry.boundingBox;
                         if (box) {
@@ -2572,26 +2592,33 @@ function space() {
                             child.geometry.translate(-centerHelper.x, -centerHelper.y, -centerHelper.z);
                         }
                         child.geometry.computeBoundingSphere?.();
-                    }
-                    child.position.set(0, 0, 0);
-                    const material = new THREE.MeshStandardMaterial({
-                        color: 0xcccccc,
-                        roughness: 0.35,
-                        metalness: 1,
-                        envMapIntensity: 1.2
+                        child.position.set(0, 0, 0);
+                        const material = new THREE.MeshStandardMaterial({
+                            color: 0xcccccc,
+                            roughness: 0.35,
+                            metalness: 1,
+                            envMapIntensity: 1.2
+                        });
+                        material.userData.smallColor = new THREE.Color(0x888888);
+                        material.userData.largeColor = new THREE.Color(0xffffff);
+                        child.material = material;
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        geometries.add(child.geometry);
+                        materials.add(material);
                     });
-                    material.userData.smallColor = new THREE.Color(0x888888);
-                    material.userData.largeColor = new THREE.Color(0xffffff);
-                    child.material = material;
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                    geometries.add(child.geometry);
-                    materials.add(material);
-                });
 
-                groups.forEach((group, index) => {
+                    const group = groups[index];
+                    if (!group) return;
                     const clone = template.clone(true);
+                    const cfg = perGroupOffsets[index] ?? {};
+                    clone.position.set(...(cfg.pos ?? [0, 0, 0]));
+                    const [rx = 0, ry = 0, rz = 0] = cfg.rot ?? [];
+                    clone.rotation.set(rx, ry, rz);
+                    if (cfg.scale) clone.scale.multiplyScalar(cfg.scale);
+
                     group.add(clone);
+                    // group.add(new THREE.AxesHelper(2));
                     clone.updateMatrixWorld(true);
                     clone.traverse(child => {
                         if (child.isMesh && child.material) {
@@ -2608,13 +2635,12 @@ function space() {
                     const centerWorld = new THREE.Box3().setFromObject(clone).getCenter(tempCenterWorld);
                     group.worldToLocal(centerWorld);
                     clone.position.sub(centerWorld);
-                    models.push(clone);
-
-                    lights.push(null);
+                    models[index] = clone;
+                    lights[index] = null;
+                    syncGroupsToSections();
+                }, undefined, (error) => {
+                    console.error(`[createWhatScene] Failed to load ${url.href}`, error);
                 });
-                syncGroupsToSections();
-            }, undefined, (error) => {
-                console.error('[createWhatScene] Failed to load element07.glb', error);
             });
 
             const rotationSpeed = 0.2;
@@ -2657,7 +2683,7 @@ function space() {
                     const worldRight = ndcToWorldX(rightNdc);
                     const worldWidth = Math.max(0.001, worldRight - worldLeft);
                     entry.group.position.set((worldLeft + worldRight) / 2, 0, targetZ);
-                    const baseWidth = Math.max(0.001, templateSize.x);
+                    const baseWidth = Math.max(0.001, (templateSizes[entry.index]?.x ?? templateSizeFallback.x));
                     const targetScale = Math.max(0.4, Math.min(3, worldWidth / baseWidth));
                     entry.group.scale.setScalar(targetScale);
                     const colorRatio = Math.pow((bounds.width - minWidth) / widthRange, 0.4);
@@ -2680,6 +2706,7 @@ function space() {
                 camera.aspect = size.width / Math.max(1, size.height);
                 camera.updateProjectionMatrix();
                 syncGroupsToSections();
+                camera.lookAt(lookAtTarget);
             }
 
             resize();
@@ -2735,7 +2762,8 @@ function space() {
 
         const what3D = createWhatScene();
         window.what3D = what3D;
-        
+        const whatLookAt = new THREE.Vector3(0, 0, 0);
+
 
         // ============================== TIMELINE
 
@@ -2747,6 +2775,7 @@ function space() {
         gsap.set('.what-canvas', { autoAlpha: 0 });
         gsap.set('#what-section-4', { autoAlpha: 0 });
         gsap.set('#page-what>.section-container i', { scaleY: 0 });
+        gsap.set('#what-canvas', { autoAlpha: 0 });
 
         // Definition timeline    
         tl.add(() => { // Append Scroller
@@ -2763,15 +2792,15 @@ function space() {
         tl.to(renderer.domElement, {
             autoAlpha: 0, duration: 1, ease: 'power2.out', onComplete: () => stopThree()
         }, 0);
-        tl.to('.what-canvas', {
-            autoAlpha: 1, duration: 0.5
-        }, 0);
         tl.to('#what-title', {
             yPercent: 0, autoAlpha: 1, duration: 0.5
         }, 0)
         tl.to('#page-what .scroll-hint', {
             autoAlpha: 1, duration: 0.5
         }, '>0.5');
+
+        const whatCam = what3D?.camera;
+        const whatGroups = what3D?.groups ?? [];
 
         tl.add(() => { // Three-section timeline
             const segmentTl = gsap.timeline({
@@ -2790,6 +2819,9 @@ function space() {
             segmentTl.to('#what-title', {
                 fontSize: '2rem', top: '4rem'
             }, 0);
+            segmentTl.to('#what-canvas', {
+                autoAlpha: 1, duration: 1
+            }, 0)
             segmentTl.to('.section-container', {
                 autoAlpha: 1, duration: 0.5
             }, 0);
@@ -2800,7 +2832,7 @@ function space() {
                 scaleY: 1,
                 duration: 0.5,
                 stagger: 0.2
-            }, '<');            
+            }, '<');
             segmentTl.to('.scroll-hint', {
                 opacity: 0, duration: 0.2, onComplete: () => {
                     segmentTl.to('#page-what .scroll-hint', {
@@ -2872,25 +2904,74 @@ function space() {
             segmentTl.to('#page-what>.section-container .section', {
                 zIndex: 0
             }, '<');
-            segmentTl.add(() => {
-                console.log('RUNNING');
-                gsap.to({}, { duration: 2 }, '>')
+            if (whatCam) {
+                const tempOffset = new THREE.Vector3();
+                const triRadius = 1;
+                const triHeight = Math.sin(THREE.MathUtils.degToRad(60)) * triRadius;
+                const trianglePositions = [
+                    new THREE.Vector3(-triRadius, 0, -triHeight),
+                    new THREE.Vector3(triRadius, 0, -triHeight),
+                    new THREE.Vector3(0, 0, triHeight * 2)
+                ];
+                let camOffset = null; // vector from target to camera
+                let camSpherical = null; // spherical form of camOffset (captured once)
+                let startPos = [];
+                let startScale = [];
+                let startRotX = [];
+                const captureStartState = () => {
+                    if (camOffset) return;
+                    camOffset = new THREE.Vector3().copy(whatCam.position).sub(whatLookAt);
+                    camSpherical = new THREE.Spherical().setFromVector3(camOffset);
+                    startPos = whatGroups.map(g => g.position.clone());
+                    startScale = whatGroups.map(g => g.scale.clone());
+                    startRotX = whatGroups.map(g => g.rotation.x);
+                };
+                const orbitState = { phi: 0, theta: 0, radius: 0 };
+                segmentTl.to(orbitState, {
+                    ease: 'none',
+                    immediateRender: false,
+                    onStart: captureStartState,
+                    onUpdate: function () {
+                        if (!camSpherical) return;
+                        const t = this.progress();
+                        orbitState.radius = camSpherical.radius;
+                        orbitState.phi = THREE.MathUtils.lerp(camSpherical.phi, 0.0001, t); // toward top-down
+                        orbitState.theta = THREE.MathUtils.lerp(camSpherical.theta, camSpherical.theta + Math.PI / 2, t); // spin 90° around Y
+                        tempOffset.setFromSpherical(new THREE.Spherical(orbitState.radius, orbitState.phi, orbitState.theta));
+                        // also slide downward on world Y while rotating
+                        const easedDrop = THREE.MathUtils.clamp(Math.pow(t, 4), 0, 1); // ~power4.in
+                        const yDrop = THREE.MathUtils.lerp(0, -camSpherical.radius * 1, easedDrop);
+                        whatCam.position.copy(whatLookAt).add(tempOffset).add(new THREE.Vector3(0, yDrop, 0));
+                        whatCam.lookAt(whatLookAt);
+                        whatCam.updateProjectionMatrix();
+                        whatGroups.forEach((group, index) => {
+                            const pos = trianglePositions[index % trianglePositions.length];
+                            group.position.copy(startPos[index]).lerp(pos, t);
+                            group.scale.copy(startScale[index]).lerp(new THREE.Vector3(1, 1, 1), t);
+                            group.rotation.x = THREE.MathUtils.lerp(startRotX[index], THREE.MathUtils.degToRad(90), t);
+                            group.visible = t < 0.999; // hide once the move finishes; restores when scrubbing back
+                        });
+                    }
+                }, '<');
+            }
+            const nestedTl = gsap.timeline({ paused: true });
+            nestedTl.set('#what-section-4', { autoAlpha: 1 });
+            nestedTl.fromTo('#we-are-liminal', { autoAlpha: 0, scale: 0 }, { autoAlpha: 1, scale: 1, duration: 0.5 });
+            nestedTl.fromTo('#we-are-liminal-content', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5}, '>');
+            nestedTl.fromTo('.backBtn', { autoAlpha: 0 }, { autoAlpha: 1 }, '>');
+
+            segmentTl.eventCallback('onComplete', () => nestedTl.play(0));
+
+            // Scrub fade-out on reverse: tie nested fade-out to segment progress (only visible when scrolling back up)
+            const fadeBackTl = gsap.timeline({ paused: true, defaults: { ease: 'none' } });
+            fadeBackTl.to('#what-section-4', { autoAlpha: 0, duration: 5 }, '<');
+
+            segmentTl.eventCallback('onUpdate', function () {
+                const prog = segmentTl.progress();
+                // forward: prog increases 0->1, so 1-prog goes 1->0 (keeps fadeBackTl at start)
+                // reverse: prog decreases 1->0, so 1-prog goes 0->1 (plays fade out)
+                fadeBackTl.progress(1 - prog);
             });
-            segmentTl.fromTo('#we-are-liminal', {
-                autoAlpha: 0, scale: 0
-            }, {
-                autoAlpha: 1, scale: 1, duration: 0.5
-            }, '-=0.5');
-            segmentTl.fromTo('#we-are-liminal-content', {
-                autoAlpha: 0
-            }, {
-                autoAlpha: 1
-            }, '>');
-            segmentTl.fromTo('.backBtn', {
-                autoAlpha: 0
-            }, {
-                autoAlpha: 1
-            }, '+=1');
         });
         tl.add(() => {
             btn?.addEventListener('click', (e) => back(2, e, what3D), { once: true });
@@ -3406,7 +3487,7 @@ const Page = {
         // -------------------------------------------------
         once: ({ next }) => {
             const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
-            tl.set(next.container.querySelector('#entrance'), { scaleX: 0, scaleY: 0 });
+            tl.set(next.container.querySelector('#entrance'), { xPercent: -50, yPercent: -50, scaleX: 0, scaleY: 0 });
             tl.set(next.container.querySelector('.window'), { scaleX: 0, scaleY: 0 });
             tl.set(next.container.querySelector('.grid-viewport'), { scale: 0.1 }, 0);
             tl.set(next.container.querySelector('.grid-bg'), {
@@ -3474,7 +3555,7 @@ const Page = {
                 scaleX: 1, scaleY: 0.001, duration: 0.5
             }, '>');
             tl.to(next.container.querySelector('#entrance'), {
-                scaleX: 1, scaleY: 0.001, duration: 0.5
+                xPercent: -50, yPercent: -50, scaleX: 1, scaleY: 0.001, duration: 0.5
             }, '<');
             tl.to(next.container.querySelector('.window'), {
                 scaleY: 1, duration: 0.2
