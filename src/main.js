@@ -1379,6 +1379,7 @@ function space() {
             fov: focusFov,
             onUpdate: () => camera.updateProjectionMatrix()
         });
+        document.getElementById('label-container')?.style?.setProperty('z-index', '-999');
     }
 
     // Resize Event Listener
@@ -3311,12 +3312,16 @@ function space() {
         tl.from('#portfolio-desc', {
             autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
         }, '-=0.25');
+        tl.from('#portfolio-icon-container', {
+            autoAlpha: 0, duration: 0.5
+        }, '-=0.25');
         tl.from('.backBtn', {
             autoAlpha: 0, duration: 0.5
         }, '+=0.5');
 
+        const portfolio3D = createPortfolioScene();
         tl.add(() => {
-            btn?.addEventListener('click', (e) => back(4, e), { once: true });
+            btn?.addEventListener('click', (e) => back(4, e, portfolio3D), { once: true });
         });
 
         (function setupPortfolioToggle() {
@@ -3383,6 +3388,7 @@ function space() {
 
             const defaultUser = toggles.querySelector('[data-user]')?.dataset.user || 'xweave';
             let activeUser = defaultUser;
+            portfolio3D?.swap?.(activeUser);
             showUser(activeUser);
 
             const animateSwap = (nextUser) => {
@@ -3411,6 +3417,7 @@ function space() {
                         toggles.querySelectorAll('[data-user]').forEach((btn) =>
                             btn.toggleAttribute('current', btn.dataset.user === nextUser)
                         );
+                        portfolio3D?.swap?.(nextUser);
                     })
                     .fromTo(incoming, {
                         autoAlpha: 0,
@@ -3429,6 +3436,171 @@ function space() {
                 animateSwap(btn.dataset.user);
             });
         })();
+
+        function createPortfolioScene() {
+            const container = document.getElementById('portfolio-icon-container');
+            if (!container) return null;
+            container.style.position = container.style.position || 'relative';
+
+            const canvas = Object.assign(document.createElement('canvas'), {
+                id: 'portfolio-canvas',
+                className: 'portfolio-canvas'
+            });
+            Object.assign(canvas.style, {
+                position: 'absolute',
+                inset: '0',
+                width: '100%',
+                height: '100%',
+                zIndex: '-1',
+                pointerEvents: 'none'
+            });
+            container.prepend(canvas);
+
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            const getSize = () => {
+                const rect = container.getBoundingClientRect();
+                return { width: Math.max(1, rect.width), height: Math.max(1, rect.height) };
+            };
+            const { width, height } = getSize();
+            renderer.setSize(width, height, false);
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 100);
+            camera.position.set(0, 0, 6);
+            scene.add(camera);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 1));
+            const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+            dir.position.set(4, 6, 5);
+            scene.add(dir);
+            const rim = new THREE.DirectionalLight(0xff8800, 0.5);
+            rim.position.set(-6, -2, -2);
+            scene.add(rim);
+            const front = new THREE.PointLight(0xffffff, 0.8);
+            front.position.set(0, 0, 6);
+            scene.add(front);
+
+            const loader = new GLTFLoader();
+            loader.setDRACOLoader?.(dracoLoader);
+            const modelGroup = new THREE.Group();
+            scene.add(modelGroup);
+
+            let currentModel = null;
+            let running = true;
+            let targetYRot = 0;
+            let targetXRot = 0;
+
+            const clock = new THREE.Clock();
+
+            const materialize = (root) => {
+                const metalMat = new THREE.MeshStandardMaterial({
+                    color: 0xffffff,
+                    roughness: 0.2,
+                    metalness: 1,
+                    transparent: true,
+                    opacity: 0
+                });
+                root.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material = metalMat.clone();
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                return root;
+            };
+
+            const centerAndScale = (root) => {
+                const box = new THREE.Box3().setFromObject(root);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                root.position.sub(center);
+                const maxDim = Math.max(size.x, size.y, size.z, 1e-3);
+                const target = 2;
+                const scale = target / maxDim;
+                root.scale.setScalar(scale);
+            };
+
+            const fadeModel = (root, to, onComplete) => {
+                const meshes = [];
+                root?.traverse?.((child) => {
+                    if (child.isMesh) meshes.push(child);
+                });
+                if (!meshes.length) return onComplete?.();
+                gsap.to(meshes.map(m => m.material), {
+                    opacity: to,
+                    duration: 0.35,
+                    ease: 'power2.out',
+                    onComplete
+                });
+            };
+
+            const loadModel = (userId) => {
+                if (!userId) return;
+                const url = new URL(`./logo/${userId}.glb`, import.meta.url);
+                const old = currentModel;
+                loader.load(url.href, (gltf) => {
+                    const next = materialize(gltf.scene);
+                    centerAndScale(next);
+                    modelGroup.add(next);
+                    next.rotation.y = old?.rotation.y ?? 0;
+                    fadeModel(old, 0, () => {
+                        if (old) modelGroup.remove(old);
+                        currentModel = next;
+                        fadeModel(next, 1);
+                    });
+                    if (!old) {
+                        currentModel = next;
+                        fadeModel(next, 1);
+                    }
+                }, undefined, (err) => console.error('[portfolio] load failed', err));
+            };
+
+            const onMouseMove = (e) => {
+                const rect = container.getBoundingClientRect();
+                const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+                targetYRot = THREE.MathUtils.degToRad(THREE.MathUtils.clamp(nx * 20, -20, 20));
+                targetXRot = THREE.MathUtils.degToRad(THREE.MathUtils.clamp(ny * 20, -20, 20));
+            };
+            window.addEventListener('mousemove', onMouseMove, { passive: true });
+
+            const resize = () => {
+                const { width, height } = getSize();
+                renderer.setSize(width, height, false);
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+            };
+            window.addEventListener('resize', resize);
+
+            const render = () => {
+                if (!running) return;
+                requestAnimationFrame(render);
+                const delta = clock.getDelta();
+                if (currentModel) {
+                    currentModel.rotation.y = THREE.MathUtils.lerp(currentModel.rotation.y, targetYRot, 0.08);
+                    currentModel.rotation.x = THREE.MathUtils.lerp(currentModel.rotation.x, targetXRot, 0.08);
+                }
+                renderer.render(scene, camera);
+            };
+            render();
+
+            return {
+                swap: loadModel,
+                dispose() {
+                    running = false;
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('resize', resize);
+                    renderer.dispose();
+                    canvas.remove();
+                },
+                renderer,
+                canvases: [canvas]
+            };
+        }
+
     };
 
     // ========== HELPERS
@@ -3455,6 +3627,7 @@ function space() {
 
         const instanceCanvas = threeInstance?.renderer?.domElement ?? (threeInstance instanceof HTMLCanvasElement ? threeInstance : null);
         const instanceCanvases = threeInstance?.canvases ?? (instanceCanvas ? [instanceCanvas] : []);
+        document.getElementById('label-container')?.style.removeProperty('z-index');
 
         gsap.killTweensOf(camera.position);
         gsap.killTweensOf(camera.quaternion);
