@@ -614,6 +614,8 @@ canvas#what-canvas {
     z-index: 10;
     pointer-events: none;
     inset: 0;
+    width: 100vw;
+    height: 100vh;
 }
 
 canvas#space {
@@ -815,6 +817,14 @@ canvas#space {
 
 #whitespaces {
     margin-top: 4rem;
+    margin-bottom: 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.4em;
+}
+
+#whitespaces span {
+    white-space: nowrap;
 }
 
 #page-thesis #line {
@@ -922,6 +932,10 @@ canvas#space {
 #what-section-4>div {
     flex: 1;
     align-content: end;
+}
+
+#we-are-liminal {
+    transform-origin: 50% 100%;
 }
 
 #we-are-liminal-content {

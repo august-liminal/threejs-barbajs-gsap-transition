@@ -1068,10 +1068,10 @@ function space() {
         });
     };
 
-    attachLabel(cubeThesis, 'menuThesis', 'Our Thesis', [8, 6, 0], [0, 1]);
-    attachLabel(cubeWhat, 'menuWhat', 'What We Are (Not)', [8, -6, 0], [0, 0]);
-    attachLabel(cubeUs, 'menuUs', 'About Us', [-8, 6, 0], [1, 1]);
-    attachLabel(cubePortfolio, 'menuPortfolio', 'Our Portfolio', [-8, -6, 0], [1, 0]);
+    attachLabel(cubeThesis, 'menuThesis', 'DNA', [8, 6, 0], [0, 1]);
+    attachLabel(cubeWhat, 'menuWhat', 'Antithesis', [8, -6, 0], [0, 0]);
+    attachLabel(cubeUs, 'menuUs', 'Leadership', [-8, 6, 0], [1, 1]);
+    attachLabel(cubePortfolio, 'menuPortfolio', 'Portfolio', [-8, -6, 0], [1, 0]);
 
     labelRenderer = new CSS2DRenderer();
     labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -2563,6 +2563,7 @@ function space() {
             const materials = new Set();
             const sectionIds = ['what-section-1', 'what-section-2', 'what-section-3'];
             const sectionMap = new Map(sectionIds.map((id, index) => [id, { group: groups[index], element: document.getElementById(id), index }]));
+            let hoveredSectionId = null;
             const sectionResizeObserver = 'ResizeObserver' in window ? new ResizeObserver(() => syncGroupsToSections()) : null;
             sectionIds.forEach(id => {
                 const el = document.getElementById(id);
@@ -2582,10 +2583,11 @@ function space() {
             const templateSizes = Array(groupCount).fill(null);
             const templateSizeFallback = new THREE.Vector3(1, 1, 1);
 
+            const scaleFactor = Math.min(window.innerHeight / window.innerWidth, window.innerWidth / window.innerHeight)
             const perGroupOffsets = [
-                { pos: [0, 10, 0], rot: [10, 0, 0], scale: 0.7 },
-                { pos: [0, 10, 0], rot: [0, 0, 0], scale: 1 },
-                { pos: [0, 10, 0], rot: [80, 0, 20], scale: 0.7 }
+                { pos: [0, 0.1, 0], rot: [10, 0, 0], scale: 1 * scaleFactor },
+                { pos: [0, 0.1, 0], rot: [0, 0, 0], scale: 0.9 * scaleFactor },
+                { pos: [0, 0.1, 0], rot: [80, 0, 20], scale: 0.8 * scaleFactor }
             ];
 
             modelPaths.forEach((url, index) => {
@@ -2618,12 +2620,12 @@ function space() {
                         child.geometry.computeBoundingSphere?.();
                         child.position.set(0, 0, 0);
                         const material = new THREE.MeshStandardMaterial({
-                            color: 0xcccccc,
-                            roughness: 0.35,
+                            color: 0xffffff,
+                            roughness: 0.2,
                             metalness: 1,
                             envMapIntensity: 1.2
                         });
-                        material.userData.smallColor = new THREE.Color(0x888888);
+                        material.userData.smallColor = new THREE.Color(0xaaaaaa);
                         material.userData.largeColor = new THREE.Color(0xffffff);
                         child.material = material;
                         child.castShadow = true;
@@ -2636,7 +2638,6 @@ function space() {
                     if (!group) return;
                     const clone = template.clone(true);
                     const cfg = perGroupOffsets[index] ?? {};
-                    clone.position.set(...(cfg.pos ?? [0, 0, 0]));
                     const [rx = 0, ry = 0, rz = 0] = cfg.rot ?? [];
                     clone.rotation.set(rx, ry, rz);
                     if (cfg.scale) clone.scale.multiplyScalar(cfg.scale);
@@ -2658,7 +2659,9 @@ function space() {
                     });
                     const centerWorld = new THREE.Box3().setFromObject(clone).getCenter(tempCenterWorld);
                     group.worldToLocal(centerWorld);
-                    clone.position.sub(centerWorld);
+                    clone.position.sub(centerWorld); // center to group origin
+                    const [ox = 0, oy = 0, oz = 0] = cfg.pos ?? [0, 0, 0];
+                    clone.position.add(new THREE.Vector3(ox, oy, oz)); // apply offset after centering
                     models[index] = clone;
                     lights[index] = null;
                     syncGroupsToSections();
@@ -2707,9 +2710,15 @@ function space() {
                     const worldRight = ndcToWorldX(rightNdc);
                     const worldWidth = Math.max(0.001, worldRight - worldLeft);
                     entry.group.position.set((worldLeft + worldRight) / 2, 0, targetZ);
-                    const baseWidth = Math.max(0.001, (templateSizes[entry.index]?.x ?? templateSizeFallback.x));
-                    const targetScale = Math.max(0.4, Math.min(3, worldWidth / baseWidth));
-                    entry.group.scale.setScalar(targetScale);
+                    const cfg = perGroupOffsets[entry.index] ?? {};
+                    const baseScale = cfg.scale ?? 1;
+                    const normSize = templateSizes[entry.index] ?? templateSizeFallback;
+                    const normalizedWidth = Math.max(0.001, normSize.x, normSize.y, normSize.z); // use longest dimension
+                    const flexRatio = Math.max(0.4, worldWidth / normalizedWidth); // flex child size relative to normalized model
+                    const targetScale = baseScale * flexRatio;
+                    const isHovered = entry.element?.classList.contains('hovered') || entry.element?.id === hoveredSectionId;
+                    const hoverFactor = isHovered ? 1.2 : 1;
+                    entry.group.scale.setScalar(targetScale * hoverFactor);
                     const colorRatio = Math.pow((bounds.width - minWidth) / widthRange, 0.4);
                     entry.group.traverse(child => {
                         if (child.isMesh && child.material?.userData) {
@@ -2780,13 +2789,17 @@ function space() {
                 objects: models,
                 canvases: [canvas],
                 syncToSections: syncGroupsToSections,
-                dispose
+                dispose,
+                lookAtTarget,
+                getViewportSize
             };
         }
 
         const what3D = createWhatScene();
         window.what3D = what3D;
         const whatLookAt = new THREE.Vector3(0, 0, 0);
+
+
 
 
         // ============================== TIMELINE
@@ -2796,7 +2809,6 @@ function space() {
         // Set initial states
         gsap.set('#what-title', { fontSize: '8rem', top: '50%', yPercent: 500, autoAlpha: 0 });
         gsap.set('.section-container', { autoAlpha: 0 });
-        gsap.set('.what-canvas', { autoAlpha: 0 });
         gsap.set('#what-section-4', { autoAlpha: 0 });
         gsap.set('#page-what>.section-container i', { scaleY: 0 });
         gsap.set('#what-canvas', { autoAlpha: 0 });
@@ -2884,6 +2896,7 @@ function space() {
                         section.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
                         section.classList.add('hovered');
                         section.style.zIndex = '0';
+                        
 
                         what3D?.syncToSections?.();
                         requestAnimationFrame(() => what3D?.syncToSections?.());
@@ -2981,7 +2994,7 @@ function space() {
             const nestedTl = gsap.timeline({ paused: true });
             nestedTl.set('#what-section-4', { autoAlpha: 1 });
             nestedTl.fromTo('#we-are-liminal', { autoAlpha: 0, scale: 0 }, { autoAlpha: 1, scale: 1, duration: 0.5 });
-            nestedTl.fromTo('#we-are-liminal-content', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5}, '>');
+            nestedTl.fromTo('#we-are-liminal-content', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, '>');
             nestedTl.fromTo('.backBtn', { autoAlpha: 0 }, { autoAlpha: 1 }, '>');
 
             segmentTl.eventCallback('onComplete', () => nestedTl.play(0));
@@ -3506,23 +3519,6 @@ function space() {
         document.querySelector('.guides-container')?.remove();
     };
 
-    // Conditional Menu
-    // function menuLayout(state) {
-    //     const menu = document.querySelector('#menu');
-
-    //     // HTML Menu for backup
-    //     menu.innerHTML = `
-    //         <div class="menu-item" id="menu-thesis">${state < 2 ? 'Start Here' : 'Our Thesis'}</div>
-    //         ${state >= 2 ? '<div class="menu-item" id="menu-what">What We Are (Not)</div>' : ''}
-    //         ${state >= 3 ? '<div class="menu-item" id="menu-us">About Us</div>' : ''}
-    //         ${state >= 4 ? '<div class="menu-item" id="menu-portfolio">Our Portfolio</div>' : ''}`;
-
-    //     document.querySelector('#menu-thesis')?.addEventListener('click', thesis);
-    //     document.querySelector('#menu-what')?.addEventListener('click', what);
-    //     document.querySelector('#menu-us')?.addEventListener('click', us);
-    //     document.querySelector('#menu-portfolio')?.addEventListener('click', portfolio);
-    // }
-
     function menuLayoutThree(state) {
         const getLabel = (id) => cubeLabels.find(entry => entry.id === id)?.element;
 
@@ -3534,7 +3530,7 @@ function space() {
         menuPortfolio?.removeAttribute('hidden');
         menuUs?.removeAttribute('hidden');
         menuWhat?.removeAttribute('hidden');
-        menuThesis && (menuThesis.textContent = 'Our Thesis');
+        menuThesis && (menuThesis.textContent = 'DNA');
 
         cubeThesis.visible = true;
         cubeWhat.visible = true;
