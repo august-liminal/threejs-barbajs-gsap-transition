@@ -213,7 +213,6 @@ body.is-transitioning {
     left: 50%;
     z-index: 999;
     border: 1px solid #fff;
-    transform: translate(-50%, -50%);
     width: calc(var(--entrance-w) * var(--cell-size));
     height: calc(var(--entrance-h) * var(--cell-size));
     transition: background 0.2s ease-out, box-shadow 0.2s ease-out;
@@ -976,11 +975,6 @@ canvas#space {
 #profile-portrait-container {
     grid-area: 2 / 3 / 5 / 3;
     position: relative;
-}
-
-#profile-portrait {
-    width: 100%;
-    height: 100%;
 }
 
 #profile-back-btn {

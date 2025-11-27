@@ -709,9 +709,33 @@ function unlock() {
     document.getElementById('submit-btn')?.addEventListener('click', validateCode);
 
     const inputs = document.querySelectorAll('.digit');
+    const focusFirstEmptyBefore = (idx) => {
+        for (let j = 0; j <= idx; j++) {
+            if (!inputs[j].value) {
+                if (j !== idx) inputs[j].focus();
+                return j !== idx;
+            }
+        }
+        return false;
+    };
     inputs.forEach((input, i) => {
-        input.addEventListener('input', () => { if (input.value && i < inputs.length - 1) inputs[i + 1].focus(); });
-        input.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && !input.value && i > 0) inputs[i - 1].focus(); });
+        input.addEventListener('focus', () => {
+            focusFirstEmptyBefore(i);
+        });
+        input.addEventListener('input', () => {
+            if (!input.value) return;
+            if (focusFirstEmptyBefore(i)) return; // don't advance if earlier empty
+            if (i < inputs.length - 1) inputs[i + 1].focus();
+        });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !input.value && i > 0) inputs[i - 1].focus();
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                validateCode();
+            }
+            // If previous empty, redirect focus there (allow typing in current if it's the first empty)
+            if (focusFirstEmptyBefore(i)) e.preventDefault();
+        });
     });
 
     async function validateCode() {
@@ -2991,6 +3015,73 @@ function space() {
 
         const btn = page.querySelector('.backBtn');
         btn.textContent = localStorage.getItem(key) == 3 ? 'Continue' : 'Back';
+        const portraitContainer = document.getElementById('profile-portrait-container');
+        const portraitCanvas = portraitContainer?.querySelector('canvas#profile-portrait');
+        if (portraitCanvas) portraitCanvas.style.display = 'none';
+        let portraitVideo = portraitContainer?.querySelector('video#profile-portrait');
+        if (portraitContainer && !portraitVideo) {
+            portraitVideo = Object.assign(document.createElement('video'), {
+                id: 'profile-portrait',
+                playsInline: true,
+                muted: true,
+                loop: true,
+                preload: 'metadata',
+                autoplay: true
+            });
+            portraitVideo.controls = false;
+            portraitVideo.setAttribute('controlsList', 'nodownload noplaybackrate noremoteplayback');
+            portraitVideo.disablePictureInPicture = true;
+            Object.assign(portraitVideo.style, {
+                pointerEvents: 'none',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                position: 'absolute',
+                inset: '0',
+                zIndex: '-1',
+                opacity: '1'
+            });
+            portraitContainer.appendChild(portraitVideo);
+        }
+        const buildPortraitMap = () => {
+            const map = {};
+            document.querySelectorAll('#profile-name [data-user]').forEach(span => {
+                const id = span.dataset.user;
+                if (id) map[id] = `./videos/${id}.mp4`;
+            });
+            return map;
+        };
+        const portraitVideos = window.profileVideos || buildPortraitMap();
+        const fadeOutPortrait = () => new Promise(resolve => {
+            if (!portraitVideo) return resolve();
+            gsap.to(portraitVideo, {
+                autoAlpha: 0,
+                duration: 0.2,
+                ease: 'power1.inOut',
+                onComplete: resolve
+            });
+        });
+        const fadeInPortrait = () => {
+            if (!portraitVideo) return;
+            gsap.fromTo(portraitVideo, { autoAlpha: 0 }, {
+                autoAlpha: 1,
+                duration: 0.2,
+                ease: 'power1.inOut'
+            });
+        };
+        const setPortrait = async (userId) => {
+            if (!portraitVideo) return;
+            const src = portraitVideos[userId];
+            console.log('[portrait] switch', userId, '->', src);
+            if (!src) return;
+            const resolved = new URL(src, import.meta.url).href;
+            if (portraitVideo.src !== resolved) {
+                await fadeOutPortrait();
+                portraitVideo.src = resolved;
+            }
+            try { await portraitVideo.play(); } catch { /* autoplay might be blocked */ }
+            fadeInPortrait();
+        };
 
         const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
         gsap.set('#page-profile', { '--pseudo-opacity': 0 });
@@ -3019,6 +3110,9 @@ function space() {
         tl.to('#page-profile', {
             '--pseudo-opacity': 1, duration: 0.5
         }, '>');
+        if (portraitContainer) {
+            tl.from(portraitContainer, { autoAlpha: 0, duration: 0.5 }, '<');
+        }
         tl.from('#profile-name', {
             autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
         }, '-=0.5');
@@ -3084,6 +3178,7 @@ function space() {
                 toggles.querySelectorAll('[data-user]').forEach(btn => {
                     btn.toggleAttribute('current', btn.dataset.user === userId);
                 });
+                setPortrait(userId);
             };
 
             const getUserNodes = (userId) => {
@@ -3129,6 +3224,7 @@ function space() {
                         toggles.querySelectorAll('[data-user]').forEach((btn) =>
                             btn.toggleAttribute('current', btn.dataset.user === nextUser)
                         );
+                        setPortrait(nextUser);
                         outgoing.forEach((node) => {
                             node.hidden = true;
                             node.textContent = textCache.get(node) ?? node.textContent;
@@ -3555,7 +3651,7 @@ const Page = {
                 scaleX: 1, scaleY: 0.001, duration: 0.5
             }, '>');
             tl.to(next.container.querySelector('#entrance'), {
-                xPercent: -50, yPercent: -50, scaleX: 1, scaleY: 0.001, duration: 0.5
+                scaleX: 1, scaleY: 0.001, duration: 0.5
             }, '<');
             tl.to(next.container.querySelector('.window'), {
                 scaleY: 1, duration: 0.2
