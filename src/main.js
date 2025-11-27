@@ -382,7 +382,7 @@ function updateLanding(e) {
         document.documentElement.style.setProperty('--e', '1');
     } else {
         Object.assign(entrance.style, { background: 'transparent', boxShadow: 'none' });
-        entrance.removeAttribute('href');
+        entrance.setAttribute('href', '/cloud');
     }
 
     // Drawing Entrance Inner
@@ -3287,8 +3287,7 @@ function space() {
             autoAlpha: 0, duration: 1
         }, '<');
         tl.to(renderer.domElement, {
-            autoAlpha: 0, duration: 1, ease: 'power2.out'
-            // onComplete: swapScene(); // add your replacement logic here when ready
+            autoAlpha: 0, duration: 1, ease: 'power2.out'            
         }, '<');
 
         tl.from('#page-portfolio>i:nth-child(1)', {
@@ -3628,6 +3627,10 @@ function space() {
         const instanceCanvas = threeInstance?.renderer?.domElement ?? (threeInstance instanceof HTMLCanvasElement ? threeInstance : null);
         const instanceCanvases = threeInstance?.canvases ?? (instanceCanvas ? [instanceCanvas] : []);
         document.getElementById('label-container')?.style.removeProperty('z-index');
+        const entrance = document.querySelector('#entrance');
+        if (entrance) {
+            gsap.set(entrance, { xPercent: -50, yPercent: -50, scaleX: 1, scaleY: 1 });
+        }
 
         gsap.killTweensOf(camera.position);
         gsap.killTweensOf(camera.quaternion);
@@ -3742,6 +3745,15 @@ const defaultEnter = ({ next }) => gsap.fromTo(next.container, { autoAlpha: 0 },
 
 
 // -----------------------------------------------------
+// PORTFOLIO PAGE
+// -----------------------------------------------------
+function portfolioPage() {
+    if (!location.pathname.endsWith('/portfolio')) return;
+    
+    document.documentElement.style.visibility = 'visible';
+}
+
+// -----------------------------------------------------
 // PAGE TRANSITION ANIMATION TIMELINE
 // -----------------------------------------------------
 
@@ -3839,6 +3851,7 @@ const Page = {
         // -------------------------------------------------
         enter: ({ next }) => {
             const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+            tl.set('#entrance', { xPercent: -50, yPercent: -50});
             tl.from(next.container, {
                 scale: 1.5, autoAlpha: 0, duration: 0.5
             }, 0);
@@ -3917,9 +3930,32 @@ const Page = {
         }
     },
 
+    portfolio: { // PORTFOLIO PAGE
+        build: () => { portfolioPage(); },
+        enter: ({ next }) => {
+            const tl = gsap.timeline();
+            tl.from('.portfolio-list', {
+                scale: 1.2, autoAlpha: 0, duration: 0.5
+            });
+            tl.from('.portfolio-item', { 
+                autoAlpha: 0, duration: 0.3, stagger: 0.1 
+            }, '>');
+            return tl;
+        },
+        leave: ({ current }) => {
+            const tl = gsap.timeline();
+            tl.to(current.container, { autoAlpha: 0, duration: 0.3 });
+            return tl;
+        }
+    },
+
     cloud: { // CLOUD PAGE --------------------------------
         build: () => { cloud(); },
-        enter: ({ next }) => gsap.timeline(),
+        enter: ({ next }) => {
+            const tl = gsap.timeline();
+            tl.from('#cloud-fog-hud', { autoAlpha: 0, duration: 0.5 });
+            return tl;
+        },
         leave: ({ current }) => {
             const tl = gsap.timeline();
             tl.to(current.container, { autoAlpha: 0, duration: 0.3 });
@@ -4214,7 +4250,8 @@ function cloud() {
             a.click();
         });
         wrap.append(saveBtn);
-        document.body.appendChild(wrap);
+        const cloudMain = document.querySelector('main[data-barba-namespace="cloud"]') || document.querySelector('main');
+        (cloudMain || document.body).appendChild(wrap);
         return wrap;
     })();
 

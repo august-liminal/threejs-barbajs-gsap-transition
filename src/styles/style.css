@@ -273,7 +273,7 @@ div:has(#unlock-module) {
     height: var(--cell-size);
     border: 2px solid #fff;
     background: #000;
-    font-size: 2rem;
+    font-size: 1.5rem;
     position: absolute;
     bottom: var(--cell-size);
     left: 50%;
@@ -314,16 +314,22 @@ div:has(#unlock-module) {
 }
 
 .text-1 {
-    right: 0.25em;
+    left: 0.25em;
     top: -1.25em;
     font-size: 1.5rem;
+    color: #fff;
+    text-decoration: none;
+    transition: text-shadow 0.2s;
+}
+
+.text-1:hover {
+    color: #fff;
+    text-shadow: 0 0 0.5em #fff;
 }
 
 .text-2 {
-    left: -1.25em;
-    top: calc(50% + var(--cell-size) * 0.85);
-    transform-origin: 100% 50%;
-    transform: translateX(-100%) rotate(-90deg);
+    right: 0.5em;
+    bottom: -1.5em;
 }
 
 .code {
@@ -1280,7 +1286,7 @@ canvas#space {
 }
 
 
-/* Cloud viewer */
+/* ------------------CLOUD------------------ */
 #cloud-canvas {
     position: fixed;
     inset: 0;
@@ -1373,4 +1379,31 @@ canvas#space {
     border: 1px solid #fff;
     padding: 0.35rem 0.5rem;
     cursor: pointer;
+}
+
+/*--------------------PORTFOLIO------------------------*/
+
+.portfolio-title {
+    display: none;
+}
+
+/* As soon as list scrolls under, shrink the block height so text moves up */
+main[data-barba-namespace="portfolio"] {
+    height: 100vh;
+    overflow: auto;
+}
+
+.portfolio-list {
+    margin: 10rem 5rem;
+        padding: 4rem;
+        border: 1px solid;
+        height: calc(100vh - 20rem);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+}
+
+.portfolio-item {
+    padding: 1rem 1.25rem;
 }
