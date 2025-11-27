@@ -70,7 +70,7 @@ body.is-transitioning {
         var(--c) 100% 0,
         var(--c) 100% 100%,
         var(--c) 0 100%;
-    animation: l1 3s forwards;
+    animation: l1 1s forwards;
     animation-play-state: paused;
     will-change: opacity;
 }
@@ -1297,6 +1297,14 @@ canvas#space {
     pointer-events: auto;
 }
 
+main[data-barba-namespace="cloud"] a {
+    z-index: 1;
+        position: relative;
+        color: #fff;
+        padding: 2em;
+        top: 1em;
+}
+
 #cloud-fog-hud {
     position: fixed;
     top: 1rem;
@@ -1406,4 +1414,12 @@ main[data-barba-namespace="portfolio"] {
 
 .portfolio-item {
     padding: 1rem 1.25rem;
+}
+
+.portfolio-list a {
+    position: absolute;
+    color: #fff;
+    bottom: 1em;
+    left: 50%;
+    transform: translateX(-50%);
 }

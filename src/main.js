@@ -3781,7 +3781,7 @@ const Page = {
                 next.container.querySelector('.loader')?.classList.add('is-active');
                 next.container.querySelector('.loader-glow')?.classList.add('is-active');// CSS animation lives on .loader.is-active
             }, '>1');
-            tl.to({}, { duration: 2.5 });
+            tl.to({}, { duration: 1.5 });
             tl.to(next.container.querySelector('.loader'), {
                 width: '100%', '--thickness': '25%', ease: 'expo.in', duration: 0.5
             }, '>');
@@ -3940,6 +3940,9 @@ const Page = {
             tl.from('.portfolio-item', { 
                 autoAlpha: 0, duration: 0.3, stagger: 0.1 
             }, '>');
+            tl.from('.portfolio-list a', {
+                autoAlpha: 0, duration: 0.3
+            }, '>+0.5');
             return tl;
         },
         leave: ({ current }) => {
@@ -3952,8 +3955,9 @@ const Page = {
     cloud: { // CLOUD PAGE --------------------------------
         build: () => { cloud(); },
         enter: ({ next }) => {
-            const tl = gsap.timeline();
-            tl.from('#cloud-fog-hud', { autoAlpha: 0, duration: 0.5 });
+            const tl = gsap.timeline();            
+            tl.from('#cloud-fog-hud', { autoAlpha: 0, duration: 0.5 },'>+0.1');
+            tl.from(next.container.querySelectorAll('a'), { autoAlpha: 0, duration: 0.2 },'>');
             return tl;
         },
         leave: ({ current }) => {
