@@ -401,7 +401,7 @@ function unlock() {
     // ---- CONSTANTS
     const ENTRY_PAGE = '/landing';
     const PROTECTED_PAGE = '/space';
-    const API_URL = 'https://liminal-webflow-auth.vercel.app/api/validate-code';
+    const API_URL = 'https://website-auth-sage.vercel.app/api/validate-code';
     let paddingX, paddingY;
 
     // ---- ELEMENTS
@@ -796,7 +796,7 @@ function unlock() {
                 })();
 
                 document.querySelectorAll('.text-line').forEach(el => { el.style.opacity = '0'; });
-                message.innerHTML = `<span class="welcome">Transitioning...</span>`;
+                message.innerHTML = `<span class="welcome">Crossing the chasm...</span>`;
 
                 //Set state management. Only uncomment after states are done
                 //if(!localStorage.getItem(code)) {
@@ -811,7 +811,7 @@ function unlock() {
                     new Promise(r => setTimeout(r, MAX_WAIT))
                 ]).then(() => barba.go(PROTECTED_PAGE));
             } else {
-                message.innerHTML = '<span class="warning-message">Invalid code. Try again.</span>';
+                message.innerHTML = '<span class="warning-message">Invalid code.</span>';
                 console.log('Wrong code');
 
                 // Immediately run wrong-input feedback
@@ -1556,17 +1556,17 @@ function space() {
             }, '>');
             tl.to('#user_message .coded-char', {
                 className: 'coded-char animated',
-                stagger: 0.003,
-                duration: userMessage.length * 0.043
+                stagger: 0.002,
+                duration: userMessage.length * 0.022
             }, '>')
 
             // Cue Animation
 
-            tl.add(() => { host._cueLoops?.forEach(({ tl }) => tl.play()) }, '>-9');
+            tl.add(() => { host._cueLoops?.forEach(({ tl }) => tl.play()) }, '>');
 
             tl.from(scrollHint, {
                 autoAlpha: 0, duration: 0.5
-            }, '>1');
+            }, '>');
             tl.add(() => menuLayoutThree(localStorage.getItem(key)), '>');
             tl.from(root.querySelector('#space'), {
                 autoAlpha: 0, duration: 3
@@ -1752,7 +1752,7 @@ function space() {
             const cone = new THREE.Mesh(coneGeometry, coneMaterial);
             cone.castShadow = true;
             cone.receiveShadow = true;
-            cone.position.set(-1, 10, 10);
+            cone.position.set(-1, 8, 10);
             cone.rotation.set(
                 THREE.MathUtils.degToRad(0),
                 THREE.MathUtils.degToRad(90),
@@ -1765,7 +1765,7 @@ function space() {
             const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
             cylinder.castShadow = true;
             cylinder.receiveShadow = true;
-            cylinder.position.set(-1, 20, 10);
+            cylinder.position.set(-1, 16, 10);
             cylinder.rotation.set(
                 THREE.MathUtils.degToRad(5),
                 THREE.MathUtils.degToRad(90),
@@ -1777,14 +1777,14 @@ function space() {
             coneOverlay.material = core.material.clone();
             coneOverlay.material.transparent = true;
             coneOverlay.material.opacity = 0;
-            coneOverlay.position.set(0, 10, 0);
+            coneOverlay.position.set(0, 8, 0);
             scene.add(coneOverlay);
 
             const cylinderOverlay = core.clone();
             cylinderOverlay.material = cylinderOverlay.material.clone();
             cylinderOverlay.material.transparent = true;
             cylinderOverlay.material.opacity = 0;
-            cylinderOverlay.position.set(0, 20, 0);
+            cylinderOverlay.position.set(0, 16, 0);
             scene.add(cylinderOverlay);
 
             const shellGeometry = new THREE.SphereGeometry(12, 80, 80);
@@ -1794,10 +1794,6 @@ function space() {
                 color: new THREE.Color(0x111111),
                 roughness: 0.95,
                 metalness: 1,
-                // map: shellColorMap,
-                // displacementMap: shellDispMap,
-                // displacementScale: 0.08,
-                // displacementBias: -0.01,
                 normalMap: normalMap,
                 roughnessMap: roughnessMap
             });
@@ -1867,6 +1863,8 @@ function space() {
 
             const clock = new THREE.Clock();
             let running = false;
+
+            // scene.add(new THREE.AxesHelper(10));
 
             function resize() {
                 const width = canvas.clientWidth;
@@ -2029,7 +2027,7 @@ function space() {
 
                     tl.to(proxy, {
                         index: full.length,
-                        duration: Math.max(0.2, full.length * 0.05),
+                        duration: Math.max(0.2, full.length * 0.04),
                         ease: 'none',
                         onUpdate() {
                             const i = Math.floor(proxy.index);
@@ -2041,7 +2039,7 @@ function space() {
                     }, '>');
                 }
             }
-            const defDur = document.querySelector('#liminal-def').textContent.length * 0.05;
+            const defDur = document.querySelector('#liminal-def').textContent.length * 0.02;
             {   // Typewriter for definition
                 const txt = document.querySelector('#liminal-def');
                 if (txt) {
@@ -2083,10 +2081,10 @@ function space() {
                 autoAlpha: 1, duration: 0.5
             }, '>');
             tl.to('#liminal-phonetic', {
-                autoAlpha: 1, duration: 0.5
+                autoAlpha: 1, duration: 0.2
             }, '-=0.2');
             tl.to('#liminal-def', {
-                autoAlpha: 1, duration: 0.5
+                autoAlpha: 1, duration: 0.3
             }, '-=0.2');
             tl.fromTo('#page-thesis #line', {
                 scaleX: 0
@@ -2387,7 +2385,7 @@ function space() {
                 duration: 1.2
             }, '>');
             nestedTl.to(cone.position, {
-                x: 0, z: -1.5,
+                x: 0, y: 8, z: -1,
                 ease: 'power4.inOut',
                 duration: 1.2
             }, '<');
@@ -2397,7 +2395,7 @@ function space() {
                 duration: 1.2
             }, '<+0.1');
             nestedTl.to(cylinder.position, {
-                x: 0, y: 20.2, z: -1.5,
+                x: 0, y: 16, z: -1.5,
                 ease: 'power4.inOut',
                 duration: 1.2
             }, '<');
@@ -2427,7 +2425,13 @@ function space() {
                     end: 'top top',
                     scrub: true,
                     invalidateOnRefresh: true,
-                    onEnter: () => nestedTl.play(0),
+                    onEnter: () => {
+                        scroller.style.pointerEvents = 'auto';
+                        nestedTl.play(0);
+                    },
+                    onEnterBack: () => {
+                        scroller.style.pointerEvents = 'auto';
+                    },
                     onLeaveBack: () => nestedTl.reverse()
                 }
             });
@@ -2461,7 +2465,7 @@ function space() {
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, 0);
                 segmentTl.to(cam.position, {
-                    x: -1, y: 10, z: 100,
+                    x: -1, y: 8, z: 110,
                     ease: 'power4.out',
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, '<');
@@ -2491,6 +2495,7 @@ function space() {
 
         const btn = page.querySelector('.backBtn');
         btn.textContent = localStorage.getItem(key) == 2 ? 'Continue' : 'Back';
+        
 
         //creating scroller
         const scroller = Object.assign(document.createElement('div'), {
@@ -2538,7 +2543,7 @@ function space() {
                 200
             );
             camera.position.set(0, 0, 60);
-            const lookAtTarget = new THREE.Vector3(0, 0, 0);
+            const lookAtTarget = new THREE.Vector3(0, -0.5, 0);
             camera.lookAt(lookAtTarget);
             scene.add(camera);
 
@@ -2551,14 +2556,20 @@ function space() {
             // scene.add(new THREE.AxesHelper(10));
 
             const groupCount = 3;
+            const lights = [];
             const groups = Array.from({ length: groupCount }, (_, index) => {
                 const group = new THREE.Group();
                 group.name = `whatGroup${index + 1}`;
+                const key = new THREE.PointLight(0xFF8B07, 10, 60, 2);
+                key.position.set(-10, 0, -15);
+                group.add(key);
+                const fill = new THREE.AmbientLight(0xffffff, 100);
+                group.add(fill);
+                lights[index] = key;
                 scene.add(group);
                 return group;
             });
 
-            const lights = [];
             const models = [];
             const geometries = new Set();
             const materials = new Set();
@@ -2584,11 +2595,11 @@ function space() {
             const templateSizes = Array(groupCount).fill(null);
             const templateSizeFallback = new THREE.Vector3(1, 1, 1);
 
-            const scaleFactor = Math.min(window.innerHeight / window.innerWidth, window.innerWidth / window.innerHeight)
+            const scaleFactor = Math.max(window.innerHeight / window.innerWidth, window.innerWidth / window.innerHeight) * 0.35
             const perGroupOffsets = [
                 { pos: [0, 0.1, 0], rot: [10, 0, 0], scale: 1 * scaleFactor },
-                { pos: [0, 0.1, 0], rot: [0, 0, 0], scale: 0.9 * scaleFactor },
-                { pos: [0, 0.1, 0], rot: [80, 0, 20], scale: 0.8 * scaleFactor }
+                { pos: [0, 0.1, 0], rot: [0, 0, 0], scale: 1.1 * scaleFactor },
+                { pos: [0, 0.1, 0], rot: [80, 0, 20], scale: 1 * scaleFactor }
             ];
 
             modelPaths.forEach((url, index) => {
@@ -2622,7 +2633,7 @@ function space() {
                         child.position.set(0, 0, 0);
                         const material = new THREE.MeshStandardMaterial({
                             color: 0xffffff,
-                            roughness: 0.2,
+                            roughness: 0.3,
                             metalness: 1,
                             envMapIntensity: 1.2
                         });
@@ -2897,7 +2908,7 @@ function space() {
                         section.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
                         section.classList.add('hovered');
                         section.style.zIndex = '0';
-                        
+
 
                         what3D?.syncToSections?.();
                         requestAnimationFrame(() => what3D?.syncToSections?.());
@@ -2993,22 +3004,52 @@ function space() {
                 }, '<');
             }
             const nestedTl = gsap.timeline({ paused: true });
-            nestedTl.set('#what-section-4', { autoAlpha: 1 });
-            nestedTl.fromTo('#we-are-liminal', { autoAlpha: 0, scale: 0 }, { autoAlpha: 1, scale: 1, duration: 0.5 });
+            nestedTl.set('#what-section-4', {
+                autoAlpha: 1, onComplete: () => {
+                    const el = document.querySelector('#what-section-4');
+                    if (el) {
+                        el.style.removeProperty('transform');
+                        el.style.removeProperty('scale');
+                    }
+                }
+            });
+            nestedTl.fromTo('.liminal-svg', { scale: 0 }, { scale: 1, duration: 1.5, ease: 'power4.out' });
+            nestedTl.fromTo('.liminal-svg>div', { autoAlpha: 0 }, { autoAlpha: 1, duration: 1.5 }, '<');
+            nestedTl.fromTo('.liminal-svg>svg', { autoAlpha: 0 }, { autoAlpha: 1, duration: 2.5, ease: 'power4.out' }, '<+0.1');
+            nestedTl.fromTo('#we-are-liminal', { autoAlpha: 0, scale: 0 }, { autoAlpha: 1, scale: 1, duration: 0.5 }, '<');
             nestedTl.fromTo('#we-are-liminal-content', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, '>');
             nestedTl.fromTo('.backBtn', { autoAlpha: 0 }, { autoAlpha: 1 }, '>');
 
             segmentTl.eventCallback('onComplete', () => nestedTl.play(0));
+            segmentTl.eventCallback('onReverseComplete', () => {
+                nestedTl.pause(0);
+                gsap.set('#what-section-4', { autoAlpha: 0 });
+            });
 
             // Scrub fade-out on reverse: tie nested fade-out to segment progress (only visible when scrolling back up)
             const fadeBackTl = gsap.timeline({ paused: true, defaults: { ease: 'none' } });
-            fadeBackTl.to('#what-section-4', { autoAlpha: 0, duration: 5 }, '<');
+            fadeBackTl.to('#what-section-4', {
+                autoAlpha: 0,
+                scale: 0,
+                duration: 5,
+                onComplete: () => {
+                    const el = document.querySelector('#what-section-4');
+                    if (el) {
+                        el.style.removeProperty('transform');
+                        el.style.removeProperty('scale');
+                    }
+                }
+            }, '<');
+            let prevProg = 0;
 
             segmentTl.eventCallback('onUpdate', function () {
                 const prog = segmentTl.progress();
-                // forward: prog increases 0->1, so 1-prog goes 1->0 (keeps fadeBackTl at start)
-                // reverse: prog decreases 1->0, so 1-prog goes 0->1 (plays fade out)
-                fadeBackTl.progress(1 - prog);
+                if (prog < prevProg) {
+                    fadeBackTl.progress(1 - prog);
+                } else {
+                    fadeBackTl.progress(0);
+                }
+                prevProg = prog;
             });
         });
         tl.add(() => {
@@ -3287,7 +3328,7 @@ function space() {
             autoAlpha: 0, duration: 1
         }, '<');
         tl.to(renderer.domElement, {
-            autoAlpha: 0, duration: 1, ease: 'power2.out'            
+            autoAlpha: 0, duration: 1, ease: 'power2.out'
         }, '<');
 
         tl.from('#page-portfolio>i:nth-child(1)', {
@@ -3724,7 +3765,6 @@ function space() {
         if (state < 2) {
             menuWhat?.setAttribute('hidden', '');
             cubeWhat.visible = false;
-            menuThesis && (menuThesis.textContent = 'Start Here');
         }
     }
 }
@@ -3749,7 +3789,7 @@ const defaultEnter = ({ next }) => gsap.fromTo(next.container, { autoAlpha: 0 },
 // -----------------------------------------------------
 function portfolioPage() {
     if (!location.pathname.endsWith('/portfolio')) return;
-    
+
     document.documentElement.style.visibility = 'visible';
 }
 
@@ -3851,7 +3891,7 @@ const Page = {
         // -------------------------------------------------
         enter: ({ next }) => {
             const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
-            tl.set('#entrance', { xPercent: -50, yPercent: -50});
+            tl.set('#entrance', { xPercent: -50, yPercent: -50 });
             tl.from(next.container, {
                 scale: 1.5, autoAlpha: 0, duration: 0.5
             }, 0);
@@ -3937,8 +3977,8 @@ const Page = {
             tl.from('.portfolio-list', {
                 scale: 1.2, autoAlpha: 0, duration: 0.5
             });
-            tl.from('.portfolio-item', { 
-                autoAlpha: 0, duration: 0.3, stagger: 0.1 
+            tl.from('.portfolio-item', {
+                autoAlpha: 0, duration: 0.3, stagger: 0.1
             }, '>');
             tl.from('.portfolio-list a', {
                 autoAlpha: 0, duration: 0.3
@@ -3955,9 +3995,9 @@ const Page = {
     cloud: { // CLOUD PAGE --------------------------------
         build: () => { cloud(); },
         enter: ({ next }) => {
-            const tl = gsap.timeline();            
-            tl.from('#cloud-fog-hud', { autoAlpha: 0, duration: 0.5 },'>+0.1');
-            tl.from(next.container.querySelectorAll('a'), { autoAlpha: 0, duration: 0.2 },'>');
+            const tl = gsap.timeline();
+            tl.from('#cloud-fog-hud', { autoAlpha: 0, duration: 0.5 }, '>+0.1');
+            tl.from(next.container.querySelectorAll('a'), { autoAlpha: 0, duration: 0.2 }, '>');
             return tl;
         },
         leave: ({ current }) => {
