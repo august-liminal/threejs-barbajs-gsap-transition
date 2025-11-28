@@ -3547,15 +3547,15 @@ function space() {
             camera.position.set(0, 0, 6);
             scene.add(camera);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 1));
-            const dir = new THREE.DirectionalLight(0xffffff, 1.2);
-            dir.position.set(4, 6, 5);
+            scene.add(new THREE.AmbientLight(0xffffff, 10));
+            const dir = new THREE.DirectionalLight(0xffffff, 20);
+            dir.position.set(-10, 6, 5);
             scene.add(dir);
-            const rim = new THREE.DirectionalLight(0xff8800, 0.5);
+            const rim = new THREE.DirectionalLight(0xff8800, 8);
             rim.position.set(-6, -2, -2);
             scene.add(rim);
-            const front = new THREE.PointLight(0xffffff, 0.8);
-            front.position.set(0, 0, 6);
+            const front = new THREE.PointLight(0xffffff, 1.6);
+            front.position.set(-2, 0, 6);
             scene.add(front);
 
             const loader = new GLTFLoader();
@@ -3620,16 +3620,21 @@ function space() {
                 loader.load(url.href, (gltf) => {
                     const next = materialize(gltf.scene);
                     centerAndScale(next);
-                    modelGroup.add(next);
                     next.rotation.y = old?.rotation.y ?? 0;
-                    fadeModel(old, 0, () => {
-                        if (old) modelGroup.remove(old);
+
+                    const addAndFadeIn = () => {
+                        modelGroup.add(next);
                         currentModel = next;
                         fadeModel(next, 1);
-                    });
-                    if (!old) {
-                        currentModel = next;
-                        fadeModel(next, 1);
+                    };
+
+                    if (old) {
+                        fadeModel(old, 0, () => {
+                            modelGroup.remove(old);
+                            addAndFadeIn();
+                        });
+                    } else {
+                        addAndFadeIn();
                     }
                 }, undefined, (err) => console.error('[portfolio] load failed', err));
             };
