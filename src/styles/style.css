@@ -2,6 +2,7 @@
     --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1748926717051---font--body-font: 'Space Mono';
     --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1748926717051---font--heading-font: 'Space Grostesk';
     --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1748926717051---font--button-font: 'Space Mono';
+    overflow: hidden;
 }
 
 body {
@@ -279,6 +280,7 @@ div:has(#unlock-module) {
     left: 50%;
     transform: translateX(-50%);
     transition: box-shadow 0.2s ease, opacity 0.2s ease;
+    line-height: 1em;
 }
 
 #unlock-module #submit-btn:hover {
@@ -296,17 +298,17 @@ div:has(#unlock-module) {
 }
 
 
-.warning-message {
+.warning-message, #message {
     color: #ff3030;
     width: calc(var(--cell-size) * 8 - 8px);
-    height: var(--cell-size);
     display: block;
     text-align: center;
     background: #000;
-    top: calc(50% - var(--cell-size) * 2 - 2px);
+    top: calc(50% - var(--cell-size) * 4 - 2px);
     left: 50%;
     transform: translateX(-50%);
     position: absolute;
+    line-height: var(--cell-size);
 }
 
 .text-line {
@@ -385,6 +387,7 @@ div:has(#unlock-module) {
     top: calc(50% - var(--cell-size) * 2);
     left: 50%;
     transform: translateX(-50%);
+    width: 100vw;
 }
 
 #user_greeting {
@@ -838,6 +841,7 @@ canvas#space {
     height: 1px;
     width: 100%;
     rotate: none;
+    transform-origin: 0% 50%;
     transform: rotate(0deg) translate(0, 0);
     background: #fff;
     top: 50%;
@@ -879,6 +883,7 @@ canvas#space {
 #page-what>.section-container i {
     height: 100%;
     width: 1px;
+    display: block;
     background: #fff8;
     transform-origin: 50% 100%;
 }
@@ -988,8 +993,8 @@ canvas#space {
 
 .page#page-profile {
     display: grid;
-    grid-template-columns: 4rem 3fr 5fr 4rem;
-    grid-template-rows: 4rem 3fr 1fr 7fr 1fr 4rem;
+    grid-template-columns: 4rem 2fr 4fr 6fr 4rem;
+    grid-template-rows: 4rem 3fr 1fr 7fr 4rem;
     padding: 0;
 }
 
@@ -1000,17 +1005,17 @@ canvas#space {
 
 
 #page-profile>i:nth-child(1) {
-    grid-area: 2 / 1 / 6 / 6;
+    grid-area: 2 / 1 / 5 / 6;
     border-top: 1px solid #454545;
     border-bottom: 1px solid #454545;
 }
 
 #page-profile>i:nth-child(2) {
-    grid-area: 1 / 2 / 8 / 4;
+    grid-area: 1 / 2 / 8 / 5;
     border-left: 1px solid #454545;
     border-right: 1px solid #454545;
 }
-
+/* 
 #page-profile>i:nth-child(3) {
     grid-area: 5 / 1 / 5 / 6;
     border-top: 1px solid #454545;
@@ -1019,16 +1024,17 @@ canvas#space {
 #page-profile>i:nth-child(4) {
     grid-area: 1 / 2 / 5 / 2;
     border-right: 1px solid #454545;
-}
+} */
 
 #profile-portrait-container {
-    grid-area: 2 / 3 / 5 / 3;
+    grid-area: 2 / 4 / 5 / 4;
     position: relative;
+    border-left: 1px solid #454545;
 }
 
 #profile-back-btn {
     position: relative;
-    grid-area: 2 / 3 / 2 / 3;
+    grid-area: 2 / 4 / 2 / 4;
 }
 
 #profile-back-btn .backBtn {
@@ -1037,7 +1043,7 @@ canvas#space {
 
 #profile-name {
     position: relative;
-    grid-area: 2 / 2 / 2 / 2;
+    grid-area: 2 / 3 / 2 / 3;
     align-content: center;
     border-bottom: 1px solid #454545;
     display: flex;
@@ -1047,11 +1053,15 @@ canvas#space {
     align-content: flex-end;
     padding-left: 2rem;
     padding-bottom: 1rem;
+    display: block;
+    width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 #profile-title {
     position: relative;
-    grid-area: 3 / 2 / 3 / 2;
+    grid-area: 3 / 3 / 3 / 3;
     border-bottom: 1px solid #454545;
     display: flex;
 }
@@ -1059,11 +1069,15 @@ canvas#space {
 #profile-title>span {
     align-content: center;
     padding-left: 2rem;
+    display: block;
+    width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 #profile-desc {
     position: relative;
-    grid-area: 4 / 2 / 4 / 2;
+    grid-area: 4 / 3 / 4 / 3;
     display: flex;
 }
 
@@ -1071,21 +1085,25 @@ canvas#space {
     align-content: flex-start;
     padding-left: 2rem;
     padding-top: 2rem;
+    display: block;
+    width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 #profile-toggle {
-    grid-area: 5 / 2 / 5 / 4;
+    grid-area: 2 / 2 / 5 / 2;
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     gap: 1em;
-    border-top: 1px solid #454545;
+    border-right: 1px solid #454545;
     position: relative;
-    padding: 0 2rem;
+    padding: 2rem 0;
 }
 
 #profile-toggle>a {
     color: #fff9;
-    padding: 2rem 0.5em;
+    padding: 0.5rem 2em;
     text-decoration: none;
     text-transform: uppercase;
     cursor: pointer;
@@ -1097,13 +1115,12 @@ canvas#space {
 #profile-toggle>a::after {
     content: '';
     position: absolute;
-    width: 0%;
-    height: 0.25rem;
+    height: 0%;
+    width: 0.25rem;
     background: #fff;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    transition: width 0.2s ease-out;
+    left: 0;
+    transition: height 0.2s ease-out;
+    top: 0;
 }
 
 #profile-toggle>a[current] {
@@ -1112,7 +1129,7 @@ canvas#space {
 }
 
 #profile-toggle>a[current]::after {
-    width: 100%;
+    height: 100%;
 }
 
 #profile-toggle>a:hover {
@@ -1123,6 +1140,7 @@ canvas#space {
 #profile-portrait-container::after,
 #profile-name::before,
 #profile-name::after,
+#profile-desc::before,
 #profile-desc::after,
 #profile-toggle::before,
 #profile-toggle::after {
@@ -1151,8 +1169,12 @@ canvas#space {
     inset: -0.725rem -0.725rem auto auto;
 }
 
-#profile-desc::after {
+#profile-desc::before {
     inset: auto auto -0.725rem -0.725rem;
+}
+
+#profile-desc::after {
+    inset: auto -0.725rem -0.725rem auto;
 }
 
 #profile-toggle::before {
@@ -1160,7 +1182,7 @@ canvas#space {
 }
 
 #profile-toggle::after {
-    inset: auto -0.725rem -0.725rem auto;
+    inset: -0.725rem auto auto -0.725rem;
 }
 
 
@@ -1186,10 +1208,24 @@ canvas#space {
     position: relative;
 }
 
+#portfolio-name>span {
+    display: block;
+    width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 #portfolio-desc {
     grid-area: 3 / 3 / 3 / 3;
     padding: 2rem;
     position: relative;
+}
+
+#portfolio-desc>span {
+    display: block;
+    width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 #portfolio-toggle {

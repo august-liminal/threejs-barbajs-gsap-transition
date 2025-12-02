@@ -96,6 +96,66 @@ function stopThree() {
     }
 }
 
+// ==========================================================
+// ====================== DETECT DEVICE =====================
+// ==========================================================
+
+let phonePortrait;
+function detectDevice() {
+    const ua = navigator.userAgent || '';
+    const isTablet = /iPad|Tablet|Nexus 7|Nexus 9|SM-T|Tab|Kindle|Silk|PlayBook/.test(ua) ||
+        (/Android/.test(ua) && !/Mobile/.test(ua));
+    const isPhone = /iPhone|Android.+Mobile|Windows Phone|BlackBerry|BB10|Mobi/i.test(ua);
+
+    const coarse = matchMedia('(pointer: coarse)').matches;
+    const width = Math.min(screen.width, screen.height);
+    const uaMobileHint = navigator.userAgentData?.mobile === true;
+
+    let type;
+    if (isPhone || uaMobileHint || (coarse && width < 768)) type = 'phone';
+    else if (isTablet || (coarse && width >= 768 && width < 1100)) type = 'tablet';
+    else type = 'desktop';
+
+    const orientation = matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape';
+
+    window.deviceInfo = { type, orientation };
+
+    phonePortrait = window.deviceInfo?.type === 'phone' && window.deviceInfo?.orientation === 'portrait';
+};
+detectDevice();
+window.addEventListener('resize', detectDevice, { passive: true });
+
+
+// =======================================================================
+// ====================== RESPONSIVE STYLE INJECTION =====================
+// =======================================================================
+if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
+    const style = Object.assign(document.createElement('style'), {
+        id: 'phone-portrait-styles',
+        textContent: `
+            :root { font-size: 14px }
+
+            .text-line { font-size: 1rem; text-align: center; inset: -1.5rem 0px auto; }
+            #submit-btn {font-size: 1rem; }
+
+            #liminalspace section { padding: 1.25rem; }
+            .section { padding: 1.25rem; }
+            #liminalspace #logo-holder { inset: 1.25rem; }
+            .text-4xl { font-size: 3rem; line-height: 1.1; }
+            .text-xl { font-size: 2.25rem; line-height: 1.5; }
+            .text-lg { font-size: 1.5rem; }
+            #welcome h1 { height: 1.25em; }
+
+            #who-what { height: 6rem; margin-bottom: 1rem; }
+
+            #page-what>.section-container { pointer-event: none; }
+            #page-what>.section-container i { display: none; }
+            #page-what>.section-container .section { position: absolute; }
+            #vc, #vs, #acc { margin-top: 6rem }
+        `
+    });
+    document.head.append(style);
+}
 
 // ================================================================
 // ====================== LANDING PAGE LAYOUT =====================
@@ -106,6 +166,11 @@ let gridDimension, gridSize, cellSize, x, y, deltaW, deltaH;
 
 function landing() {
     if (!location.pathname.endsWith('/landing') || landingInit) return;
+    Object.assign(document.documentElement.style, {
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden'
+    });
 
     function landingLayout() {
         //===== DECLARATIONS
@@ -382,7 +447,7 @@ function updateLanding(e) {
         document.documentElement.style.setProperty('--e', '1');
     } else {
         Object.assign(entrance.style, { background: 'transparent', boxShadow: 'none' });
-        entrance.setAttribute('href', '/cloud');
+        entrance.removeAttribute('href');
     }
 
     // Drawing Entrance Inner
@@ -419,7 +484,7 @@ function unlock() {
     // ---- TYPOGRAPHY / GRID SIZING
     if (t?.style.lineHeight) t.style.removeProperty('line-height');
 
-    const mincellSize = 0.5 * parseFloat(getComputedStyle(t).fontSize);
+    const mincellSize = Math.max(24, 0.5 * parseFloat(getComputedStyle(t).fontSize));
     let dimensionH, dimensionW, cellSize, innerH, innerW, cells, total, codeOffsetX, codeOffsetY, moduleOffsetX, moduleOffsetY;
     let centersX, centersY, jitter, lastChar;
 
@@ -432,8 +497,8 @@ function unlock() {
         inner?.style.setProperty('--cell-size', `${cellSize}px`);
         t.style.lineHeight = (cellSize * 2) + 'px';
 
-        innerH = dimensionH - 8;
-        innerW = dimensionW - 4;
+        innerH = dimensionH - (phonePortrait ? 4 : 8);
+        innerW = dimensionW - (phonePortrait ? 2 : 4);
         total = innerH * innerW;
 
         // ---- GRID CALCULATION
@@ -441,6 +506,7 @@ function unlock() {
 
 
         unlockModule.style.gridTemplateColumns = `repeat(${innerW}, ${cellSize}px)`;
+        unlockModule.style.gridAutoRows = `${cellSize}px`;
 
         unlockModule.style.width = (innerW * cellSize) + 'px';
         unlockModule.style.height = (innerH * cellSize) + 'px';
@@ -491,8 +557,8 @@ function unlock() {
     // verticals
     container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX - 8}px;` }));
     container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX}px;` }));
-    container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `left:${codeOffsetX}px;` }));
-    container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `right:${codeOffsetX}px;` }));
+    if (!phonePortrait) container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `left:${codeOffsetX}px;` }));
+    if (!phonePortrait) container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `right:${codeOffsetX}px;` }));
     container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX}px;` }));
     container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX - 8}px;` }));
     // horizontals
@@ -1395,6 +1461,7 @@ function space() {
 
         bloomComposer.setSize(size.width, size.height);
         finalComposer.setSize(size.width, size.height);
+        labelRenderer?.setSize(size.width, size.height);
     });
 
     document.documentElement.style.visibility = 'visible';
@@ -1981,7 +2048,7 @@ function space() {
         const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
         // Set initial states
-        tl.set('#thesis-title', { fontSize: '8rem', xPercent: 100, autoAlpha: 0, bottom: '2em' });
+        tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '8rem', xPercent: 100, autoAlpha: 0, bottom: '2em' });
         tl.set('#page-thesis .section>*', { visibility: 'hidden' });
 
         // Definition timeline
@@ -2148,7 +2215,7 @@ function space() {
                 xPercent: -100, autoAlpha: 0
             }, '-=0.5');
             segmentTl.to('#thesis-title', {
-                xPercent: 0, autoAlpha: 1
+                bottom: '1em', xPercent: 0, autoAlpha: 1
             }, '-=0.5');
             if (cam && leftShell && rightShell) {
                 segmentTl.to(cam.rotation, {
@@ -2273,7 +2340,7 @@ function space() {
                 }
             });
             segmentTl.to('#thesis-title', {
-                fontSize: '2rem', top: '4rem', bottom: 'unset'
+                fontSize: phonePortrait ? '1.25rem' : '2rem', top: phonePortrait ? '1.25rem' : '4rem', bottom: 'unset'
             }, 0);
             segmentTl.to('#who-what', {
                 xPercent: 0, autoAlpha: 1
@@ -2412,7 +2479,7 @@ function space() {
                 opacity: 0, duration: 0.5
             }, '<');
             nestedTl.fromTo('.backBtn', {
-                autoAlpha: 0, bottom: '2em'
+                autoAlpha: 0, bottom: phonePortrait ? '1.25rem' : '2em'
             }, {
                 autoAlpha: 1
             }, '>');
@@ -2495,7 +2562,7 @@ function space() {
 
         const btn = page.querySelector('.backBtn');
         btn.textContent = localStorage.getItem(key) == 2 ? 'Continue' : 'Back';
-        
+
         // Inject fresh SVG each time this page loads; replace the placeholder string with your SVG markup
         const liminalSvg = page.querySelector('.liminal-svg');
         liminalSvg?.querySelectorAll('svg').forEach(n => n.remove()); // clear previous SVGs, keep sibling divs intact
@@ -2541,12 +2608,14 @@ function space() {
         function createWhatScene() {
             const pageElement = document.querySelector('#page-what');
             if (!pageElement) return null;
+            const isPhonePortrait = phonePortrait;
+            let activePhoneIndex = isPhonePortrait ? 0 : -1;
 
             const canvas = Object.assign(document.createElement('canvas'), {
                 id: 'what-canvas',
                 className: 'what-canvas'
             });
-            canvas.style.pointerEvents = 'none';
+            canvas.style.pointerEvents = isPhonePortrait ? 'auto' : 'none';
             pageElement.prepend(canvas);
 
             const renderer = new THREE.WebGLRenderer({
@@ -2615,6 +2684,10 @@ function space() {
                 const el = document.getElementById(id);
                 if (el) sectionResizeObserver?.observe(el);
             });
+            if (isPhonePortrait) {
+                const firstSection = document.getElementById(sectionIds[0]);
+                firstSection?.classList.add('hovered');
+            }
 
             const loader = new GLTFLoader();
             loader.setDRACOLoader?.(dracoLoader);
@@ -2629,7 +2702,7 @@ function space() {
             const templateSizes = Array(groupCount).fill(null);
             const templateSizeFallback = new THREE.Vector3(1, 1, 1);
 
-            const scaleFactor = Math.max(window.innerHeight / window.innerWidth, window.innerWidth / window.innerHeight) * 0.5
+            const scaleFactor = Math.max(window.innerHeight / window.innerWidth, window.innerWidth / window.innerHeight) * 0.4
             const perGroupOffsets = [
                 { pos: [0, 0.1, 0], rot: [10, 0, 0], scale: 1 * scaleFactor },
                 { pos: [0, 0.1, 0], rot: [0, 0, 0], scale: 1.1 * scaleFactor },
@@ -2731,6 +2804,10 @@ function space() {
             }
 
             function syncGroupsToSections() {
+                if (isPhonePortrait) {
+                    syncGroupsPhone();
+                    return;
+                }
                 const rect = canvas.getBoundingClientRect();
                 if (!rect.width || !rect.height) return;
                 const measurements = [];
@@ -2778,6 +2855,29 @@ function space() {
                 });
             }
 
+            function syncGroupsPhone(immediate = false) {
+                const rect = canvas.getBoundingClientRect();
+                if (!rect.width || !rect.height) return;
+                const positionsNdc = [-2 / 3, 0, 2 / 3]; // three equal slots across the width
+                positionsNdc.forEach((ndcX, idx) => {
+                    const worldX = ndcToWorldX(ndcX);
+                    const group = groups[idx];
+                    if (!group) return;
+                    group.position.set(worldX, 0, targetZ);
+                    const baseScale = perGroupOffsets[idx]?.scale ?? 1;
+                    const normSize = templateSizes[idx] ?? templateSizeFallback;
+                    const normalizedWidth = Math.max(0.001, normSize.x, normSize.y, normSize.z);
+                    const targetScale = baseScale * (10 / normalizedWidth); // normalize size visually
+                    const hoverFactor = idx === activePhoneIndex ? 1.35 : 1;
+                    const finalScale = targetScale * hoverFactor;
+                    if (immediate) {
+                        group.scale.setScalar(finalScale);
+                    } else {
+                        gsap.to(group.scale, { x: finalScale, y: finalScale, z: finalScale, duration: 0.35, ease: 'power2.out' });
+                    }
+                });
+            }
+
             function resize() {
                 const size = getViewportSize();
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -2801,17 +2901,65 @@ function space() {
                 renderer.render(scene, camera);
             }
 
+            const groupSet = new Set(groups);
+            function findGroupFromObject(obj) {
+                let node = obj;
+                while (node) {
+                    if (groupSet.has(node)) return node;
+                    node = node.parent;
+                }
+                return null;
+            }
+
+            function setPhoneActive(idx) {
+                if (idx === activePhoneIndex || idx < 0) return;
+                activePhoneIndex = idx;
+                sectionIds.forEach((id, i) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.classList.toggle('hovered', i === idx);
+                });
+                syncGroupsPhone(false);
+            }
+
+            function onPhoneTap(e) {
+                if (!isPhonePortrait) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera({ x, y }, camera);
+                const intersects = raycaster.intersectObjects(groups, true);
+                const hit = intersects.find(i => i.object);
+                if (!hit) return;
+                const group = findGroupFromObject(hit.object);
+                const idx = group ? groups.indexOf(group) : -1;
+                if (idx === -1) return;
+                setPhoneActive(idx);
+            }
+
             function start() {
                 if (running) return;
                 running = true;
                 clock.start();
                 renderer.setAnimationLoop(renderFrame);
+                if (isPhonePortrait) {
+                    syncGroupsPhone(true); // set initial scales and hovered state
+                    canvas.addEventListener('pointerdown', onPhoneTap);
+                    canvas.addEventListener('touchstart', (e) => {
+                        const t = e.touches?.[0];
+                        if (t) onPhoneTap(t);
+                    }, { passive: true });
+                }
             }
 
             function stop() {
                 if (!running) return;
                 running = false;
                 renderer.setAnimationLoop(null);
+                if (isPhonePortrait) {
+                    canvas.removeEventListener('pointerdown', onPhoneTap);
+                }
             }
 
             function dispose() {
@@ -2853,10 +3001,10 @@ function space() {
         const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
         // Set initial states
-        gsap.set('#what-title', { fontSize: '8rem', top: '50%', yPercent: 500, autoAlpha: 0 });
+        gsap.set('#what-title', { fontSize: phonePortrait ? '4rem' : '8rem', lineHeight: 1, top: phonePortrait ? 'calc(100vh - 3em)' : '50%', yPercent: 500, autoAlpha: 0 });
         gsap.set('.section-container', { autoAlpha: 0 });
         gsap.set('#what-section-4', { autoAlpha: 0 });
-        gsap.set('#page-what>.section-container i', { scaleY: 0 });
+        if (!phonePortrait) gsap.set('#page-what>.section-container i', { scaleY: 0 });
         gsap.set('#what-canvas', { autoAlpha: 0 });
 
         // Definition timeline    
@@ -2894,12 +3042,12 @@ function space() {
                     scrub: true,
                     invalidateOnRefresh: true,
                     onComplete: () => {
-                        document.querySelector('.scroller').style.pointerEvents = 'none';
+                        if (!phonePortrait) document.querySelector('.scroller').style.pointerEvents = 'none';
                     }
                 }
             });
             segmentTl.to('#what-title', {
-                fontSize: '2rem', top: '4rem'
+                fontSize: phonePortrait ? '1.5rem' : '2rem', top: '4rem'
             }, 0);
             segmentTl.to('#what-canvas', {
                 autoAlpha: 1, duration: 1
@@ -3110,15 +3258,49 @@ function space() {
         const portraitCanvas = portraitContainer?.querySelector('canvas#profile-portrait');
         if (portraitCanvas) portraitCanvas.style.display = 'none';
         let portraitVideo = portraitContainer?.querySelector('video#profile-portrait');
-        if (portraitContainer && !portraitVideo) {
-            portraitVideo = Object.assign(document.createElement('video'), {
-                id: 'profile-portrait',
-                playsInline: true,
-                muted: true,
-                loop: true,
-                preload: 'metadata',
-                autoplay: true
-            });
+        let portraitPingPongCleanup = null;
+        const enablePortraitPingPong = (video) => {
+            if (!video) return null;
+            const fps = 30;
+            const step = 1 / fps;
+            let reversing = false;
+            let intervalId = null;
+            const clear = () => { if (intervalId) { clearInterval(intervalId); intervalId = null; } };
+            const playForward = () => { reversing = false; clear(); video.play().catch(() => { }); };
+            const playReverse = () => {
+                if (reversing) return;
+                reversing = true;
+                video.pause();
+                clear();
+                intervalId = setInterval(() => {
+                    if (video.currentTime <= step) {
+                        video.currentTime = 0;
+                        playForward();
+                        return;
+                    }
+                    video.currentTime = Math.max(0, video.currentTime - step);
+                }, 1000 / fps);
+            };
+            const onEnded = () => playReverse();
+            const onLoaded = () => { video.currentTime = 0; playForward(); };
+            video.loop = false;
+            video.addEventListener('ended', onEnded);
+            video.addEventListener('loadedmetadata', onLoaded, { once: true });
+            return () => { clear(); video.removeEventListener('ended', onEnded); };
+        };
+        const ensurePortraitVideo = () => {
+            if (!portraitContainer) return null;
+            if (!portraitVideo) {
+                portraitVideo = Object.assign(document.createElement('video'), {
+                    id: 'profile-portrait',
+                    playsInline: true,
+                    muted: true,
+                    loop: true,
+                    preload: 'metadata',
+                    autoplay: true
+                });
+                portraitContainer.appendChild(portraitVideo);
+            }
             portraitVideo.controls = false;
             portraitVideo.setAttribute('controlsList', 'nodownload noplaybackrate noremoteplayback');
             portraitVideo.disablePictureInPicture = true;
@@ -3132,8 +3314,9 @@ function space() {
                 zIndex: '-1',
                 opacity: '1'
             });
-            portraitContainer.appendChild(portraitVideo);
-        }
+            return portraitVideo;
+        };
+        ensurePortraitVideo();
         const buildPortraitMap = () => {
             const map = {};
             document.querySelectorAll('#profile-name [data-user]').forEach(span => {
@@ -3143,39 +3326,22 @@ function space() {
             return map;
         };
         const portraitVideos = window.profileVideos || buildPortraitMap();
-        const fadeOutPortrait = () => new Promise(resolve => {
-            if (!portraitVideo) return resolve();
-            gsap.to(portraitVideo, {
-                autoAlpha: 0,
-                duration: 0.2,
-                ease: 'power1.inOut',
-                onComplete: resolve
-            });
-        });
-        const fadeInPortrait = () => {
-            if (!portraitVideo) return;
-            gsap.fromTo(portraitVideo, { autoAlpha: 0 }, {
-                autoAlpha: 1,
-                duration: 0.2,
-                ease: 'power1.inOut'
-            });
-        };
         const setPortrait = async (userId) => {
             if (!portraitVideo) return;
             const src = portraitVideos[userId];
-            console.log('[portrait] switch', userId, '->', src);
             if (!src) return;
             const resolved = new URL(src, import.meta.url).href;
             if (portraitVideo.src !== resolved) {
-                await fadeOutPortrait();
                 portraitVideo.src = resolved;
             }
+            portraitPingPongCleanup?.();
+            portraitPingPongCleanup = enablePortraitPingPong(portraitVideo);
             try { await portraitVideo.play(); } catch { /* autoplay might be blocked */ }
-            fadeInPortrait();
         };
 
         const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
         gsap.set('#page-profile', { '--pseudo-opacity': 0 });
+        gsap.set('#profile-portrait', { autoAlpha: 0 })
 
         // TIMELINE
 
@@ -3198,32 +3364,32 @@ function space() {
         tl.from('#page-profile>i:nth-child(4)', {
             scaleY: 0, duration: 0.5
         }, '<');
-        tl.to('#page-profile', {
-            '--pseudo-opacity': 1, duration: 0.5
-        }, '>');
-        if (portraitContainer) {
-            tl.from(portraitContainer, { autoAlpha: 0, duration: 0.5 }, '<');
-        }
-        tl.from('#profile-name', {
-            autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
-        }, '-=0.5');
-        tl.from('#profile-title', {
-            autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
-        }, '>');
-        tl.from('#profile-desc', {
-            autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
-        }, '-=0.25');
         tl.from('#profile-toggle', {
             autoAlpha: 0, duration: 0.2
         }, '-=0.25');
         tl.from('#profile-toggle a', {
             autoAlpha: 0, duration: 0.5, stagger: 0.05, ease: 'bounce.out'
         }, '-=0.25');
+        tl.to('#page-profile', {
+            '--pseudo-opacity': 1, duration: 0.5
+        }, '>');
+        tl.from('#profile-portrait-container', { autoAlpha: 0, duration: 0.5 }, '>-1');
+        tl.from('#profile-name', {
+            autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
+        }, '<');
+        tl.from('#profile-title', {
+            autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
+        }, '>');
+        tl.from('#profile-desc', {
+            autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
+        }, '-=0.25');
+        tl.to('#profile-portrait', { autoAlpha: 1, duration: 0.5 }, '>');
+
         tl.fromTo('.backBtn', {
             autoAlpha: 0
         }, {
             autoAlpha: 1, duration: 0.5
-        }, '+=0.5');
+        }, '+=0.2');
 
         tl.add(() => {
             btn?.addEventListener('click', (e) => back(3, e), { once: true });
@@ -3235,6 +3401,13 @@ function space() {
             const sections = ['profile-name', 'profile-title', 'profile-desc'];
             const toggles = document.querySelector('#profile-toggle');
             if (!toggles) return;
+
+            const lockSectionHeights = () => {
+                sections.forEach((id) => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.minHeight = el.offsetHeight + 'px';
+                });
+            };
 
             const textCache = new WeakMap();
             const rememberText = (nodes) => {
@@ -3296,9 +3469,11 @@ function space() {
 
             let activeUser = 'sonny';
             showUser(activeUser);
+            lockSectionHeights();
 
             const animateSwap = (nextUser) => {
                 if (nextUser === activeUser) return;
+                lockSectionHeights();
 
                 const outgoing = getUserNodes(activeUser);
                 const incoming = getUserNodes(nextUser);
@@ -3405,6 +3580,13 @@ function space() {
             const toggles = document.querySelector('#portfolio-toggle');
             if (!toggles) return;
 
+            const lockSectionHeights = () => {
+                sections.forEach((id) => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.minHeight = el.offsetHeight + 'px';
+                });
+            };
+
             const textCache = new WeakMap();
             const rememberText = (nodes) => {
                 nodes.forEach((node) => {
@@ -3466,9 +3648,11 @@ function space() {
             let activeUser = defaultUser;
             portfolio3D?.swap?.(activeUser);
             showUser(activeUser);
+            lockSectionHeights();
 
             const animateSwap = (nextUser) => {
                 if (nextUser === activeUser) return;
+                lockSectionHeights();
 
                 const outgoing = getUserNodes(activeUser);
                 const incoming = getUserNodes(nextUser);
@@ -3595,8 +3779,14 @@ function space() {
                 root.position.sub(center);
                 const maxDim = Math.max(size.x, size.y, size.z, 1e-3);
                 const target = 2;
-                const scale = target / maxDim;
-                root.scale.setScalar(scale);
+                root.scale.setScalar(target / maxDim);
+                // keep the model centered at origin after scale
+                const box2 = new THREE.Box3().setFromObject(root);
+                const c2 = box2.getCenter(new THREE.Vector3());
+                root.position.sub(c2);
+                const pivot = new THREE.Group();
+                pivot.add(root);
+                return pivot;
             };
 
             const fadeModel = (root, to, onComplete) => {
@@ -3618,8 +3808,8 @@ function space() {
                 const url = new URL(`./logo/${userId}.glb`, import.meta.url);
                 const old = currentModel;
                 loader.load(url.href, (gltf) => {
-                    const next = materialize(gltf.scene);
-                    centerAndScale(next);
+                    let next = materialize(gltf.scene);
+                    next = centerAndScale(next);
                     next.rotation.y = old?.rotation.y ?? 0;
 
                     const addAndFadeIn = () => {
@@ -3830,6 +4020,13 @@ const defaultEnter = ({ next }) => gsap.fromTo(next.container, { autoAlpha: 0 },
 // -----------------------------------------------------
 function portfolioPage() {
     if (!location.pathname.endsWith('/portfolio')) return;
+
+    if (phonePortrait) {
+        const list = document.querySelector('.portfolio-list');
+        list.style.margin = '2rem';
+        list.style.padding = '2rem';
+        list.style.height = 'calc(100vh - 4rem)'
+    }
 
     document.documentElement.style.visibility = 'visible';
 }
