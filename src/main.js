@@ -151,10 +151,19 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             #page-what>.section-container { pointer-event: none; }
             #page-what>.section-container i { display: none; }
             #page-what>.section-container .section { position: absolute; }
-            #vc, #vs, #acc { margin-top: 6rem }
+            #vc, #vs, #acc { margin-top: 32vh }
+            #vc-def, #vs-def, #acc-def { flex: 0; margin-bottom: 1em; }
+
+            #what-section-4>div { flex: 0; }
+            .liminal-svg { width: 40vw; }
+            #we-are-liminal-content { margin-top: 2rem; }
+            #what-section-4 .backBtn { bottom: 1.25rem; }
+            #page-what .scroll-hint { bottom: 1.25rem; }
+
         `
     });
     document.head.append(style);
+    document.querySelector('#unlock-potential').innerHTML = "Runway <br>+ Activation <br>+ Agency <br>= The ultimate <span style='white-space:nowrap'>co-founder</span>";
 }
 
 // ================================================================
@@ -2610,12 +2619,13 @@ function space() {
             if (!pageElement) return null;
             const isPhonePortrait = phonePortrait;
             let activePhoneIndex = isPhonePortrait ? 0 : -1;
+            let lastPhoneSelection = activePhoneIndex;
 
             const canvas = Object.assign(document.createElement('canvas'), {
                 id: 'what-canvas',
                 className: 'what-canvas'
             });
-            canvas.style.pointerEvents = isPhonePortrait ? 'auto' : 'none';
+            canvas.style.pointerEvents = isPhonePortrait ? 'none' : 'none';
             pageElement.prepend(canvas);
 
             const renderer = new THREE.WebGLRenderer({
@@ -2646,7 +2656,9 @@ function space() {
                 200
             );
             camera.position.set(0, 0, 60);
-            const lookAtTarget = new THREE.Vector3(0, -0.5, 0);
+            const lookAtTarget = phonePortrait
+                ? new THREE.Vector3(0, -4.5, 0)
+                : new THREE.Vector3(0, -0.5, 0);
             camera.lookAt(lookAtTarget);
             scene.add(camera);
 
@@ -2703,11 +2715,17 @@ function space() {
             const templateSizeFallback = new THREE.Vector3(1, 1, 1);
 
             const scaleFactor = Math.max(window.innerHeight / window.innerWidth, window.innerWidth / window.innerHeight) * 0.4
-            const perGroupOffsets = [
-                { pos: [0, 0.1, 0], rot: [10, 0, 0], scale: 1 * scaleFactor },
-                { pos: [0, 0.1, 0], rot: [0, 0, 0], scale: 1.1 * scaleFactor },
-                { pos: [0, 0.1, 0], rot: [80, 0, 20], scale: 1 * scaleFactor }
-            ];
+            const perGroupOffsets = phonePortrait
+                ? [
+                    { pos: [0, 0.1, 0], rot: [10, 0, 0], scale: 0.42 },
+                    { pos: [0, 0, 0], rot: [0, 0, 0], scale: 0.5 },
+                    { pos: [0, 0, 0], rot: [80, 0, 20], scale: 0.45 }
+                ]
+                : [
+                    { pos: [0, 0.1, 0], rot: [10, 0, 0], scale: 1 * scaleFactor },
+                    { pos: [0, 0.1, 0], rot: [0, 0, 0], scale: 1.1 * scaleFactor },
+                    { pos: [0, 0.1, 0], rot: [80, 0, 20], scale: 1 * scaleFactor }
+                ];
 
             modelPaths.forEach((url, index) => {
                 if (!url) {
@@ -2740,11 +2758,11 @@ function space() {
                         child.position.set(0, 0, 0);
                         const material = new THREE.MeshStandardMaterial({
                             color: 0xffffff,
-                            roughness: 0.3,
+                            roughness: 0.4,
                             metalness: 1,
                             envMapIntensity: 1.2
                         });
-                        material.userData.smallColor = new THREE.Color(0xaaaaaa);
+                        material.userData.smallColor = new THREE.Color(0x999999);
                         material.userData.largeColor = new THREE.Color(0xffffff);
                         child.material = material;
                         child.castShadow = true;
@@ -2867,8 +2885,8 @@ function space() {
                     const baseScale = perGroupOffsets[idx]?.scale ?? 1;
                     const normSize = templateSizes[idx] ?? templateSizeFallback;
                     const normalizedWidth = Math.max(0.001, normSize.x, normSize.y, normSize.z);
-                    const targetScale = baseScale * (10 / normalizedWidth); // normalize size visually
-                    const hoverFactor = idx === activePhoneIndex ? 1.35 : 1;
+                    const targetScale = baseScale * (10 / normalizedWidth); 
+                    const hoverFactor = idx === activePhoneIndex ? 1.5 : 0.75;
                     const finalScale = targetScale * hoverFactor;
                     if (immediate) {
                         group.scale.setScalar(finalScale);
@@ -2898,6 +2916,7 @@ function space() {
                 groups.forEach((group) => {
                     group.rotation.y += rotationSpeed * delta;
                 });
+                camera.lookAt(lookAtTarget);
                 renderer.render(scene, camera);
             }
 
@@ -2911,22 +2930,32 @@ function space() {
                 return null;
             }
 
-            function setPhoneActive(idx) {
-                if (idx === activePhoneIndex || idx < 0) return;
+            function setPhoneActive(idx, { force = false, immediate = false } = {}) {
+                if (idx < 0) return;
+                const same = idx === activePhoneIndex;
                 activePhoneIndex = idx;
+                lastPhoneSelection = idx;
                 sectionIds.forEach((id, i) => {
                     const el = document.getElementById(id);
                     if (!el) return;
                     el.classList.toggle('hovered', i === idx);
                 });
-                syncGroupsPhone(false);
+                // If we're reapplying the same index, only refresh scales when forced
+                if (!same || force) {
+                    syncGroupsPhone(immediate);
+                }
             }
 
             function onPhoneTap(e) {
                 if (!isPhonePortrait) return;
                 const rect = canvas.getBoundingClientRect();
-                const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-                const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                const cx = e.clientX ?? e.touches?.[0]?.clientX;
+                const cy = e.clientY ?? e.touches?.[0]?.clientY;
+                if (cx == null || cy == null) return;
+                // Ignore presses outside the canvas bounds so underlying elements remain clickable
+                if (cx < rect.left || cx > rect.right || cy < rect.top || cy > rect.bottom) return;
+                const x = ((cx - rect.left) / rect.width) * 2 - 1;
+                const y = -((cy - rect.top) / rect.height) * 2 + 1;
                 const raycaster = new THREE.Raycaster();
                 raycaster.setFromCamera({ x, y }, camera);
                 const intersects = raycaster.intersectObjects(groups, true);
@@ -2945,11 +2974,8 @@ function space() {
                 renderer.setAnimationLoop(renderFrame);
                 if (isPhonePortrait) {
                     syncGroupsPhone(true); // set initial scales and hovered state
-                    canvas.addEventListener('pointerdown', onPhoneTap);
-                    canvas.addEventListener('touchstart', (e) => {
-                        const t = e.touches?.[0];
-                        if (t) onPhoneTap(t);
-                    }, { passive: true });
+                    window.addEventListener('pointerdown', onPhoneTap, { passive: true });
+                    window.addEventListener('touchstart', onPhoneTap, { passive: true });
                 }
             }
 
@@ -2958,7 +2984,8 @@ function space() {
                 running = false;
                 renderer.setAnimationLoop(null);
                 if (isPhonePortrait) {
-                    canvas.removeEventListener('pointerdown', onPhoneTap);
+                    window.removeEventListener('pointerdown', onPhoneTap);
+                    window.removeEventListener('touchstart', onPhoneTap);
                 }
             }
 
@@ -2985,7 +3012,10 @@ function space() {
                 syncToSections: syncGroupsToSections,
                 dispose,
                 lookAtTarget,
-                getViewportSize
+                getViewportSize,
+                setPhoneActive: (idx) => setPhoneActive(idx),
+                getPhoneActiveIndex: () => activePhoneIndex,
+                getLastPhoneSelection: () => lastPhoneSelection
             };
         }
 
@@ -3047,15 +3077,15 @@ function space() {
                 }
             });
             segmentTl.to('#what-title', {
-                fontSize: phonePortrait ? '1.5rem' : '2rem', top: '4rem'
-            }, 0);
+                fontSize: phonePortrait ? '1.5rem' : '2rem', top: phonePortrait ? '1.25rem' : '4rem'
+            }, 0);            
             segmentTl.to('#what-canvas', {
                 autoAlpha: 1, duration: 1
             }, 0)
             segmentTl.to('.section-container', {
                 autoAlpha: 1, duration: 0.5
             }, 0);
-            segmentTl.to('#page-what>.section-container .section', {
+            if(!phonePortrait) segmentTl.to('#page-what>.section-container .section', {
                 zIndex: 9
             }, 0);
             segmentTl.to('#page-what>.section-container i', {
@@ -3063,7 +3093,7 @@ function space() {
                 duration: 0.5,
                 stagger: 0.2
             }, '<');
-            segmentTl.to('.scroll-hint', {
+            if (!phonePortrait) segmentTl.to('.scroll-hint', {
                 opacity: 0, duration: 0.2, onComplete: () => {
                     segmentTl.to('#page-what .scroll-hint', {
                         right: '4rem', duration: 0
@@ -3071,52 +3101,84 @@ function space() {
                 }
             }, '<-0.5');
 
-            segmentTl.add(() => {
-                const sections = document.querySelectorAll('#page-what > .section-container .section');
-                const clearHovered = () => {
-                    document.querySelectorAll('#page-what > .section-container .section.hovered').forEach(s => {
-                        s.classList.remove('hovered');
-                    });
-                };
-                sections.forEach(section => {
-                    section.addEventListener('mouseenter', () => {
-                        clearHovered();
-                        sections.forEach(s => {
-                            s.removeAttribute('style');
-                            s.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
-                            s.style.zIndex = '9';
+            if (!phonePortrait) {
+                segmentTl.add(() => {
+                    const sections = document.querySelectorAll('#page-what > .section-container .section');
+                    const clearHovered = () => {
+                        document.querySelectorAll('#page-what > .section-container .section.hovered').forEach(s => {
+                            s.classList.remove('hovered');
                         });
-                        section.removeAttribute('style');
-                        section.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
-                        section.classList.add('hovered');
-                        section.style.zIndex = '0';
+                    };
+                    sections.forEach(section => {
+                        section.addEventListener('mouseenter', () => {
+                            clearHovered();
+                            sections.forEach(s => {
+                                s.removeAttribute('style');
+                                s.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
+                                s.style.zIndex = '9';
+                            });
+                            section.removeAttribute('style');
+                            section.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
+                            section.classList.add('hovered');
+                            section.style.zIndex = '0';
 
 
-                        what3D?.syncToSections?.();
-                        requestAnimationFrame(() => what3D?.syncToSections?.());
+                            what3D?.syncToSections?.();
+                            requestAnimationFrame(() => what3D?.syncToSections?.());
 
-                        if (section.id === 'what-section-3') {
-                            scroller.style.pointerEvents = 'auto';
-                            document.querySelector('#page-what .scroll-hint').style.opacity = '1'
-                        } else {
-                            scroller.style.pointerEvents = 'none';
-                            document.querySelector('#page-what .scroll-hint').style.opacity = '0'
-                        }
+                            if (section.id === 'what-section-3') {
+                                scroller.style.pointerEvents = 'auto';
+                                document.querySelector('#page-what .scroll-hint').style.opacity = '1'
+                            } else {
+                                scroller.style.pointerEvents = 'none';
+                                document.querySelector('#page-what .scroll-hint').style.opacity = '0'
+                            }
+                        });
                     });
-                });
-            }, '>')
+                }, '>')
+            }
         });
         tl.add(() => { // We Are Liminal timeline
-            const segmentTl = gsap.timeline({
-                scrollTrigger: {
-                    trigger: '#segment-3',
-                    scroller,
-                    start: 'top bottom',
-                    end: 'top top',
-                    scrub: true,
-                    invalidateOnRefresh: true
-                }
-            });
+            const sectionContentSel = '#page-what>.section-container .section > div';
+            const clearPhoneSectionStyles = () => {
+                if (!phonePortrait) return;
+                document.querySelectorAll(sectionContentSel).forEach(el => {
+                    el.style.removeProperty('opacity');
+                    el.style.removeProperty('visibility');
+                    el.style.removeProperty('transform');
+                });
+            };
+            const reapplyPhoneHover = () => {
+                if (!phonePortrait) return;
+                const idx = what3D?.getLastPhoneSelection?.() ?? what3D?.getPhoneActiveIndex?.();
+                if (idx == null || idx < 0) return;
+                what3D?.setPhoneActive?.(idx, { force: true, immediate: true });
+            };
+
+            const stConfig = {
+                trigger: '#segment-3',
+                scroller,
+                start: 'top bottom',
+                end: 'top top',
+                scrub: true,
+                invalidateOnRefresh: true,
+                onLeaveBack: () => { clearPhoneSectionStyles(); reapplyPhoneHover(); },
+                onEnter: () => { reapplyPhoneHover(); },
+                onEnterBack: () => { clearPhoneSectionStyles(); reapplyPhoneHover(); }
+            };
+            if (phonePortrait) {
+                const hoveredSelector = '#page-what>.section-container .section.hovered > div';
+                stConfig.onUpdate = (self) => {
+                    const p = self.progress;
+                    document.querySelectorAll(hoveredSelector).forEach(el => {
+                        el.style.opacity = String(1 - p);
+                        el.style.transform = `translateY(${(-64 * p)}px)`;
+                    });
+                    reapplyPhoneHover();
+                };
+            }
+
+            const segmentTl = gsap.timeline({ scrollTrigger: stConfig });
             segmentTl.to('#page-what .scroll-hint', {
                 autoAlpha: 0, duration: 0.01
             });
@@ -3126,12 +3188,14 @@ function space() {
             segmentTl.to('#page-what>.section-container i', {
                 yPercent: -100, duration: 0.5
             }, '<');
-            segmentTl.to('#page-what>.section-container .section > div', {
-                autoAlpha: 0, duration: 0.5
-            }, '<');
-            segmentTl.to('#page-what>.section-container .section > div', {
-                transform: 'translateY(-4rem)', duration: 1
-            }, '<');
+            if (!phonePortrait) {
+                segmentTl.to(sectionContentSel, {
+                    autoAlpha: 0, duration: 0.5
+                }, '<');
+                segmentTl.to(sectionContentSel, {
+                    transform: 'translateY(-4rem)', duration: 1
+                }, '<');
+            }
             segmentTl.to('#page-what>.section-container .section', {
                 zIndex: 0
             }, '<');
@@ -3150,7 +3214,7 @@ function space() {
                 let startScale = [];
                 let startRotX = [];
                 const captureStartState = () => {
-                    if (camOffset) return;
+                    // Always recapture so we start from the latest selection/state
                     camOffset = new THREE.Vector3().copy(whatCam.position).sub(whatLookAt);
                     camSpherical = new THREE.Spherical().setFromVector3(camOffset);
                     startPos = whatGroups.map(g => g.position.clone());
@@ -3184,6 +3248,14 @@ function space() {
                         });
                     }
                 }, '<');
+                if (phonePortrait && what3D?.lookAtTarget) {
+                    segmentTl.to(what3D.lookAtTarget, {
+                        x: 0, y: 0, z: 0,
+                        duration: 0.8,
+                        onUpdate: () => { what3D.camera.lookAt(what3D.lookAtTarget); },
+                        ease: 'power2.out'
+                    }, '<');
+                }
             }
             const nestedTl = gsap.timeline({ paused: true });
             nestedTl.set('#what-section-4', {
