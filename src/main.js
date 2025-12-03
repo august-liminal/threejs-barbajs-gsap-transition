@@ -1569,6 +1569,16 @@ function space() {
         });
         scroller.style.scrollSnapType = 'unset';
         if (phonePortrait) scroller.style.transform = 'translateY(-100dvh)';
+        scroller.addEventListener('scroll', () => {
+            const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+            if (atBottom && !scrubTl.data) {
+                scrubTl.data = 'done';
+                document.querySelector('#welcome')?.remove();
+                scroller.remove();
+                ScrollTrigger.refresh();
+                localStorage.setItem(localStorage.getItem('userId'), 1);
+            }
+        }, { passive: true });
 
         // Caching Constants
 
