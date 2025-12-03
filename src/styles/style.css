@@ -17,7 +17,7 @@ body {
 
 [data-barba="wrapper"] {
     position: relative;
-    min-height: 100vh;
+    min-height: 100dvh;
 }
 
 [data-barba="container"] {
@@ -223,7 +223,7 @@ body.is-transitioning {
 
 div:has(#unlock-module) {
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
 }
 
@@ -438,7 +438,7 @@ main#liminalspace {
 
 #liminalspace section {
     width: 100%;
-    height: 100vh;
+    height: 100dvh;
     padding: 4rem;
     position: absolute;
 }
@@ -469,12 +469,12 @@ div:has(>#user_message) {
     width: 100%;
     scroll-snap-type: y mandatory;
     overscroll-behavior: contain;
-    height: 100vh;
+    height: 100dvh;
     overflow-y: auto;
 }
 
 .scroller .segment {
-    height: 100vh;
+    height: 100dvh;
     scroll-snap-align: end;
     scroll-snap-stop: always;
 }
@@ -486,7 +486,7 @@ div:has(>#user_message) {
 /* Welcome */
 
 #welcome {
-    min-height: 100vh;
+    min-height: 100dvh;
     z-index: 2;
     pointer-events: none;
 }
@@ -611,7 +611,7 @@ canvas#space,
 canvas#thesis-canvas {
     position: fixed;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     inset: 0;
 }
 
@@ -625,7 +625,7 @@ canvas#what-canvas {
     pointer-events: none;
     inset: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
 }
 
 canvas#space {
@@ -679,7 +679,7 @@ canvas#space {
 
 #menu {
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     visibility: hidden;
 }
 
@@ -1438,7 +1438,7 @@ canvas#space {
     position: fixed;
     inset: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     display: block;
     z-index: 0;
     pointer-events: auto;
@@ -1544,7 +1544,7 @@ main[data-barba-namespace="cloud"] a {
 
 /* As soon as list scrolls under, shrink the block height so text moves up */
 main[data-barba-namespace="portfolio"] {
-    height: 100vh;
+    height: 100dvh;
     overflow: auto;
 }
 
@@ -1552,7 +1552,7 @@ main[data-barba-namespace="portfolio"] {
     margin: 10rem 5rem;
     padding: 4rem;
     border: 1px solid;
-    height: calc(100vh - 20rem);
+    height: calc(100dvh - 20rem);
     display: flex;
     flex-direction: column;
     align-items: center;
