@@ -1235,14 +1235,23 @@ function space() {
 
             // Wrap in a group for rotation
             object = new THREE.Group();
-            object.add(root);
+            object.add(root);            
 
-            const layoutScale = Math.min(window.innerWidth / 1600, 2);
-
-            cubeThesis.position.set(35 * layoutScale, 55, -15 * layoutScale);
-            cubeWhat.position.set(5 * layoutScale, 15, 5 * layoutScale);
-            cubeUs.position.set(-45 * layoutScale, 45, 45 * layoutScale);
-            cubePortfolio.position.set(-45 * layoutScale, -10, -35 * layoutScale);
+            if (phonePortrait) { 
+                const layoutScale = Math.min(window.innerWidth / 375, 1.5);
+                const screenRatio = window.innerHeight / window.innerWidth / 2.2;
+                cubeThesis.position.set(-10 * layoutScale, 75 * screenRatio, 10 * layoutScale);
+                cubeWhat.position.set(-15 * layoutScale, 5 * screenRatio, 0 * layoutScale);
+                cubeUs.position.set(5 * layoutScale, 25 * screenRatio, 20 * layoutScale);
+                cubePortfolio.position.set(10 * layoutScale, -20 * screenRatio, 20 * layoutScale);
+            }
+            else {
+                const layoutScale = Math.min(window.innerWidth / 1600, 2);
+                cubeThesis.position.set(35 * layoutScale, 55, -15 * layoutScale);
+                cubeWhat.position.set(5 * layoutScale, 15, 5 * layoutScale);
+                cubeUs.position.set(-45 * layoutScale, 45, 45 * layoutScale);
+                cubePortfolio.position.set(-45 * layoutScale, -10, -35 * layoutScale);
+            }
 
             object.add(cubeThesis, cubeWhat, cubeUs, cubePortfolio);
             scene.add(object);
@@ -1705,7 +1714,7 @@ function space() {
                 window.scrollTo(0, 0);
                 scroller.scrollTop = 0;
                 ScrollTrigger.refresh();
-            }, '<-3')
+            }, '<-2')
 
             // TIMELINE
             tl.add(() => {
@@ -2935,7 +2944,7 @@ function space() {
                     const baseScale = perGroupOffsets[idx]?.scale ?? 1;
                     const normSize = templateSizes[idx] ?? templateSizeFallback;
                     const normalizedWidth = Math.max(0.001, normSize.x, normSize.y, normSize.z);
-                    const targetScale = baseScale * (10 / normalizedWidth); 
+                    const targetScale = baseScale * (10 / normalizedWidth);
                     const hoverFactor = idx === activePhoneIndex ? 1.5 : 0.75;
                     const finalScale = targetScale * hoverFactor;
                     if (immediate) {
@@ -3128,14 +3137,14 @@ function space() {
             });
             segmentTl.to('#what-title', {
                 fontSize: phonePortrait ? '1.5rem' : '2rem', top: phonePortrait ? '1.25rem' : '4rem'
-            }, 0);            
+            }, 0);
             segmentTl.to('#what-canvas', {
                 autoAlpha: 1, duration: 1
             }, 0)
             segmentTl.to('.section-container', {
                 autoAlpha: 1, duration: 0.5
             }, 0);
-            if(!phonePortrait) segmentTl.to('#page-what>.section-container .section', {
+            if (!phonePortrait) segmentTl.to('#page-what>.section-container .section', {
                 zIndex: 9
             }, 0);
             segmentTl.to('#page-what>.section-container i', {
@@ -3372,7 +3381,7 @@ function space() {
 
         // show page
         page.removeAttribute('hidden');
-        page.setAttribute('style', 'position: absolute; inset: 0');        
+        page.setAttribute('style', 'position: absolute; inset: 0');
 
         const btn = page.querySelector('.backBtn');
         btn.textContent = localStorage.getItem(key) == 3 ? 'Continue' : 'Back';
@@ -3475,7 +3484,7 @@ function space() {
             portraitPingPongCleanup = enablePortraitPingPong(portraitVideo);
             try { await portraitVideo.play(); } catch { /* autoplay might be blocked */ }
             if (changing && portraitHasShown) await fadeTo(portraitVideo, 1, 0.25); // initial show handled by GSAP timeline
-        };  
+        };
 
         const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
         gsap.set('#page-profile', { '--pseudo-opacity': 0 });
@@ -3871,7 +3880,7 @@ function space() {
             renderer.setSize(width, height, false);
 
             const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(phonePortrait? 20 : 35, width / height, 0.1, 100);
+            const camera = new THREE.PerspectiveCamera(phonePortrait ? 20 : 35, width / height, 0.1, 100);
             camera.position.set(0, 0, 6);
             scene.add(camera);
 
