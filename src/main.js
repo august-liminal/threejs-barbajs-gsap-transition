@@ -1785,7 +1785,7 @@ function space() {
                         trigger: '#segment-2',
                         scroller,
                         start: 'top bottom',
-                        end: 'top top',
+                        end: 'bottom bottom',
                         scrub: true,
                         invalidateOnRefresh: true,
 
