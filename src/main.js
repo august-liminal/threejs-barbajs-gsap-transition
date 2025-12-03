@@ -134,7 +134,8 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
     const style = Object.assign(document.createElement('style'), {
         id: 'phone-portrait-styles',
         textContent: `
-            :root { font-size: 14px }
+            :root { font-size: 14px; --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); }
+            body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); height: calc(100dvh - var(--safe-top) - var(--safe-bottom)); box-sizing: border-box; }
 
             .text-line { font-size: 1rem; text-align: center; inset: -1.5rem 0px auto; }
             .welcome { top: 50%;}
@@ -593,6 +594,7 @@ function unlock() {
         moduleOffsetY = window.innerHeight / 2 - document.querySelector('#unlock-module').clientHeight / 2
 
         if (unlockInit) {
+            const code = document.querySelector('.code')
             // ---- LINES: clear previous then place fresh
             container.querySelectorAll('.line-solid, .line-dashed').forEach(n => n.remove());
 
