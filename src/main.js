@@ -25,6 +25,7 @@ import { ScrollTrigger } from 'https://esm.sh/gsap@3.13.0/ScrollTrigger?target=e
 import { ScrambleTextPlugin } from 'https://esm.sh/gsap@3.13.0/ScrambleTextPlugin?target=es2020&external=gsap';
 import { SplitText } from 'https://esm.sh/gsap@3.13.0/SplitText?target=es2020&external=gsap';
 gsap.registerPlugin(ScrollTrigger, ScrambleTextPlugin, SplitText);
+ScrollTrigger.normalizeScroll(true);
 
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
