@@ -2322,7 +2322,7 @@ function space() {
                     trigger: '#segment-2',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',
+                    end: 'bottom bottom',
                     scrub: true,
                     invalidateOnRefresh: true,
                 }
@@ -2462,7 +2462,7 @@ function space() {
                     trigger: '#segment-3',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',
+                    end: 'bottom bottom',
                     scrub: true,
                     invalidateOnRefresh: true,
                 }
@@ -2512,7 +2512,7 @@ function space() {
                     trigger: '#segment-4',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',
+                    end: 'bottom bottom',
                     scrub: true,
                     invalidateOnRefresh: true,
                 }
@@ -2617,7 +2617,7 @@ function space() {
                     trigger: '#segment-5',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',
+                    end: 'bottom bottom',
                     scrub: true,
                     invalidateOnRefresh: true,
                     onEnter: () => {
@@ -3187,7 +3187,7 @@ function space() {
                     trigger: '#segment-2',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',
+                    end: 'bottom bottom',
                     scrub: true,
                     invalidateOnRefresh: true,
                     onComplete: () => {
@@ -3278,7 +3278,7 @@ function space() {
                 trigger: '#segment-3',
                 scroller,
                 start: 'top bottom',
-                end: 'top top',
+                end: 'bottom bottom',
                 scrub: true,
                 invalidateOnRefresh: true,
                 onLeaveBack: () => { clearPhoneSectionStyles(); reapplyPhoneHover(); },
