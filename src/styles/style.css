@@ -129,6 +129,11 @@ body.is-transitioning {
     }
 }
 
+.grid-viewport {
+    width: 100vw;
+    height: 100dvh;
+}
+
 .grid-container {
     position: absolute;
     inset: 0;
