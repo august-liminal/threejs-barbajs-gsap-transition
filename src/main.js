@@ -160,6 +160,31 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             #what-section-4 .backBtn { bottom: 1.25rem; }
             #page-what .scroll-hint { bottom: 1.25rem; }
 
+            .page#page-profile { grid-template-columns: 1.25rem minmax(0, 1fr) minmax(0, 7fr) 1.25rem; 
+                grid-template-rows: 1.25rem minmax(0, 5fr) minmax(0, 1fr) minmax(0, 6fr) 1.25rem; }
+            #page-profile>i:nth-child(1) { grid-area: 2 / 1 / 5 / 6; }
+            #page-profile>i:nth-child(2) { grid-area: 1 / 2 / 6 / 4; }
+            #profile-portrait-container { grid-area: 2 / 3 / 2 / 3; border-width: 0; }
+            #profile-back-btn { grid-area: 2 / 3 / 2 / 3; }
+            #profile-name { grid-area: 2 / 3 / 2 / 3; font-size: 2rem; line-height: 1; text-shadow: 0 0 1px #000, 0 0 4px #000, 0 0 16px #000; background: linear-gradient(to top, #0008, transparent 6rem); z-index: -1; }
+            #profile-name span { padding: 0.75rem 1.25rem; }
+            #profile-title { grid-area: 3 / 3 / 3 / 3; font-size: 1rem; line-height: 1; }
+            #profile-desc { grid-area: 4 / 3 / 4 / 3; }
+            #profile-desc>span { overflow: scroll; }
+            #profile-toggle { grid-area: 2 / 2 / 5 / 2; padding: 4rem 0 0 0}
+            #profile-toggle a { padding: 0.5rem}
+            #profile-toggle a span { display: none; }
+            #profile-toggle a::before { display: block; margin-left: 1px; opacity: 0.4; }
+            #profile-toggle a[current]::before { opacity: 1; filter: drop-shadow(0 0 1px #fff); }
+            #profile-toggle>a::after { width: 1px; }
+            #profile-desc::before, #profile-name::before, #profile-portrait-container::after { display: none; }
+
+            #profile-desc>span, #profile-name>span, #profile-title>span { padding: 1.25rem }
+
+            .page#page-portfolio { grid-template-columns: 1.25rem 1fr 7fr 1.25rem; grid-template-rows: 1.25rem 6fr 2fr 4fr 1.25rem; }
+
+            
+
         `
     });
     document.head.append(style);
@@ -3331,6 +3356,7 @@ function space() {
         if (portraitCanvas) portraitCanvas.style.display = 'none';
         let portraitVideo = portraitContainer?.querySelector('video#profile-portrait');
         let portraitPingPongCleanup = null;
+        let portraitHasShown = false;
         const enablePortraitPingPong = (video) => {
             if (!video) return null;
             const fps = 30;
@@ -3398,18 +3424,32 @@ function space() {
             return map;
         };
         const portraitVideos = window.profileVideos || buildPortraitMap();
+        const waitForCanPlay = (video) => new Promise(resolve => {
+            if (!video) return resolve();
+            if (video.readyState >= 3) return resolve();
+            const onCanPlay = () => { video.removeEventListener('canplay', onCanPlay); resolve(); };
+            video.addEventListener('canplay', onCanPlay);
+        });
+        const fadeTo = (video, value, duration = 0.25) => new Promise(res => {
+            if (!video) return res();
+            gsap.to(video, { autoAlpha: value, duration, ease: 'power1.out', onComplete: res });
+        });
         const setPortrait = async (userId) => {
             if (!portraitVideo) return;
             const src = portraitVideos[userId];
             if (!src) return;
             const resolved = new URL(src, import.meta.url).href;
-            if (portraitVideo.src !== resolved) {
+            const changing = portraitVideo.src !== resolved;
+            if (changing) {
+                await fadeTo(portraitVideo, 0, 0.25);
                 portraitVideo.src = resolved;
+                await waitForCanPlay(portraitVideo);
             }
             portraitPingPongCleanup?.();
             portraitPingPongCleanup = enablePortraitPingPong(portraitVideo);
             try { await portraitVideo.play(); } catch { /* autoplay might be blocked */ }
-        };
+            if (changing && portraitHasShown) await fadeTo(portraitVideo, 1, 0.25); // initial show handled by GSAP timeline
+        };  
 
         const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
         gsap.set('#page-profile', { '--pseudo-opacity': 0 });
@@ -3455,7 +3495,11 @@ function space() {
         tl.from('#profile-desc', {
             autoAlpha: 0, duration: 0.5, ease: 'bounce.out'
         }, '-=0.25');
-        tl.to('#profile-portrait', { autoAlpha: 1, duration: 0.5 }, '>');
+        tl.to('#profile-portrait', {
+            autoAlpha: 1,
+            duration: 0.5,
+            onComplete: () => { portraitHasShown = true; }
+        }, '>');
 
         tl.fromTo('.backBtn', {
             autoAlpha: 0
@@ -3477,7 +3521,7 @@ function space() {
             const lockSectionHeights = () => {
                 sections.forEach((id) => {
                     const el = document.getElementById(id);
-                    if (el) el.style.minHeight = el.offsetHeight + 'px';
+                    if (el && !phonePortrait) el.style.minHeight = el.offsetHeight + 'px';
                 });
             };
 
