@@ -1240,9 +1240,9 @@ function space() {
 
             // Wrap in a group for rotation
             object = new THREE.Group();
-            object.add(root);            
+            object.add(root);
 
-            if (phonePortrait) { 
+            if (phonePortrait) {
                 const layoutScale = Math.min(window.innerWidth / 375, 1.5);
                 const screenRatio = window.innerHeight / window.innerWidth / 2.2;
                 cubeThesis.position.set(-10 * layoutScale, 75 * screenRatio, 10 * layoutScale);
@@ -1547,6 +1547,8 @@ function space() {
         const scroller = Object.assign(document.createElement('div'), {
             className: 'scroller'
         });
+        scroller.style.scrollSnapType = 'unset';
+        if (phonePortrait) scroller.style.transform = 'translateY(-100dvh)';
 
         // Caching Constants
 
@@ -1689,55 +1691,68 @@ function space() {
                 });
             }
 
-        if (phonePortrait) {
-            // --- Simple Reveal: MESSAGE for phone
-            tl.add(() => {
-                renderer.setAnimationLoop(tick);
-                isRunning = true;
-            }, '>');
-            const msg = document.querySelector('#user_message');
-            if (msg) {
-                msg.innerHTML = (originalUserMessage || '').replace(/\n/g, '<br>');
-                const split = new SplitText(msg, { type: 'lines' });
-                const lines = split.lines;
-                tl.from(lines.length ? lines : ['#user_message'], {
-                    autoAlpha: 0,
-                    duration: 0.3,
-                    ease: 'bounce.out',
-                    stagger: 0.1
+            if (phonePortrait) {
+                // --- Simple Reveal: MESSAGE for phone
+                tl.add(() => {
+                    renderer.setAnimationLoop(tick);
+                    isRunning = true;
                 }, '>');
-            }
-            tl.add(() => { host._cueLoops?.forEach(({ tl }) => tl.play()) }, '>');
-            tl.from(scrollHint, { autoAlpha: 0, duration: 0.5 }, '>');
-        } else {
-            // --- Decode Reveal: MESSAGE
-            tl.add(() => {
-                renderer.setAnimationLoop(tick);
-                isRunning = true;
-            }, '>');
-            tl.to('#user_message .coded-char', {
-                className: 'coded-char animated',
-                stagger: 0.002,
-                duration: userMessage.length * 0.022
-            }, '>');
-            tl.add(() => { host._cueLoops?.forEach(({ tl }) => tl.play()) }, '>');
-            tl.from(scrollHint, {
-                autoAlpha: 0, duration: 0.5
-            }, '>');
-        }
-            tl.add(() => menuLayoutThree(localStorage.getItem(key)), '>');
-            tl.from(root.querySelector('#space'), {
-                autoAlpha: 0, duration: 3
-            }, '<-1');
+                const msg = document.querySelector('#user_message');
+                if (msg) {
+                    msg.innerHTML = (originalUserMessage || '').replace(/\n/g, '<br>');
+                    const split = new SplitText(msg, { type: 'lines' });
+                    const lines = split.lines;
+                    tl.from(lines.length ? lines : ['#user_message'], {
+                        autoAlpha: 0,
+                        duration: 0.3,
+                        ease: 'bounce.out',
+                        stagger: 0.1
+                    }, '>');
+                }
+                tl.add(() => { host._cueLoops?.forEach(({ tl }) => tl.play()) }, '>');
+                tl.from(scrollHint, { autoAlpha: 0, duration: 0.5 }, '>');
+                tl.add(() => menuLayoutThree(localStorage.getItem(key)), '>');
+                tl.from(root.querySelector('#space'), {
+                    autoAlpha: 0, duration: 3
+                }, '<-1');
 
-            // After intro timeline completes, set up scroll trigger for menu
-            tl.add(() => { // Append Scroller
-                document.body.appendChild(scroller);
-                appendSegments(2);
-                window.scrollTo(0, 0);
-                scroller.scrollTop = 0;
-                ScrollTrigger.refresh();
-            }, '<-2')
+                // After intro timeline completes, set up scroll trigger for menu
+                tl.add(() => { // Append Scroller
+                    document.body.appendChild(scroller);
+                    appendSegments(2);
+                    window.scrollTo(0, 0);
+                    scroller.scrollTop = 0;
+                    ScrollTrigger.refresh();
+                }, '<-2')
+            } else {
+                // --- Decode Reveal: MESSAGE
+                tl.add(() => {
+                    renderer.setAnimationLoop(tick);
+                    isRunning = true;
+                }, '>');
+                tl.to('#user_message .coded-char', {
+                    className: 'coded-char animated',
+                    stagger: 0.002,
+                    duration: userMessage.length * 0.022
+                }, '>');
+                tl.add(() => { host._cueLoops?.forEach(({ tl }) => tl.play()) }, '>');
+                tl.from(scrollHint, {
+                    autoAlpha: 0, duration: 0.5
+                }, '>');
+                tl.add(() => menuLayoutThree(localStorage.getItem(key)), '>');
+                tl.from(root.querySelector('#space'), {
+                    autoAlpha: 0, duration: 3
+                }, '<-1');
+
+                // After intro timeline completes, set up scroll trigger for menu
+                tl.add(() => { // Append Scroller
+                    document.body.appendChild(scroller);
+                    appendSegments(2);
+                    window.scrollTo(0, 0);
+                    scroller.scrollTop = 0;
+                    ScrollTrigger.refresh();
+                }, '<-2')
+            }            
 
             // TIMELINE
             tl.add(() => {
