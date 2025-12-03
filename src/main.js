@@ -136,11 +136,12 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             :root { font-size: 14px }
 
             .text-line { font-size: 1rem; text-align: center; inset: -1.5rem 0px auto; }
+            .welcome { top: 50%;}
             #submit-btn {font-size: 1rem; }
 
             #liminalspace section { padding: 1.25rem; }
             .section { padding: 1.25rem; }
-            #liminalspace #logo-holder { inset: 1.25rem; }
+            #liminalspace #logo-holder { inset: 1.25rem; width: 3rem; height: 3rem; }
             .text-4xl { font-size: 3rem; line-height: 1.1; }
             .text-xl { font-size: 2.25rem; line-height: 1.5; }
             .text-lg { font-size: 1.5rem; }
@@ -165,30 +166,54 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             #page-profile>i:nth-child(1) { grid-area: 2 / 1 / 5 / 6; }
             #page-profile>i:nth-child(2) { grid-area: 1 / 2 / 6 / 4; }
             #profile-portrait-container { grid-area: 2 / 3 / 2 / 3; border-width: 0; }
-            #profile-back-btn { grid-area: 2 / 3 / 2 / 3; }
+            #profile-back-btn { grid-area: 2 / 2 / 2 / 2; }
+            #profile-back-btn .backBtn { width: 100%; inset: 0; padding: 0.75rem; aspect-ratio: 1; border-bottom: 1px solid #fff4}
+            #profile-back-btn .backBtn::before { display: block; }
             #profile-name { grid-area: 2 / 3 / 2 / 3; font-size: 2rem; line-height: 1; text-shadow: 0 0 1px #000, 0 0 4px #000, 0 0 16px #000; background: linear-gradient(to top, #0008, transparent 6rem); z-index: -1; }
             #profile-name span { padding: 0.75rem 1.25rem; }
             #profile-title { grid-area: 3 / 3 / 3 / 3; font-size: 1rem; line-height: 1; }
             #profile-desc { grid-area: 4 / 3 / 4 / 3; }
             #profile-desc>span { overflow: scroll; }
-            #profile-toggle { grid-area: 2 / 2 / 5 / 2; padding: 4rem 0 0 0}
+            #profile-toggle { grid-area: 2 / 2 / 5 / 2; padding-top: calc(100% + 1em); }
             #profile-toggle a { padding: 0.5rem}
             #profile-toggle a span { display: none; }
-            #profile-toggle a::before { display: block; margin-left: 1px; opacity: 0.4; }
+            #profile-toggle a::before { display: block; }
             #profile-toggle a[current]::before { opacity: 1; filter: drop-shadow(0 0 1px #fff); }
             #profile-toggle>a::after { width: 1px; }
-            #profile-desc::before, #profile-name::before, #profile-portrait-container::after { display: none; }
+            #profile-desc::before { inset: -0.725rem -0.725rem auto auto; }
+            #profile-desc::after { inset: auto -0.725rem -0.725rem auto; }
+            #profile-name::before { display: none } 
+            #profile-portrait-container::after {}
 
             #profile-desc>span, #profile-name>span, #profile-title>span { padding: 1.25rem }
 
-            .page#page-portfolio { grid-template-columns: 1.25rem 1fr 7fr 1.25rem; grid-template-rows: 1.25rem 6fr 2fr 4fr 1.25rem; }
+            .page#page-portfolio { grid-template-columns: 1.25rem minmax(0, 1fr) minmax(0, 7fr) 1.25rem; grid-template-rows: 1.25rem minmax(0, 4fr) minmax(0, 8fr) 1.25rem; }
+            #page-portfolio>i:nth-child(1) { grid-area: 2 / 1 / 4 / 6; }
+            #page-portfolio>i:nth-child(2) { grid-area: 1 / 2 / 5 / 4; }
+            #page-portfolio>i:nth-child(3) { display: none; }
+            #portfolio-name { display: none; }
+            #portfolio-icon-container { grid-area: 2 / 3 / 2 / 3; border-width: 0 0 1px 0 }
+            #portfolio-back-btn { grid-area: 2 / 2 / 2 / 2; }
+            #portfolio-back-btn .backBtn { width: 100%; inset: 0; padding: 0.75rem; aspect-ratio: 1; border-bottom: 1px solid #fff4}
+            #portfolio-back-btn .backBtn::before { display: block; }
+            #portfolio-desc { grid-area: 3 / 3 / 3 / 3; padding: 1.25rem; }
+            #portfolio-toggle { border-width: 0 1px 0 0; padding-top: calc(100% + 1em); }
+            #portfolio-toggle a { padding: 0.5rem}
+            #portfolio-toggle a span { display: none; }
+            #portfolio-toggle a::before { display: block; }
+            #portfolio-toggle a[current]::before { opacity: 1; filter: drop-shadow(0 0 1px #fff4); }
+            #portfolio-toggle>a::after { width: 1px; }
+
 
             
 
         `
     });
     document.head.append(style);
-    document.querySelector('#unlock-potential').innerHTML = "Runway <br>+ Activation <br>+ Agency <br>= The ultimate <span style='white-space:nowrap'>co-founder</span>";
+    const unlockPotential = document.querySelector('#unlock-potential');
+    if (unlockPotential) {
+        unlockPotential.innerHTML = "Runway <br>+ Activation <br>+ Agency <br>= The ultimate <span style='white-space:nowrap'>co-founder</span>";
+    }
 }
 
 // ================================================================
@@ -3347,10 +3372,11 @@ function space() {
 
         // show page
         page.removeAttribute('hidden');
-        page.setAttribute('style', 'position: absolute; inset: 0');
+        page.setAttribute('style', 'position: absolute; inset: 0');        
 
         const btn = page.querySelector('.backBtn');
         btn.textContent = localStorage.getItem(key) == 3 ? 'Continue' : 'Back';
+        if (phonePortrait) document.querySelector('#profile-back-btn .backBtn').textContent = '';
         const portraitContainer = document.getElementById('profile-portrait-container');
         const portraitCanvas = portraitContainer?.querySelector('canvas#profile-portrait');
         if (portraitCanvas) portraitCanvas.style.display = 'none';
@@ -3647,6 +3673,8 @@ function space() {
         page.setAttribute('style', 'position: absolute; inset: 0');
         const btn = page.querySelector('.backBtn');
 
+        if (phonePortrait) document.querySelector('#portfolio-back-btn .backBtn').textContent = '';
+
         const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
 
         // TIMELINE
@@ -3843,7 +3871,7 @@ function space() {
             renderer.setSize(width, height, false);
 
             const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 100);
+            const camera = new THREE.PerspectiveCamera(phonePortrait? 20 : 35, width / height, 0.1, 100);
             camera.position.set(0, 0, 6);
             scene.add(camera);
 
