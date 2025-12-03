@@ -142,6 +142,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             .welcome { top: 50%;}
             #submit-btn {font-size: 1rem; }
 
+            main[data-barba-namespace="space"] {height: 0}
             #liminalspace section { padding: 4rem 1.25rem; }
             .section { padding: 1.25rem; }
             #liminalspace #logo-holder { inset: 4rem 1.25rem; width: 3rem; height: 3rem; }
@@ -1568,17 +1569,8 @@ function space() {
             className: 'scroller'
         });
         scroller.style.scrollSnapType = 'unset';
-        if (phonePortrait) scroller.style.transform = 'translateY(-100dvh)';
-        scroller.addEventListener('scroll', () => {
-            const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
-            if (atBottom && !scrubTl.data) {
-                scrubTl.data = 'done';
-                document.querySelector('#welcome')?.remove();
-                scroller.remove();
-                ScrollTrigger.refresh();
-                localStorage.setItem(localStorage.getItem('userId'), 1);
-            }
-        }, { passive: true });
+        
+        
 
         // Caching Constants
 
