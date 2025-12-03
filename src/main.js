@@ -135,7 +135,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
         id: 'phone-portrait-styles',
         textContent: `
             :root { font-size: 14px; --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); }
-            body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); height: calc(100dvh - var(--safe-top) - var(--safe-bottom)); box-sizing: border-box; }
+            body { height: 100dvh; box-sizing: border-box; }
             
 
             .text-line { font-size: 1rem; text-align: center; inset: -1.5rem 0px auto; }
