@@ -135,7 +135,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
         id: 'phone-portrait-styles',
         textContent: `
             :root { font-size: 14px; --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); }
-            body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); height: calc(100svh - var(--safe-top) - var(--safe-bottom)); box-sizing: border-box; }
+            body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); height: calc(100dvh - var(--safe-top) - var(--safe-bottom)); box-sizing: border-box; }
             
 
             .text-line { font-size: 1rem; text-align: center; inset: -1.5rem 0px auto; }
@@ -156,7 +156,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             #page-what>.section-container { pointer-event: none; }
             #page-what>.section-container i { display: none; }
             #page-what>.section-container .section { position: absolute; }
-            #vc, #vs, #acc { margin-top: 32vh }
+            #vc, #vs, #acc { margin-top: 32dvh }
             #vc-def, #vs-def, #acc-def { flex: 0; margin-bottom: 1em; }
 
             #what-section-4>div { flex: 0; }
@@ -231,7 +231,7 @@ function landing() {
     if (!location.pathname.endsWith('/landing') || landingInit) return;
     Object.assign(document.documentElement.style, {
         width: '100vw',
-        height: '100vh',
+        height: '100dvh',
         overflow: 'hidden'
     });
 
@@ -3113,7 +3113,7 @@ function space() {
         const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
         // Set initial states
-        gsap.set('#what-title', { fontSize: phonePortrait ? '4rem' : '8rem', lineHeight: 1, top: phonePortrait ? 'calc(100vh - 3em)' : '50%', yPercent: 500, autoAlpha: 0 });
+        gsap.set('#what-title', { fontSize: phonePortrait ? '4rem' : '8rem', lineHeight: 1, top: phonePortrait ? 'calc(100dvh - 3em)' : '50%', yPercent: 500, autoAlpha: 0 });
         gsap.set('.section-container', { autoAlpha: 0 });
         gsap.set('#what-section-4', { autoAlpha: 0 });
         if (!phonePortrait) gsap.set('#page-what>.section-container i', { scaleY: 0 });
@@ -4201,7 +4201,7 @@ function portfolioPage() {
         const list = document.querySelector('.portfolio-list');
         list.style.margin = '2rem';
         list.style.padding = '2rem';
-        list.style.height = 'calc(100vh - 4rem)'
+        list.style.height = 'calc(100dvh - 4rem)'
     }
 
     document.documentElement.style.visibility = 'visible';
@@ -4316,7 +4316,7 @@ const Page = {
             landingInit = false;
             const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } });
             tl.to(current.container.querySelectorAll('#entrance, .window'), {
-                width: '100vw', height: '100vh', backgroundColor: '#0000', borderColor: '#fff', boxShadow: 'none', duration: 0.5
+                width: '100vw', height: '100dvh', backgroundColor: '#0000', borderColor: '#fff', boxShadow: 'none', duration: 0.5
             }, 0);
             tl.to(current.container.querySelectorAll('#entrance'), {
                 borderColor: 'transparent', duration: 0.5
