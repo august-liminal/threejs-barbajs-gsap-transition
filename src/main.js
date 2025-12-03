@@ -532,11 +532,30 @@ function unlock() {
     const API_URL = 'https://website-auth-sage.vercel.app/api/validate-code';
     let paddingX, paddingY;
 
+    // --- viewport helper for mobile url bar/visual viewport
+    const getViewportHeight = () => (window.visualViewport?.height || window.innerHeight);
+    const setVhVar = () => {
+        const vh = getViewportHeight() * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+    setVhVar();
+    window.visualViewport?.addEventListener('resize', setVhVar);
+    window.addEventListener('resize', setVhVar);
+
     // ---- ELEMENTS
     const t = document.querySelector('#unlock-title');
     const unlockModule = document.querySelector('#unlock-module');
     const inner = document.querySelector('#unlock-module-inner');
     const container = unlockModule?.parentNode;
+
+    // Force container to use visual viewport height if available
+    if (container) {
+        Object.assign(container.style, {
+            width: '100vw',
+            height: 'calc(var(--vh, 1vh) * 100)',
+            overflow: 'hidden'
+        });
+    }
 
 
     // ----- GRID SETUP
@@ -553,9 +572,10 @@ function unlock() {
 
     function unlockGrid() {
         unlockModule.querySelectorAll('.cell').forEach(el => el.remove()); // clear previous cells if re-running    
-        dimensionH = Math.max(12, Math.floor(window.innerHeight / mincellSize / 2) * 2);
+        const viewportH = getViewportHeight();
+        dimensionH = Math.max(12, Math.floor(viewportH / mincellSize / 2) * 2);
         dimensionW = Math.max(12, Math.floor(window.innerWidth / mincellSize / 2) * 2);
-        cellSize = window.innerHeight / dimensionH;
+        cellSize = viewportH / dimensionH;
 
         inner?.style.setProperty('--cell-size', `${cellSize}px`);
         t.style.lineHeight = (cellSize * 2) + 'px';
@@ -585,14 +605,14 @@ function unlock() {
         }
         unlockModule.appendChild(frag);
 
-        paddingY = (window.innerHeight - innerH * cellSize) / 2;
+        paddingY = (getViewportHeight() - innerH * cellSize) / 2;
         paddingX = (window.innerWidth - innerW * cellSize) / 2;
         container.style.padding = `${paddingY}px ${paddingX}px`;
 
         codeOffsetX = window.innerWidth / 2 - document.querySelector('.code').clientWidth / 2;
-        codeOffsetY = window.innerHeight / 2 - document.querySelector('.code').clientHeight / 2;
+        codeOffsetY = getViewportHeight() / 2 - document.querySelector('.code').clientHeight / 2;
         moduleOffsetX = window.innerWidth / 2 - document.querySelector('#unlock-module').clientWidth / 2;
-        moduleOffsetY = window.innerHeight / 2 - document.querySelector('#unlock-module').clientHeight / 2
+        moduleOffsetY = getViewportHeight() / 2 - document.querySelector('#unlock-module').clientHeight / 2
 
         if (unlockInit) {
             const code = document.querySelector('.code')
