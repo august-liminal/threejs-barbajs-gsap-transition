@@ -23,7 +23,8 @@ import { OrbitControls } from 'https://esm.sh/three@0.180.0/examples/jsm/control
 import { gsap } from 'https://esm.sh/gsap@3.13.0?target=es2020';
 import { ScrollTrigger } from 'https://esm.sh/gsap@3.13.0/ScrollTrigger?target=es2020&external=gsap';
 import { ScrambleTextPlugin } from 'https://esm.sh/gsap@3.13.0/ScrambleTextPlugin?target=es2020&external=gsap';
-gsap.registerPlugin(ScrollTrigger, ScrambleTextPlugin);
+import { SplitText } from 'https://esm.sh/gsap@3.13.0/SplitText?target=es2020&external=gsap';
+gsap.registerPlugin(ScrollTrigger, ScrambleTextPlugin, SplitText);
 
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
@@ -139,13 +140,14 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             .welcome { top: 50%;}
             #submit-btn {font-size: 1rem; }
 
-            #liminalspace section { padding: 1.25rem; }
+            #liminalspace section { padding: 4rem 1.25rem; }
             .section { padding: 1.25rem; }
-            #liminalspace #logo-holder { inset: 1.25rem; width: 3rem; height: 3rem; }
+            #liminalspace #logo-holder { inset: 4rem 1.25rem; width: 3rem; height: 3rem; }
             .text-4xl { font-size: 3rem; line-height: 1.1; }
             .text-xl { font-size: 2.25rem; line-height: 1.5; }
             .text-lg { font-size: 1.5rem; }
             #welcome h1 { height: 1.25em; }
+            #welcome .scroll-hint { margin: 0;l }
 
             #who-what { height: 6rem; margin-bottom: 1rem; }
 
@@ -1557,6 +1559,7 @@ function space() {
 
             const userGreeting = localStorage.getItem('userGreeting');
             const userMessage = localStorage.getItem('userMessage');
+            const originalUserMessage = userMessage;
             const message = root.querySelector('#user_message');
             const greeting = root.querySelector('#user_greeting');
             greeting.dataset.text = userGreeting;
@@ -1683,8 +1686,28 @@ function space() {
                 });
             }
 
+        if (phonePortrait) {
+            // --- Simple Reveal: MESSAGE for phone
+            tl.add(() => {
+                renderer.setAnimationLoop(tick);
+                isRunning = true;
+            }, '>');
+            const msg = document.querySelector('#user_message');
+            if (msg) {
+                msg.innerHTML = (originalUserMessage || '').replace(/\n/g, '<br>');
+                const split = new SplitText(msg, { type: 'lines' });
+                const lines = split.lines;
+                tl.from(lines.length ? lines : ['#user_message'], {
+                    autoAlpha: 0,
+                    duration: 0.3,
+                    ease: 'bounce.out',
+                    stagger: 0.1
+                }, '>');
+            }
+            tl.add(() => { host._cueLoops?.forEach(({ tl }) => tl.play()) }, '>');
+            tl.from(scrollHint, { autoAlpha: 0, duration: 0.5 }, '>');
+        } else {
             // --- Decode Reveal: MESSAGE
-
             tl.add(() => {
                 renderer.setAnimationLoop(tick);
                 isRunning = true;
@@ -1693,15 +1716,12 @@ function space() {
                 className: 'coded-char animated',
                 stagger: 0.002,
                 duration: userMessage.length * 0.022
-            }, '>')
-
-            // Cue Animation
-
+            }, '>');
             tl.add(() => { host._cueLoops?.forEach(({ tl }) => tl.play()) }, '>');
-
             tl.from(scrollHint, {
                 autoAlpha: 0, duration: 0.5
             }, '>');
+        }
             tl.add(() => menuLayoutThree(localStorage.getItem(key)), '>');
             tl.from(root.querySelector('#space'), {
                 autoAlpha: 0, duration: 3
