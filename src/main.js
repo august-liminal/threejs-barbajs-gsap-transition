@@ -148,7 +148,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
 
             main[data-barba-namespace="space"] {height: 0}
             #liminalspace section { padding: 4rem 1.25rem; }
-            .section { padding: 1.25rem; }
+            .section { padding: 4rem 1.25rem; }
             #liminalspace #logo-holder { inset: 4rem 1.25rem; width: 3rem; height: 3rem; }
             .text-4xl { font-size: 3rem; line-height: 1.1; }
             .text-xl { font-size: 2.25rem; line-height: 1.5; }
@@ -158,20 +158,20 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
 
             #who-what { height: 6rem; margin-bottom: 1rem; }
 
-            #page-what>.section-container { pointer-event: none; }
+            #page-what>.section-container { pointer-events: none; }
             #page-what>.section-container i { display: none; }
             #page-what>.section-container .section { position: absolute; }
-            #vc, #vs, #acc { margin-top: 32dvh }
+            #vc, #vs, #acc { margin-top: 24dvh }
             #vc-def, #vs-def, #acc-def { flex: 0; margin-bottom: 1em; }
 
             #what-section-4>div { flex: 0; }
             .liminal-svg { width: 40vw; }
             #we-are-liminal-content { margin-top: 2rem; }
-            #what-section-4 .backBtn { bottom: 1.25rem; }
-            #page-what .scroll-hint { bottom: 1.25rem; }
+            #what-section-4 .backBtn { bottom: 4.25rem; }
+            #page-what .scroll-hint { bottom: 4rem; }
 
             .page#page-profile { grid-template-columns: 1.25rem minmax(0, 1fr) minmax(0, 7fr) 1.25rem; 
-                grid-template-rows: 1.25rem minmax(0, 5fr) minmax(0, 1fr) minmax(0, 6fr) 1.25rem; }
+                grid-template-rows: 4rem minmax(0, 5fr) minmax(0, 1fr) minmax(0, 6fr) 4rem; }
             #page-profile>i:nth-child(1) { grid-area: 2 / 1 / 5 / 6; }
             #page-profile>i:nth-child(2) { grid-area: 1 / 2 / 6 / 4; }
             #profile-portrait-container { grid-area: 2 / 3 / 2 / 3; border-width: 0; }
@@ -196,7 +196,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
 
             #profile-desc>span, #profile-name>span, #profile-title>span { padding: 1.25rem }
 
-            .page#page-portfolio { grid-template-columns: 1.25rem minmax(0, 1fr) minmax(0, 7fr) 1.25rem; grid-template-rows: 1.25rem minmax(0, 4fr) minmax(0, 8fr) 1.25rem; }
+            .page#page-portfolio { grid-template-columns: 1.25rem minmax(0, 1fr) minmax(0, 7fr) 1.25rem; grid-template-rows: 4rem minmax(0, 4fr) minmax(0, 8fr) 4rem; }
             #page-portfolio>i:nth-child(1) { grid-area: 2 / 1 / 4 / 6; }
             #page-portfolio>i:nth-child(2) { grid-area: 1 / 2 / 5 / 4; }
             #page-portfolio>i:nth-child(3) { display: none; }
@@ -527,14 +527,14 @@ function updateLanding(e) {
 // ========================== UNLOCK PAGE =========================
 // ================================================================
 
+
 function unlock() {
     if (!location.pathname.endsWith('/unlock') || unlockInit) return;
 
     // ---- CONSTANTS
     const ENTRY_PAGE = '/landing';
     const PROTECTED_PAGE = '/space';
-    const API_URL = 'https://website-auth-sage.vercel.app/api/validate-code';
-    let paddingX, paddingY;
+    const API_URL = 'https://website-auth-sage.vercel.app/api/validate-code';    
 
     // --- viewport helper for mobile url bar/visual viewport
     const getViewportHeight = () => (window.visualViewport?.height || window.innerHeight);
@@ -552,18 +552,9 @@ function unlock() {
     const inner = document.querySelector('#unlock-module-inner');
     const container = unlockModule?.parentNode;
 
-    // Force container to use visual viewport height if available
-    if (container) {
-        Object.assign(container.style, {
-            width: '100vw',
-            height: 'calc(var(--vh, 1vh) * 100)',
-            overflow: 'hidden'
-        });
-    }
-
 
     // ----- GRID SETUP
-
+    let paddingX, paddingY;
     unlockModule.style.display = 'grid';
     unlockModule.style.gap = '0';
 
@@ -571,8 +562,10 @@ function unlock() {
     if (t?.style.lineHeight) t.style.removeProperty('line-height');
 
     const mincellSize = Math.max(24, 0.5 * parseFloat(getComputedStyle(t).fontSize));
+    const baseViewportH = getViewportHeight();
     let dimensionH, dimensionW, cellSize, innerH, innerW, cells, total, codeOffsetX, codeOffsetY, moduleOffsetX, moduleOffsetY;
     let centersX, centersY, jitter, lastChar;
+    let extraRows = 0; // rows temporarily re-added when keyboard shows
 
     function unlockGrid() {
         unlockModule.querySelectorAll('.cell').forEach(el => el.remove()); // clear previous cells if re-running    
@@ -584,7 +577,9 @@ function unlock() {
         inner?.style.setProperty('--cell-size', `${cellSize}px`);
         t.style.lineHeight = (cellSize * 2) + 'px';
 
-        innerH = dimensionH - (phonePortrait ? 4 : 8);
+        const deducted = phonePortrait ? 4 : 8;
+        innerH = dimensionH - deducted + extraRows;
+        if (innerH > dimensionH) innerH = dimensionH;
         innerW = dimensionW - (phonePortrait ? 2 : 4);
         total = innerH * innerW;
 
@@ -596,8 +591,8 @@ function unlock() {
         unlockModule.style.gridAutoRows = `${cellSize}px`;
 
         unlockModule.style.width = (innerW * cellSize) + 'px';
-        unlockModule.style.height = (innerH * cellSize) + 'px';
-
+        unlockModule.style.height = (innerH * cellSize) + 'px'; // keep matrix grid static
+        
         cells = new Array(total);
         const frag = document.createDocumentFragment();
         for (let i = 0; i < total; i++) {
@@ -620,7 +615,7 @@ function unlock() {
 
         if (unlockInit) {
             const code = document.querySelector('.code');
-            if (code) code.style.position = 'relative';
+            if (code) code.style.position = 'absolute';
             // ---- LINES: clear previous then place fresh
             container.querySelectorAll('.line-solid, .line-dashed').forEach(n => n.remove());
 
@@ -1047,6 +1042,27 @@ function unlock() {
             textMatrixControl?.update();
         }, 50);
     });
+
+    // Keyboard show/hide watcher: when keyboard shows, add back the same number of deducted rows; revert when it hides.
+    if (phonePortrait) {
+        const applyKeyboardRows = (visible) => {
+            const deducted = phonePortrait ? 4 : 8;
+            const added = visible ? deducted : 0;
+            if (added === extraRows) return;
+            extraRows = added;
+            unlockGrid();
+            textMatrixControl?.update();
+        };
+        const keyboardThreshold = 0.9; // viewport shrinks below this ratio => keyboard likely shown
+        const checkKeyboard = () => {
+            const h = window.visualViewport?.height || window.innerHeight;
+            const visible = h < baseViewportH * keyboardThreshold;
+            applyKeyboardRows(visible);
+        };
+        window.visualViewport?.addEventListener('resize', checkKeyboard);
+        window.addEventListener('focusin', checkKeyboard);
+        window.addEventListener('focusout', checkKeyboard);
+    }
 }
 
 
@@ -1102,7 +1118,7 @@ function space() {
 
     // Camera
     const camera = new THREE.PerspectiveCamera(60, size.width / size.height, 0.5, 1000);
-    camera.position.set(-250, 0, 0);
+    camera.position.set(phonePortrait ? -200 : -250, 0, 0);
     scene.add(camera);
 
     // GLTF Loader
@@ -1670,35 +1686,13 @@ function space() {
                 document.querySelector('#user_message').setAttribute('style', '--char-count:' + userMessage.length);
             }
 
-            // Build Cue Animation
-
+            // Build Cue (pure CSS loader)
             const host = document.querySelector('#welcome .scroll-cue-container');
-
-            const GROW = 1.6;
-            const OVERLAP = 1;
-            const SPACING = 0.45;
-
-            host._cueLoops?.forEach(({ tl, cue }) => {
-                tl.kill();
-                cue.remove();
-            });
-
-            host._cueLoops = [0, (2 * GROW) - OVERLAP * SPACING].map((offset) => {
-                const cue = host.appendChild(Object.assign(document.createElement('div'), { className: 'cue' }));
-
-                const tlCue = gsap.timeline({
-                    paused: true,
-                    repeat: -1,
-                    delay: offset,                     // reapplies each repeat
-                    defaults: { ease: 'power2.inOut' }
-                })
-                    .set(cue, { top: '0%', bottom: '100%' })
-                    .to(cue, { bottom: '0%', duration: GROW })
-                    .to(cue, { top: '100%', duration: GROW }, `>-${OVERLAP}`)
-                    .set(cue, { top: '0%', bottom: '100%' });
-
-                return { cue, tl: tlCue };
-            });
+            if (host) {
+                host.innerHTML = '';
+                host.appendChild(Object.assign(document.createElement('div'), { className: 'cue' }));
+                host.style.opacity = '0';
+            }
 
             const tl = gsap.timeline({
                 defaults: { ease: 'power2.out' },
@@ -1753,7 +1747,14 @@ function space() {
                         stagger: 0.1
                     }, '>');
                 }
-                tl.add(() => { host._cueLoops?.forEach(({ tl }) => tl.play()) }, '>');
+                if (host) {
+                    tl.to(host, { autoAlpha: 1, duration: 0.6 }, '>');
+                    tl.add(() => {
+                        if (phonePortrait) {
+                            gsap.to(host, { autoAlpha: 0, duration: 0.4, delay: 1.5 });
+                        }
+                    }, '>');
+                }
                 tl.from(scrollHint, { autoAlpha: 0, duration: 0.5 }, '>');
                 tl.add(() => menuLayoutThree(localStorage.getItem(key)), '>');
                 tl.from(root.querySelector('#space'), {
@@ -1779,10 +1780,15 @@ function space() {
                     stagger: 0.002,
                     duration: userMessage.length * 0.022
                 }, '>');
-                tl.add(() => { host._cueLoops?.forEach(({ tl }) => tl.play()) }, '>');
-                tl.from(scrollHint, {
-                    autoAlpha: 0, duration: 0.5
-                }, '>');
+                if (host) {
+                    tl.to(host, { autoAlpha: 1, duration: 0.6 }, '>');
+                    tl.add(() => {
+                        if (phonePortrait) {
+                            gsap.to(host, { autoAlpha: 0, duration: 0.4, delay: 2.5 });
+                        }
+                    }, '>');
+                }
+                tl.from(scrollHint, { autoAlpha: 0, duration: 0.5 }, '>');
                 tl.add(() => menuLayoutThree(localStorage.getItem(key)), '>');
                 tl.from(root.querySelector('#space'), {
                     autoAlpha: 0, duration: 3
@@ -2198,7 +2204,7 @@ function space() {
         const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
         // Set initial states
-        tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '8rem', xPercent: 100, autoAlpha: 0, bottom: '2em' });
+        tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '8rem', xPercent: 100, autoAlpha: 0, top: 'calc(100dvh - 8rem)' });
         tl.set('#page-thesis .section>*', { visibility: 'hidden' });
 
         // Definition timeline
@@ -2365,7 +2371,7 @@ function space() {
                 xPercent: -100, autoAlpha: 0
             }, '-=0.5');
             segmentTl.to('#thesis-title', {
-                bottom: '1em', xPercent: 0, autoAlpha: 1
+                top: 'calc(100dvh - 8rem)', xPercent: 0, autoAlpha: 1
             }, '-=0.5');
             if (cam && leftShell && rightShell) {
                 segmentTl.to(cam.rotation, {
@@ -2490,7 +2496,7 @@ function space() {
                 }
             });
             segmentTl.to('#thesis-title', {
-                fontSize: phonePortrait ? '1.25rem' : '2rem', top: phonePortrait ? '1.25rem' : '4rem', bottom: 'unset'
+                fontSize: phonePortrait ? '1.25rem' : '2rem', top: '4rem', bottom: 'unset'
             }, 0);
             segmentTl.to('#who-what', {
                 xPercent: 0, autoAlpha: 1
@@ -2629,7 +2635,7 @@ function space() {
                 opacity: 0, duration: 0.5
             }, '<');
             nestedTl.fromTo('.backBtn', {
-                autoAlpha: 0, bottom: phonePortrait ? '1.25rem' : '2em'
+                autoAlpha: 0, bottom: phonePortrait ? '4rem' : '2em'
             }, {
                 autoAlpha: 1
             }, '>');
@@ -2752,6 +2758,16 @@ function space() {
         const scroller = Object.assign(document.createElement('div'), {
             className: 'scroller'
         });
+
+        const phoneSectionSegmentIds = ['segment-2', 'segment-3', 'segment-4'];
+        const scrollToPhoneSectionSegment = (idx, { behavior = 'smooth' } = {}) => {
+            if (!phonePortrait || idx == null || idx < 0) return;
+            const segmentId = phoneSectionSegmentIds[idx];
+            if (!segmentId || !scroller) return;
+            const target = scroller.querySelector(`#${segmentId}`);
+            if (!target) return;
+            scroller.scrollTo({ top: target.offsetTop, behavior });
+        };
 
         // ============================== THREEJS
 
@@ -3106,6 +3122,7 @@ function space() {
                 const idx = group ? groups.indexOf(group) : -1;
                 if (idx === -1) return;
                 setPhoneActive(idx);
+                scrollToPhoneSectionSegment(idx);
             }
 
             function start() {
@@ -3172,7 +3189,7 @@ function space() {
         const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
         // Set initial states
-        gsap.set('#what-title', { fontSize: phonePortrait ? '4rem' : '8rem', lineHeight: 1, top: phonePortrait ? 'calc(100dvh - 3em)' : '50%', yPercent: 500, autoAlpha: 0 });
+        gsap.set('#what-title', { fontSize: phonePortrait ? '4rem' : '8rem', lineHeight: 1, top: phonePortrait ? 'calc(100dvh - 10rem)' : '50%', yPercent: 500, autoAlpha: 0 });
         gsap.set('.section-container', { autoAlpha: 0 });
         gsap.set('#what-section-4', { autoAlpha: 0 });
         if (!phonePortrait) gsap.set('#page-what>.section-container i', { scaleY: 0 });
@@ -3181,7 +3198,7 @@ function space() {
         // Definition timeline    
         tl.add(() => { // Append Scroller
             document.body.appendChild(scroller);
-            appendSegments(3);
+            appendSegments(phonePortrait ? 5 : 3);
             window.scrollTo(0, 0);
             scroller.scrollTop = 0;
             ScrollTrigger.refresh();
@@ -3204,79 +3221,126 @@ function space() {
         const whatGroups = what3D?.groups ?? [];
 
         tl.add(() => { // Three-section timeline
-            const segmentTl = gsap.timeline({
-                scrollTrigger: {
-                    trigger: '#segment-2',
-                    scroller,
-                    start: 'top bottom',
-                    end: 'bottom bottom',
-                    scrub: true,
-                    invalidateOnRefresh: true,
-                    onComplete: () => {
-                        if (!phonePortrait) document.querySelector('.scroller').style.pointerEvents = 'none';
+            if (phonePortrait) {
+                const segmentTl = gsap.timeline({
+                    scrollTrigger: {
+                        trigger: '#segment-2',
+                        // endTrigger: '#segment-4',
+                        scroller,
+                        start: 'top bottom',
+                        end: 'bottom bottom',
+                        scrub: true,
+                        invalidateOnRefresh: true
                     }
-                }
-            });
-            segmentTl.to('#what-title', {
-                fontSize: phonePortrait ? '1.5rem' : '2rem', top: phonePortrait ? '1.25rem' : '4rem'
-            }, 0);
-            segmentTl.to('#what-canvas', {
-                autoAlpha: 1, duration: 1
-            }, 0)
-            segmentTl.to('.section-container', {
-                autoAlpha: 1, duration: 0.5
-            }, 0);
-            if (!phonePortrait) segmentTl.to('#page-what>.section-container .section', {
-                zIndex: 9
-            }, 0);
-            segmentTl.to('#page-what>.section-container i', {
-                scaleY: 1,
-                duration: 0.5,
-                stagger: 0.2
-            }, '<');
-            if (!phonePortrait) segmentTl.to('.scroll-hint', {
-                opacity: 0, duration: 0.2, onComplete: () => {
-                    segmentTl.to('#page-what .scroll-hint', {
-                        right: '4rem', duration: 0
-                    });
-                }
-            }, '<-0.5');
+                });
+                segmentTl.to('#what-title', {
+                    fontSize: phonePortrait ? '1.5rem' : '2rem', top: '4rem'
+                }, 0);
+                segmentTl.to('#what-canvas', {
+                    autoAlpha: 1, duration: 1
+                }, 0)
+                segmentTl.to('.section-container', {
+                    autoAlpha: 1, duration: 0.5
+                }, 0);
+                segmentTl.to('#page-what>.section-container i', {
+                    scaleY: 1,
+                    duration: 0.5,
+                    stagger: 0.2
+                }, '<');
 
-            if (!phonePortrait) {
-                segmentTl.add(() => {
-                    const sections = document.querySelectorAll('#page-what > .section-container .section');
-                    const clearHovered = () => {
-                        document.querySelectorAll('#page-what > .section-container .section.hovered').forEach(s => {
-                            s.classList.remove('hovered');
+                const setSectionFromSegment = (idx, opts = {}) => {
+                    if (idx == null || idx < 0) return;
+                    what3D?.setPhoneActive?.(idx, { force: true, immediate: opts.immediate });
+                };
+                setSectionFromSegment(0, { immediate: true });
+                phoneSectionSegmentIds.forEach((id, idx) => {
+                    const selector = `#${id}`;
+                    ScrollTrigger.create({
+                        trigger: selector,
+                        scroller,
+                        start: 'top center',
+                        end: 'bottom center',
+                        onEnter: () => setSectionFromSegment(idx),
+                        onEnterBack: () => setSectionFromSegment(idx),
+                        onLeave: () => setSectionFromSegment(Math.min(phoneSectionSegmentIds.length - 1, idx + 1)),
+                        onLeaveBack: () => setSectionFromSegment(Math.max(0, idx - 1))
+                    });
+                });
+            } else {
+                const segmentTl = gsap.timeline({
+                    scrollTrigger: {
+                        trigger: '#segment-2',
+                        scroller,
+                        start: 'top bottom',
+                        end: 'bottom bottom',
+                        scrub: true,
+                        invalidateOnRefresh: true,
+                        onComplete: () => {
+                            if (!phonePortrait) document.querySelector('.scroller').style.pointerEvents = 'none';
+                        }
+                    }
+                });
+                segmentTl.to('#what-title', {
+                    fontSize: phonePortrait ? '1.5rem' : '2rem', top: '4rem'
+                }, 0);
+                segmentTl.to('#what-canvas', {
+                    autoAlpha: 1, duration: 1
+                }, 0)
+                segmentTl.to('.section-container', {
+                    autoAlpha: 1, duration: 0.5
+                }, 0);
+                if (!phonePortrait) segmentTl.to('#page-what>.section-container .section', {
+                    zIndex: 9
+                }, 0);
+                segmentTl.to('#page-what>.section-container i', {
+                    scaleY: 1,
+                    duration: 0.5,
+                    stagger: 0.2
+                }, '<');
+                if (!phonePortrait) segmentTl.to('.scroll-hint', {
+                    opacity: 0, duration: 0.2, onComplete: () => {
+                        segmentTl.to('#page-what .scroll-hint', {
+                            right: '4rem', duration: 0
                         });
-                    };
-                    sections.forEach(section => {
-                        section.addEventListener('mouseenter', () => {
-                            clearHovered();
-                            sections.forEach(s => {
-                                s.removeAttribute('style');
-                                s.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
-                                s.style.zIndex = '9';
+                    }
+                }, '<-0.5');
+
+                if (!phonePortrait) {
+                    segmentTl.add(() => {
+                        const sections = document.querySelectorAll('#page-what > .section-container .section');
+                        const clearHovered = () => {
+                            document.querySelectorAll('#page-what > .section-container .section.hovered').forEach(s => {
+                                s.classList.remove('hovered');
                             });
-                            section.removeAttribute('style');
-                            section.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
-                            section.classList.add('hovered');
-                            section.style.zIndex = '0';
+                        };
+                        sections.forEach(section => {
+                            section.addEventListener('mouseenter', () => {
+                                clearHovered();
+                                sections.forEach(s => {
+                                    s.removeAttribute('style');
+                                    s.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
+                                    s.style.zIndex = '9';
+                                });
+                                section.removeAttribute('style');
+                                section.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
+                                section.classList.add('hovered');
+                                section.style.zIndex = '0';
 
 
-                            what3D?.syncToSections?.();
-                            requestAnimationFrame(() => what3D?.syncToSections?.());
+                                what3D?.syncToSections?.();
+                                requestAnimationFrame(() => what3D?.syncToSections?.());
 
-                            if (section.id === 'what-section-3') {
-                                scroller.style.pointerEvents = 'auto';
-                                document.querySelector('#page-what .scroll-hint').style.opacity = '1'
-                            } else {
-                                scroller.style.pointerEvents = 'none';
-                                document.querySelector('#page-what .scroll-hint').style.opacity = '0'
-                            }
+                                if (section.id === 'what-section-3') {
+                                    scroller.style.pointerEvents = 'auto';
+                                    document.querySelector('#page-what .scroll-hint').style.opacity = '1'
+                                } else {
+                                    scroller.style.pointerEvents = 'none';
+                                    document.querySelector('#page-what .scroll-hint').style.opacity = '0'
+                                }
+                            });
                         });
-                    });
-                }, '>')
+                    }, '>')
+                }
             }
         });
         tl.add(() => { // We Are Liminal timeline
@@ -3289,33 +3353,29 @@ function space() {
                     el.style.removeProperty('transform');
                 });
             };
-            const reapplyPhoneHover = () => {
-                if (!phonePortrait) return;
-                const idx = what3D?.getLastPhoneSelection?.() ?? what3D?.getPhoneActiveIndex?.();
-                if (idx == null || idx < 0) return;
-                what3D?.setPhoneActive?.(idx, { force: true, immediate: true });
-            };
 
             const stConfig = {
-                trigger: '#segment-3',
+                trigger: phonePortrait ? '#segment-5' : '#segment-3',
                 scroller,
                 start: 'top bottom',
-                end: 'bottom bottom',
+                end: 'top top',
                 scrub: true,
                 invalidateOnRefresh: true,
-                onLeaveBack: () => { clearPhoneSectionStyles(); reapplyPhoneHover(); },
-                onEnter: () => { reapplyPhoneHover(); },
-                onEnterBack: () => { clearPhoneSectionStyles(); reapplyPhoneHover(); }
+                onLeaveBack: () => { clearPhoneSectionStyles(); },
+                onEnterBack: () => { clearPhoneSectionStyles(); }
             };
             if (phonePortrait) {
                 const hoveredSelector = '#page-what>.section-container .section.hovered > div';
+                stConfig.onEnter = () => {
+                    clearPhoneSectionStyles();
+                    what3D?.setPhoneActive?.(2, { force: true, immediate: true });
+                };
                 stConfig.onUpdate = (self) => {
                     const p = self.progress;
                     document.querySelectorAll(hoveredSelector).forEach(el => {
                         el.style.opacity = String(1 - p);
                         el.style.transform = `translateY(${(-64 * p)}px)`;
                     });
-                    reapplyPhoneHover();
                 };
             }
 
@@ -3325,6 +3385,9 @@ function space() {
             });
             segmentTl.to('#what-title', {
                 autoAlpha: 0, duration: 0.5
+            });
+            segmentTl.to('#page-what>.section-container', {
+                autoAlpha: 0
             });
             segmentTl.to('#page-what>.section-container i', {
                 yPercent: -100, duration: 0.5
@@ -3415,10 +3478,13 @@ function space() {
             nestedTl.fromTo('#we-are-liminal-content', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, '>');
             nestedTl.fromTo('.backBtn', { autoAlpha: 0 }, { autoAlpha: 1 }, '>');
 
+            segmentTl.eventCallback('onStart', () => {
+                gsap.set('#what-section-4', { autoAlpha: 0, scale: 0, clearProps: 'transform,opacity' });
+            });
             segmentTl.eventCallback('onComplete', () => nestedTl.play(0));
             segmentTl.eventCallback('onReverseComplete', () => {
                 nestedTl.pause(0);
-                gsap.set('#what-section-4', { autoAlpha: 0 });
+                gsap.set('#what-section-4', { autoAlpha: 0, scale: 0, clearProps: 'transform,opacity' });
             });
 
             // Scrub fade-out on reverse: tie nested fade-out to segment progress (only visible when scrolling back up)
@@ -3426,14 +3492,8 @@ function space() {
             fadeBackTl.to('#what-section-4', {
                 autoAlpha: 0,
                 scale: 0,
-                duration: 5,
-                onComplete: () => {
-                    const el = document.querySelector('#what-section-4');
-                    if (el) {
-                        el.style.removeProperty('transform');
-                        el.style.removeProperty('scale');
-                    }
-                }
+                duration: 3,
+                onComplete: () => gsap.set('#what-section-4', { clearProps: 'transform,opacity' })
             }, '<');
             let prevProg = 0;
 
@@ -3443,6 +3503,15 @@ function space() {
                     fadeBackTl.progress(1 - prog);
                 } else {
                     fadeBackTl.progress(0);
+                }
+                // Tolerance: if the playhead nearly reaches the end, fire the nested timeline
+                if (prog >= 0.98 && prog > prevProg) {
+                    nestedTl.play(0);
+                }
+                // Tolerance reset: if playhead is near the start, force-clear to avoid flashes on next forward scroll
+                if (prog <= 0.02) {
+                    nestedTl.pause(0);
+                    gsap.set('#what-section-4', { autoAlpha: 0, scale: 0, clearProps: 'transform,opacity' });
                 }
                 prevProg = prog;
             });
@@ -3635,13 +3704,6 @@ function space() {
             const toggles = document.querySelector('#profile-toggle');
             if (!toggles) return;
 
-            const lockSectionHeights = () => {
-                sections.forEach((id) => {
-                    const el = document.getElementById(id);
-                    if (el && !phonePortrait) el.style.minHeight = el.offsetHeight + 'px';
-                });
-            };
-
             const textCache = new WeakMap();
             const rememberText = (nodes) => {
                 nodes.forEach((node) => {
@@ -3702,11 +3764,9 @@ function space() {
 
             let activeUser = 'sonny';
             showUser(activeUser);
-            lockSectionHeights();
 
             const animateSwap = (nextUser) => {
                 if (nextUser === activeUser) return;
-                lockSectionHeights();
 
                 const outgoing = getUserNodes(activeUser);
                 const incoming = getUserNodes(nextUser);
@@ -3815,13 +3875,6 @@ function space() {
             const toggles = document.querySelector('#portfolio-toggle');
             if (!toggles) return;
 
-            const lockSectionHeights = () => {
-                sections.forEach((id) => {
-                    const el = document.getElementById(id);
-                    if (el) el.style.minHeight = el.offsetHeight + 'px';
-                });
-            };
-
             const textCache = new WeakMap();
             const rememberText = (nodes) => {
                 nodes.forEach((node) => {
@@ -3883,11 +3936,9 @@ function space() {
             let activeUser = defaultUser;
             portfolio3D?.swap?.(activeUser);
             showUser(activeUser);
-            lockSectionHeights();
 
             const animateSwap = (nextUser) => {
                 if (nextUser === activeUser) return;
-                lockSectionHeights();
 
                 const outgoing = getUserNodes(activeUser);
                 const incoming = getUserNodes(nextUser);
@@ -4256,11 +4307,22 @@ const defaultEnter = ({ next }) => gsap.fromTo(next.container, { autoAlpha: 0 },
 function portfolioPage() {
     if (!location.pathname.endsWith('/portfolio')) return;
 
-    if (phonePortrait) {
-        const list = document.querySelector('.portfolio-list');
-        list.style.margin = '2rem';
-        list.style.padding = '2rem';
-        list.style.height = 'calc(100dvh - 4rem)'
+    const list = document.querySelector('.portfolio-list');
+    const container = list?.parentNode;
+    if (list && container) {
+        const fontSize = parseFloat(getComputedStyle(list).fontSize) || 16;
+        const minCell = Math.max(24, 0.5 * fontSize);
+        const vh = window.visualViewport?.height || window.innerHeight;
+        const vw = window.innerWidth;
+        const dimH = Math.max(12, Math.floor(vh / minCell / 2) * 2);
+        const dimW = Math.max(12, Math.floor(vw / minCell / 2) * 2);
+        const cell = vh / dimH;
+        const innerH = dimH - (phonePortrait ? 4 : 8);
+        const innerW = dimW - (phonePortrait ? 2 : 4);
+        const padY = (vh - innerH * cell) / 2;
+        const padX = (vw - innerW * cell) / 2;
+        container.style.padding = `${padY}px ${padX}px`;
+        container.style.height = '100%'
     }
 
     document.documentElement.style.visibility = 'visible';

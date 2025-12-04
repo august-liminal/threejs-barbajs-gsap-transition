@@ -5,6 +5,10 @@
     overflow: hidden;
 }
 
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
 body {
     max-width: 100vw;
     background-color: #000;
@@ -655,9 +659,29 @@ canvas#space {
 }
 
 .scroll-cue-container .cue {
-    width: 100%;
     position: absolute;
+    inset: 0;
+    width: 1px;
+    margin: 0 auto;
+    background: transparent;
+    overflow: hidden;
+}
+
+.scroll-cue-container .cue::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    width: 100%;
+    height: 0%;
     background: #fff;
+    animation: cueLoader 2.5s ease-in-out infinite;
+}
+
+@keyframes cueLoader {
+    50% { height: 100%; }
+    100% { height: 0%; top: auto; bottom: 0; }
 }
 
 .backBtn {
@@ -882,7 +906,7 @@ canvas#space {
 }
 
 #page-what>.section-container .section>div {
-    opacity: 0;
+    opacity: 0 !important;
     transition: opacity 0.5s ease-out;
 }
 
@@ -914,7 +938,7 @@ canvas#space {
 }
 
 #page-what>.section-container .section.hovered>div {
-    opacity: 1;
+    opacity: 1!important;
 }
 
 #what-title {
@@ -1554,10 +1578,10 @@ main[data-barba-namespace="portfolio"] {
 }
 
 .portfolio-list {
-    margin: 10rem 5rem;
     padding: 4rem;
     border: 1px solid;
-    height: calc(100dvh - 20rem);
+    height: 100%;
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
