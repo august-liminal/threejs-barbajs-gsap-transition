@@ -233,7 +233,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
 let gridDimension, gridSize, cellSize, x, y, deltaW, deltaH;
 
 async function landing() {
-    if (!location.pathname.endsWith('/landing') || landingInit) return;
+    if (!location.pathname.endsWith('/') || landingInit) return;
     Object.assign(document.documentElement.style, {
         width: '100vw',
         height: '100dvh',
@@ -477,7 +477,7 @@ async function landing() {
 //===== Landing page window resizing & flickering effect
 
 function updateLanding(e) {
-    if (!location.pathname.endsWith('/landing')) return;
+    if (!location.pathname.endsWith('/')) return;
     const windowBox = document.querySelector('.window');
 
     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -532,7 +532,7 @@ function unlock() {
     if (!location.pathname.endsWith('/unlock') || unlockInit) return;
 
     // ---- CONSTANTS
-    const ENTRY_PAGE = '/landing';
+    const ENTRY_PAGE = '/';
     const PROTECTED_PAGE = '/space';
     const API_URL = 'https://website-auth-sage.vercel.app/api/validate-code';    
 
