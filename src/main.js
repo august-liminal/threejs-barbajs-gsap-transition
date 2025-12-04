@@ -243,7 +243,7 @@ function landing() {
     function landingLayout() {
         //===== DECLARATIONS
         // Grid dimension in pixel
-        gridDimension = Math.max(window.innerHeight, window.innerWidth)
+        gridDimension = Math.max(window.innerHeight, window.innerWidth) - (phonePortrait ? 50 : 0)
         document.documentElement.style.setProperty('--grid-dimension', `${gridDimension}px`)
         // Calculate difference between viewport and grid dimension
         deltaW = Math.abs(window.innerWidth - gridDimension);
