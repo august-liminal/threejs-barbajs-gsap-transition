@@ -626,21 +626,40 @@ function unlock() {
         moduleOffsetY = getViewportHeight() / 2 - document.querySelector('#unlock-module').clientHeight / 2
 
         if (unlockInit) {
-            const code = document.querySelector('.code')
+            const code = document.querySelector('.code');
+            if (code) code.style.position = 'relative';
             // ---- LINES: clear previous then place fresh
             container.querySelectorAll('.line-solid, .line-dashed').forEach(n => n.remove());
 
-            // verticals
+            
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX - 8}px;` }));
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX}px;` }));
-            container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `left:${codeOffsetX}px;` }));
-            container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `right:${codeOffsetX}px;` }));
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX}px;` }));
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX - 8}px;` }));
+
+            // verticals
+            if (code) {
+                code.append(Object.assign(document.createElement('div'), {
+                    className: 'line-dashed line-vertical',
+                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;left:${-codeOffsetX}px;`
+                }));
+                code.append(Object.assign(document.createElement('div'), {
+                    className: 'line-dashed line-vertical',
+                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;right:${-codeOffsetX}px;`
+                }));
+            }
             // horizontals
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `top:${moduleOffsetY}px;` }));
-            container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `top:${codeOffsetY}px;` }));
-            container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `bottom:${codeOffsetY}px;` }));
+            if (code) {
+                code.append(Object.assign(document.createElement('div'), {
+                    className: 'line-dashed line-horizontal',
+                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;top:${-codeOffsetY}px;`
+                }));
+                code.append(Object.assign(document.createElement('div'), {
+                    className: 'line-dashed line-horizontal',
+                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;bottom:${-codeOffsetY}px;`
+                }));
+            }
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `bottom:${paddingY}px;` }));
         }
 

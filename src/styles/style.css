@@ -276,7 +276,7 @@ div:has(#unlock-module) {
 
 #unlock-module #submit-btn {
     width: calc(var(--cell-size) * 6);
-    height: var(--cell-size);
+    height: calc(var(--cell-size) * 2);
     border: 2px solid #fff;
     background: #000;
     font-size: 1.5rem;
