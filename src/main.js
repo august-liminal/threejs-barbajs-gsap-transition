@@ -232,13 +232,14 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
 
 let gridDimension, gridSize, cellSize, x, y, deltaW, deltaH;
 
-function landing() {
+async function landing() {
     if (!location.pathname.endsWith('/landing') || landingInit) return;
     Object.assign(document.documentElement.style, {
         width: '100vw',
         height: '100dvh',
         overflow: 'hidden'
     });
+    const fontReady = document.fonts?.ready ?? Promise.resolve();
 
     function landingLayout() {
         //===== DECLARATIONS
@@ -289,12 +290,14 @@ function landing() {
         document.querySelector('#grid-bg').style.setProperty('--y', `${y}px`);
 
         // Loader
-        document.querySelector('.grid-container')?.appendChild(
-            Object.assign(document.createElement('div'), { className: 'loader-glow' })
-        );
-        document.querySelector('.grid-bg')?.appendChild(
-            Object.assign(document.createElement('div'), { className: 'loader' })
-        );
+        const glow = Object.assign(document.createElement('div'), { className: 'loader-glow' });
+        const loaderEl = Object.assign(document.createElement('div'), { className: 'loader' });
+        document.querySelector('.grid-container')?.appendChild(glow);
+        document.querySelector('.grid-bg')?.appendChild(loaderEl);
+        requestAnimationFrame(() => {
+            glow.classList.add('is-active');
+            loaderEl.classList.add('is-active');
+        });
 
         //===== Creating outline as SVG
         // Declaring points
@@ -338,6 +341,7 @@ function landing() {
         poly.setAttribute('points', pts.map(p => `${p.x},${p.y}`).join(' '));
     }
 
+    await fontReady;
     landingLayout();
 
 
@@ -366,43 +370,32 @@ function landing() {
     camera.position.set(0, 0, 0);
     scene.add(camera);
 
-    // GLTF Loader
+    // GLTF Loader + preload
     const loader = new GLTFLoader();
     loader.setDRACOLoader(dracoLoader);
     const modelURL = new URL('./cloud.glb', import.meta.url);
-    //Load the file
-    loader.load(
-        modelURL.href,
-        function (gltf) {
-            //If the file is loaded, add it to the scene        
-            object = gltf.scene;
-            const material = new THREE.PointsMaterial({
-                size: 3,
-                color: 0xffffff,
-                transparent: true,
-                opacity: 0.7,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false,
-            });
-            object.traverse((child) => {
-                if (child.isPoints) {
-                    // child.material = material;
-                    // child.material.size = 3; // increase this value to make points bigger
-                    // child.material.color.set('#ffffff');
-                }
-            });
-            const boundingBox = new THREE.Box3().setFromObject(object);
-            const center = new THREE.Vector3();
-            boundingBox.getCenter(center);
-            object.position.sub(center);
-            object.position.z = 1;
-            scene.add(object);
-        }, null,
-        function (error) {
-            //If there is an error, log it
-            console.error(error);
-        }
-    );
+    let cloudScene = null;
+    try {
+        const [, gltfScene] = await Promise.all([
+            fontReady,
+            new Promise((resolve, reject) => {
+                loader.load(modelURL.href, gltf => resolve(gltf.scene), undefined, reject);
+            })
+        ]);
+        cloudScene = gltfScene;
+    } catch (err) {
+        console.error('Landing preload failed', err);
+    }
+
+    if (cloudScene) {
+        object = cloudScene;
+        const boundingBox = new THREE.Box3().setFromObject(object);
+        const center = new THREE.Vector3();
+        boundingBox.getCenter(center);
+        object.position.sub(center);
+        object.position.z = 1;
+        scene.add(object);
+    }
 
     //Instantiate a new renderer and set its size
     const renderer = new THREE.WebGLRenderer({
@@ -641,11 +634,11 @@ function unlock() {
             if (code) {
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-vertical',
-                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;left:${-codeOffsetX}px;`
+                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;left:0;`
                 }));
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-vertical',
-                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;right:${-codeOffsetX}px;`
+                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;right:0;`
                 }));
             }
             // horizontals
@@ -653,11 +646,11 @@ function unlock() {
             if (code) {
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-horizontal',
-                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;top:${-codeOffsetY}px;`
+                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;top:0;`
                 }));
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-horizontal',
-                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;bottom:${-codeOffsetY}px;`
+                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;bottom:0;`
                 }));
             }
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `bottom:${paddingY}px;` }));
