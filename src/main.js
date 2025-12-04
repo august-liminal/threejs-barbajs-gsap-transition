@@ -537,14 +537,14 @@ function unlock() {
     let paddingX, paddingY;
 
     // --- viewport helper for mobile url bar/visual viewport
-    const getViewportHeight = () => (window.visualViewport?.height || window.innerHeight);
-    const setVhVar = () => {
-        const vh = getViewportHeight() * 0.01;
-        document.documentElement.style.setProperty('--vh', `${vh}px`);
-    };
-    setVhVar();
-    window.visualViewport?.addEventListener('resize', setVhVar);
-    window.addEventListener('resize', setVhVar);
+    // const getViewportHeight = () => (window.visualViewport?.height || window.innerHeight);
+    // const setVhVar = () => {
+    //     const vh = getViewportHeight() * 0.01;
+    //     document.documentElement.style.setProperty('--vh', `${vh}px`);
+    // };
+    // setVhVar();
+    // window.visualViewport?.addEventListener('resize', setVhVar);
+    // window.addEventListener('resize', setVhVar);
 
     // ---- ELEMENTS
     const t = document.querySelector('#unlock-title');
@@ -577,7 +577,7 @@ function unlock() {
     function unlockGrid() {
         unlockModule.querySelectorAll('.cell').forEach(el => el.remove()); // clear previous cells if re-running    
         const viewportH = getViewportHeight();
-        dimensionH = Math.max(12, Math.floor(viewportH / mincellSize / 2) * 2);
+        dimensionH = Math.max(12, Math.floor(window.innerHeight / mincellSize / 2) * 2);
         dimensionW = Math.max(12, Math.floor(window.innerWidth / mincellSize / 2) * 2);
         cellSize = viewportH / dimensionH;
 
@@ -631,14 +631,14 @@ function unlock() {
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX - 8}px;` }));
 
             // verticals
-            if (code) {
+            if (code && !phonePortrait) {
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-vertical',
                     style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;left:0;`
                 }));
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-vertical',
-                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;right:0;`
+                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;right:0;`                    
                 }));
             }
             // horizontals
