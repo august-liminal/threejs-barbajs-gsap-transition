@@ -439,14 +439,20 @@ function landing() {
     let lastMouseUpdate = 0;
     const MOUSE_UPDATE_INTERVAL = 16; // ~60fps, adjust as needed
 
-    document.addEventListener('mousemove', (e) => {
+    const updatePointer = (e) => {
+        const p = e.touches?.[0] || e;
+        if (!p) return;
         const now = Date.now();
         if (now - lastMouseUpdate > MOUSE_UPDATE_INTERVAL) {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
+            mouseX = p.clientX;
+            mouseY = p.clientY;
             lastMouseUpdate = now;
         }
-    }, { passive: true });
+    };
+
+    document.addEventListener('mousemove', updatePointer, { passive: true });
+    document.addEventListener('touchstart', updatePointer, { passive: true });
+    document.addEventListener('touchmove', updatePointer, { passive: true });
 
     // Resize Event Listener
     window.addEventListener('resize', () => {
