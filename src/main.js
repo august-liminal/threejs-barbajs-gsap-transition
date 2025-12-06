@@ -2667,7 +2667,6 @@ function space() {
             }, {
                 autoAlpha: 1
             }, '>');
-
             const segmentTl = gsap.timeline({
                 scrollTrigger: {
                     trigger: '#segment-5',
@@ -2683,7 +2682,9 @@ function space() {
                     onEnterBack: () => {
                         scroller.style.pointerEvents = 'auto';
                     },
-                    onLeaveBack: () => nestedTl.reverse()
+                    onLeaveBack: () => {
+                        nestedTl.reverse()
+                    }
                 }
             });
             segmentTl.to('#unlock-potential', {
