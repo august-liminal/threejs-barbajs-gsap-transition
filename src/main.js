@@ -176,7 +176,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             #page-profile>i:nth-child(2) { grid-area: 1 / 2 / 6 / 4; }
             #profile-portrait-container { grid-area: 2 / 3 / 2 / 3; border-width: 0; }
             #profile-back-btn { grid-area: 2 / 2 / 2 / 2; }
-            #profile-back-btn .backBtn { width: 100%; inset: 0; padding: 0.75rem; aspect-ratio: 1; border-bottom: 1px solid #fff4}
+            #profile-back-btn .backBtn { width: 100%; inset: 0; padding: 0.75rem; aspect-ratio: 1; border-bottom: 1px solid #fff4; overflow: hidden; }
             #profile-back-btn .backBtn::before { display: block; }
             #profile-name { grid-area: 2 / 3 / 2 / 3; font-size: 2rem; line-height: 1; text-shadow: 0 0 1px #000, 0 0 4px #000, 0 0 16px #000; background: linear-gradient(to top, #0008, transparent 6rem); z-index: -1; }
             #profile-name span { padding: 0.75rem 1.25rem; }
@@ -203,7 +203,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             #portfolio-name { display: none; }
             #portfolio-icon-container { grid-area: 2 / 3 / 2 / 3; border-width: 0 0 1px 0 }
             #portfolio-back-btn { grid-area: 2 / 2 / 2 / 2; }
-            #portfolio-back-btn .backBtn { width: 100%; inset: 0; padding: 0.75rem; aspect-ratio: 1; border-bottom: 1px solid #fff4}
+            #portfolio-back-btn .backBtn { width: 100%; inset: 0; padding: 0.75rem; aspect-ratio: 1; border-bottom: 1px solid #fff4; overflow: hidden; }
             #portfolio-back-btn .backBtn::before { display: block; }
             #portfolio-desc { grid-area: 3 / 3 / 3 / 3; padding: 1.25rem; }
             #portfolio-toggle { border-width: 0 1px 0 0; padding-top: calc(100% + 1em); }
@@ -290,9 +290,9 @@ async function landing() {
         document.querySelector('#grid-bg').style.setProperty('--y', `${y}px`);
 
         // Loader
-        const glow = Object.assign(document.createElement('div'), { className: 'loader-glow' });
+        const glow = document.querySelector('.loader-glow') || Object.assign(document.createElement('div'), { className: 'loader-glow' });
         const loaderEl = Object.assign(document.createElement('div'), { className: 'loader' });
-        document.querySelector('.grid-container')?.appendChild(glow);
+        if (!glow.parentElement) document.querySelector('.grid-container')?.appendChild(glow);
         document.querySelector('.grid-bg')?.appendChild(loaderEl);
         requestAnimationFrame(() => {
             glow.classList.add('is-active');
@@ -343,6 +343,7 @@ async function landing() {
 
     await fontReady;
     landingLayout();
+    if (phonePortrait) (document.querySelector('#entrance') || document.querySelector('.grid-container')?.appendChild(Object.assign(document.createElement('a'), { id: 'entrance' })))?.style.setProperty('--entrance-w', 4), document.querySelector('#entrance')?.style.setProperty('--entrance-h', 4);
 
 
 
@@ -1123,6 +1124,27 @@ function space() {
 
     // GLTF Loader
     const loader = new GLTFLoader();
+    const preloadAssets = () => {
+        const urls = new Set();
+        ['./element05.glb', './element07.glb', './element08.glb'].forEach(p => {
+            urls.add(new URL(p, import.meta.url).href);
+        });
+        ['./textures/sphereNormal.jpg', './textures/sphereRoughness.jpg', './textures/sphereColor.png'].forEach(p => {
+            urls.add(new URL(p, import.meta.url).href);
+        });
+        document.querySelectorAll('#portfolio-toggle [data-user]').forEach(btn => {
+            const id = btn.dataset.user;
+            if (id) urls.add(new URL(`./logo/${id}.glb`, import.meta.url).href);
+        });
+        document.querySelectorAll('#profile-name [data-user]').forEach(span => {
+            const id = span.dataset.user;
+            if (id) urls.add(new URL(`./videos/${id}.mp4`, import.meta.url).href);
+        });
+        urls.forEach(url => {
+            fetch(url, { mode: 'no-cors' }).catch(() => { /* swallow prefetch errors */ });
+        });
+    };
+    preloadAssets();
 
     // Points shader  ✅ crisp disc + bright core
     const shaderMaterial = new THREE.ShaderMaterial({
@@ -1304,10 +1326,10 @@ function space() {
             if (phonePortrait) {
                 const layoutScale = Math.min(window.innerWidth / 375, 1.5);
                 const screenRatio = window.innerHeight / window.innerWidth / 2.2;
-                cubeThesis.position.set(-10 * layoutScale, 75 * screenRatio, 10 * layoutScale);
-                cubeWhat.position.set(-15 * layoutScale, 5 * screenRatio, 0 * layoutScale);
-                cubeUs.position.set(5 * layoutScale, 25 * screenRatio, 20 * layoutScale);
-                cubePortfolio.position.set(10 * layoutScale, -20 * screenRatio, 20 * layoutScale);
+                cubeThesis.position.set(-5 * layoutScale, 80 * screenRatio, 5 * layoutScale);
+                cubeWhat.position.set(-5 * layoutScale, 45 * screenRatio, 0 * layoutScale);
+                cubeUs.position.set(5 * layoutScale, 5 * screenRatio, -5 * layoutScale);
+                cubePortfolio.position.set(0 * layoutScale, -25 * screenRatio, -5 * layoutScale);
             }
             else {
                 const layoutScale = Math.min(window.innerWidth / 1600, 2);
@@ -1742,9 +1764,10 @@ function space() {
                     const lines = split.lines;
                     tl.from(lines.length ? lines : ['#user_message'], {
                         autoAlpha: 0,
-                        duration: 0.3,
-                        ease: 'bounce.out',
-                        stagger: 0.1
+                        yPercent: -10,
+                        duration: 1,
+                        ease: 'power2.out',
+                        stagger: 0.4
                     }, '>');
                 }
                 if (host) {
@@ -1807,9 +1830,21 @@ function space() {
             // TIMELINE
             tl.add(() => {
 
+                const finishWelcome = () => {
+                    if (scrubTl.data === 'done') return;
+                    scrubTl.data = 'done';
+
+                    const welcome = document.querySelector('#welcome');
+                    const scrollerEl = document.querySelector('.scroller');
+                    ScrollTrigger.getById?.('welcomeScrub')?.kill(false);
+                    gsap.timeline().add(() => { welcome?.remove(); scrollerEl?.remove(); ScrollTrigger.refresh(); });
+                    localStorage.setItem(localStorage.getItem('userId'), 1);
+                };
+
                 const scrubTl = gsap.timeline({
                     defaults: { ease: 'power2.out' },
                     scrollTrigger: {
+                        id: 'welcomeScrub',
                         trigger: '#segment-2',
                         scroller,
                         start: 'top bottom',
@@ -1817,16 +1852,9 @@ function space() {
                         scrub: true,
                         invalidateOnRefresh: true,
 
-                        onLeave(self) {
-                            if (scrubTl.data === 'done') return;
-                            scrubTl.data = 'done';
-
-                            const welcome = document.querySelector('#welcome');
-                            const scrollerEl = document.querySelector('.scroller');
-                            self.kill(false);
-
-                            gsap.timeline().add(() => { welcome?.remove(); scrollerEl?.remove(); ScrollTrigger.refresh(); });
-                            localStorage.setItem(localStorage.getItem('userId'), 1);
+                        onLeave: finishWelcome,
+                        onUpdate(self) {
+                            if (self.progress >= 0.7) finishWelcome();
                         }
 
                     }
