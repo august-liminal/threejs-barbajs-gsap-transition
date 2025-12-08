@@ -12,6 +12,7 @@
 	"dependencies": {
 		"@barba/core": "^2.10.3",
 		"gsap": "^3.13.0",
+		"scroll-snap": "^5.0.2",
 		"three": "^0.180.0"
 	}
 }

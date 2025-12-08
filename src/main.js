@@ -18,6 +18,8 @@ import { CSS2DRenderer, CSS2DObject } from 'https://esm.sh/three@0.180.0/example
 import { HorizontalBlurShader } from 'https://esm.sh/three@0.180.0/examples/jsm/shaders/HorizontalBlurShader.js?deps=three@0.180.0';
 import { VerticalBlurShader } from 'https://esm.sh/three@0.180.0/examples/jsm/shaders/VerticalBlurShader.js?deps=three@0.180.0';
 import { OrbitControls } from 'https://esm.sh/three@0.180.0/examples/jsm/controls/OrbitControls.js?deps=three@0.180.0';
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
 
 // GSAP
 import { gsap } from 'https://esm.sh/gsap@3.13.0?target=es2020';
@@ -26,12 +28,12 @@ import { ScrambleTextPlugin } from 'https://esm.sh/gsap@3.13.0/ScrambleTextPlugi
 import { SplitText } from 'https://esm.sh/gsap@3.13.0/SplitText?target=es2020&external=gsap';
 gsap.registerPlugin(ScrollTrigger, ScrambleTextPlugin, SplitText);
 ScrollTrigger.normalizeScroll({
-    allowNestedScroll: true, 
+    allowNestedScroll: true,
     type: "touch,wheel"
 });
 
-const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+// Scroll Snap
+import createScrollSnap from 'https://esm.sh/scroll-snap@5.0.2'
 
 // Barba
 import barba from 'https://esm.sh/@barba/core@2.9.7?target=es2020';
@@ -1855,7 +1857,7 @@ function space() {
 
                         onLeave: finishWelcome,
                         onUpdate(self) {
-                            if (self.progress >= 0.7) finishWelcome();
+                            if (self.progress >= 0.8) finishWelcome();
                         }
 
                     }
@@ -1902,6 +1904,9 @@ function space() {
     // ================================ OUR THESIS ===================================
 
     function thesis() {
+        document.querySelector('#welcome')?.remove(); 
+        document.querySelector('.scroller')?.remove();
+        if(localStorage.getItem(key) < 1) localStorage.setItem(key, 1);
 
         // THREE JS FUNCTION
         function createThesisScene(canvas) {
@@ -2232,7 +2237,7 @@ function space() {
         const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
         // Set initial states
-        tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '8rem', xPercent: 100, autoAlpha: 0, top: 'calc(100dvh - 8rem)' });
+        tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '8rem', xPercent: 100, autoAlpha: 0, top: phonePortrait ? 'calc(100dvh - 8rem)' : 'calc(100dvh - 10rem)' });
         tl.set('#page-thesis .section>*', { visibility: 'hidden' });
 
         // Definition timeline
@@ -2399,7 +2404,7 @@ function space() {
                 xPercent: -100, autoAlpha: 0
             }, '-=0.5');
             segmentTl.to('#thesis-title', {
-                top: 'calc(100dvh - 8rem)', xPercent: 0, autoAlpha: 1
+                xPercent: 0, autoAlpha: 1
             }, '-=0.5');
             if (cam && leftShell && rightShell) {
                 segmentTl.to(cam.rotation, {
@@ -4195,9 +4200,22 @@ function space() {
             scroller.appendChild(Object.assign(document.createElement('div'), {
                 className: 'segment', id: `segment-${i + 1}`
             }));
+        const snap = createScrollSnap(scroller, { 
+            snapDestinationY: '100%', 
+            snapStop: true,
+            duration: 500,
+            threshold: 0.2,
+            easing: t => (t < 0.5)
+                ? 2 * t * t
+                : 1 - Math.pow(-2 * t + 2, 2) / 2,
+
+        });
+        snap.bind(() => ScrollTrigger.refresh?.());
+
         // Forward wheel/touch to the scroller so it can sit “behind” interactables
         if (scroller && !scroller.dataset.forwardingSetup) {
             scroller.dataset.forwardingSetup = '1';
+            scroller.style.pointerEvents = 'none';
             let lastTouchY = null;
             const forward = (dy) => {
                 scroller.scrollTop += dy;

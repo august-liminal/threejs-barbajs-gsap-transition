@@ -475,10 +475,10 @@ div:has(>#user_message) {
 }
 
 .scroller {
-    pointer-events: none;
+    pointer-events: auto;
     position: relative;
     width: 100%;
-    scroll-snap-type: y mandatory;
+    /* scroll-snap-type: y mandatory; */
     overscroll-behavior: contain;
     height: 100dvh;
     overflow-y: auto;
@@ -486,8 +486,8 @@ div:has(>#user_message) {
 
 .scroller .segment {
     height: 100dvh;
-    scroll-snap-align: end;
-    scroll-snap-stop: always;
+    /* scroll-snap-align: end; */
+    /* scroll-snap-stop: always; */
 }
 
 .page {
