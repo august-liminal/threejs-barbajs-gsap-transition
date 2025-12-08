@@ -3249,7 +3249,7 @@ function space() {
             const snap = createScrollSnap(scroller, {
                 snapDestinationY: '100%',
                 snapStop: true,
-                duration: 500,
+                duration: 200,
                 threshold: 0.1,
                 easing: t => (t < 0.5)
                     ? 2 * t * t
