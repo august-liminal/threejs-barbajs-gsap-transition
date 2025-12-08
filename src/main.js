@@ -1791,6 +1791,7 @@ function space() {
                 tl.add(() => { // Append Scroller
                     document.body.appendChild(scroller);
                     appendSegments(2);
+                    
                     window.scrollTo(0, 0);
                     scroller.scrollTop = 0;
                     ScrollTrigger.refresh();
@@ -1824,6 +1825,7 @@ function space() {
                 tl.add(() => { // Append Scroller
                     document.body.appendChild(scroller);
                     appendSegments(2);
+                    
                     window.scrollTo(0, 0);
                     scroller.scrollTop = 0;
                     ScrollTrigger.refresh();
@@ -1906,6 +1908,7 @@ function space() {
     function thesis() {
         document.querySelector('#welcome')?.remove(); 
         document.querySelector('.scroller')?.remove();
+        document.querySelector('#logo-holder').style.opacity = 0;
         if(localStorage.getItem(key) < 1) localStorage.setItem(key, 1);
 
         // THREE JS FUNCTION
@@ -2360,6 +2363,17 @@ function space() {
         tl.add(() => { // Append Scroller
             document.body.appendChild(scroller);
             appendSegments(5);
+            const snap = createScrollSnap(scroller, {
+                snapDestinationY: '100%',
+                snapStop: true,
+                duration: 500,
+                threshold: 0.2,
+                easing: t => (t < 0.5)
+                    ? 2 * t * t
+                    : 1 - Math.pow(-2 * t + 2, 2) / 2,
+            });
+            snap.bind(() => ScrollTrigger.refresh?.());
+
             window.scrollTo(0, 0);
             scroller.scrollTop = 0;
             ScrollTrigger.refresh();
@@ -3232,6 +3246,17 @@ function space() {
         tl.add(() => { // Append Scroller
             document.body.appendChild(scroller);
             appendSegments(phonePortrait ? 5 : 3);
+            const snap = createScrollSnap(scroller, {
+                snapDestinationY: '100%',
+                snapStop: true,
+                duration: 500,
+                threshold: 0.2,
+                easing: t => (t < 0.5)
+                    ? 2 * t * t
+                    : 1 - Math.pow(-2 * t + 2, 2) / 2,
+            });
+            snap.bind(() => ScrollTrigger.refresh?.());
+
             window.scrollTo(0, 0);
             scroller.scrollTop = 0;
             ScrollTrigger.refresh();
@@ -4199,18 +4224,7 @@ function space() {
         for (let i = 0; i < number; i++)
             scroller.appendChild(Object.assign(document.createElement('div'), {
                 className: 'segment', id: `segment-${i + 1}`
-            }));
-        const snap = createScrollSnap(scroller, { 
-            snapDestinationY: '100%', 
-            snapStop: true,
-            duration: 500,
-            threshold: 0.2,
-            easing: t => (t < 0.5)
-                ? 2 * t * t
-                : 1 - Math.pow(-2 * t + 2, 2) / 2,
-
-        });
-        snap.bind(() => ScrollTrigger.refresh?.());
+            }));        
 
         // Forward wheel/touch to the scroller so it can sit “behind” interactables
         if (scroller && !scroller.dataset.forwardingSetup) {
