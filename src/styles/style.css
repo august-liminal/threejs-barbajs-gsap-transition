@@ -3,6 +3,7 @@
     --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1748926717051---font--heading-font: 'Space Grostesk';
     --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1748926717051---font--button-font: 'Space Mono';
     overflow: hidden;
+    scroll-behavior: smooth;
 }
 
 * {
@@ -290,6 +291,7 @@ div:has(#unlock-module) {
     transform: translateX(-50%);
     transition: box-shadow 0.2s ease, opacity 0.2s ease;
     line-height: 1em;
+    text-transform: uppercase;
 }
 
 #unlock-module #submit-btn:hover {
@@ -473,7 +475,7 @@ div:has(>#user_message) {
 }
 
 .scroller {
-    z-index: 1;
+    pointer-events: none;
     position: relative;
     width: 100%;
     scroll-snap-type: y mandatory;

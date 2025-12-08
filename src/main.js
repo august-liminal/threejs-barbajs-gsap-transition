@@ -1093,7 +1093,7 @@ function space() {
     })();
 
     // Logout function
-    function logout() { localStorage.clear(); barba.go('/landing'); }
+    function logout() { localStorage.clear(); barba.go('/'); }
     document.getElementById('logout-btn')?.addEventListener('click', logout);
 
     // ============================= THREEJS ==============================
@@ -1629,6 +1629,7 @@ function space() {
             className: 'scroller'
         });
         scroller.style.scrollSnapType = 'unset';
+        scroller.style.pointerEvents = 'none';
         
         
 
@@ -1901,7 +1902,6 @@ function space() {
     // ================================ OUR THESIS ===================================
 
     function thesis() {
-        if (localStorage.getItem(key) < 1) return; // Guard
 
         // THREE JS FUNCTION
         function createThesisScene(canvas) {
@@ -2738,7 +2738,6 @@ function space() {
     // ============================ WHAT WE ARE
 
     function what() {
-        if (localStorage.getItem(key) < 2) return;
         const page = document.querySelector('#page-what');
 
         // show page
@@ -3556,7 +3555,6 @@ function space() {
     // =============================== PROFILE
 
     function us() {
-        if (localStorage.getItem(key) < 3) return;
         const page = document.querySelector('#page-profile');
 
         // show page
@@ -3845,7 +3843,6 @@ function space() {
     // ===================== PORTFOLIO
 
     function portfolio() {
-        if (localStorage.getItem(key) < 4) return;
         const page = document.querySelector('#page-portfolio');
 
         // show page
@@ -4198,6 +4195,34 @@ function space() {
             scroller.appendChild(Object.assign(document.createElement('div'), {
                 className: 'segment', id: `segment-${i + 1}`
             }));
+        // Forward wheel/touch to the scroller so it can sit “behind” interactables
+        if (scroller && !scroller.dataset.forwardingSetup) {
+            scroller.dataset.forwardingSetup = '1';
+            let lastTouchY = null;
+            const forward = (dy) => {
+                scroller.scrollTop += dy;
+                ScrollTrigger.update();
+            };
+            const onWheel = (e) => {
+                if (!document.body.contains(scroller)) { window.removeEventListener('wheel', onWheel, wheelOpts); return; }
+                forward(e.deltaY);
+                e.preventDefault();
+            };
+            const onTouchMove = (e) => {
+                if (!document.body.contains(scroller)) { window.removeEventListener('touchmove', onTouchMove, touchOpts); return; }
+                const t = e.touches?.[0];
+                if (!t) return;
+                if (lastTouchY != null) forward(lastTouchY - t.clientY);
+                lastTouchY = t.clientY;
+                e.preventDefault();
+            };
+            const onTouchEnd = () => { lastTouchY = null; };
+            const wheelOpts = { passive: false };
+            const touchOpts = { passive: false };
+            window.addEventListener('wheel', onWheel, wheelOpts);
+            window.addEventListener('touchmove', onTouchMove, touchOpts);
+            window.addEventListener('touchend', onTouchEnd);
+        }
     }
 
     // Back Button
@@ -4455,6 +4480,10 @@ const Page = {
         // -------------------------------------------------
         enter: ({ next }) => {
             const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+            tl.add(() => {
+                next.container.querySelector('.loader')?.remove();
+                next.container.querySelector('.loader-glow')?.remove();
+            }, 0);
             tl.set('#entrance', { xPercent: -50, yPercent: -50 });
             tl.from(next.container, {
                 scale: 1.5, autoAlpha: 0, duration: 0.5
@@ -4467,6 +4496,10 @@ const Page = {
             const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } });
             tl.to(current.container.querySelectorAll('#entrance, .window'), {
                 width: '100vw', height: '100dvh', backgroundColor: '#0000', borderColor: '#fff', boxShadow: 'none', duration: 0.5
+            }, 0);
+            tl.add(() => {
+                current.container.querySelector('.loader')?.remove();
+                current.container.querySelector('.loader-glow')?.remove();
             }, 0);
             tl.to(current.container.querySelectorAll('#entrance'), {
                 borderColor: 'transparent', duration: 0.5
