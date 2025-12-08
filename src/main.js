@@ -2367,7 +2367,7 @@ function space() {
                 snapDestinationY: '100%',
                 snapStop: true,
                 duration: 500,
-                threshold: 0.2,
+                threshold: 0.1,
                 easing: t => (t < 0.5)
                     ? 2 * t * t
                     : 1 - Math.pow(-2 * t + 2, 2) / 2,
@@ -3250,7 +3250,7 @@ function space() {
                 snapDestinationY: '100%',
                 snapStop: true,
                 duration: 500,
-                threshold: 0.2,
+                threshold: 0.1,
                 easing: t => (t < 0.5)
                     ? 2 * t * t
                     : 1 - Math.pow(-2 * t + 2, 2) / 2,
