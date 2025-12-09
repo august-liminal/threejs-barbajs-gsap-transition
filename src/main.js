@@ -32,9 +32,6 @@ ScrollTrigger.normalizeScroll({
     type: "touch,wheel"
 });
 
-// Scroll Snap
-import createScrollSnap from 'https://esm.sh/scroll-snap@5.0.2'
-
 // Barba
 import barba from 'https://esm.sh/@barba/core@2.9.7?target=es2020';
 
@@ -2363,16 +2360,6 @@ function space() {
         tl.add(() => { // Append Scroller
             document.body.appendChild(scroller);
             appendSegments(5);
-            const snap = createScrollSnap(scroller, {
-                snapDestinationY: '100%',
-                snapStop: true,
-                duration: 500,
-                threshold: 0.1,
-                easing: t => (t < 0.5)
-                    ? 2 * t * t
-                    : 1 - Math.pow(-2 * t + 2, 2) / 2,
-            });
-            snap.bind(() => ScrollTrigger.refresh?.());
 
             window.scrollTo(0, 0);
             scroller.scrollTop = 0;
@@ -2576,7 +2563,7 @@ function space() {
                 }, '<');
                 segmentTl.to(orangeLight, {
                     intensity: 100000,
-                    ease: 'power2.out'
+                    ease: 'power4.in'
                 }, '<');
             }
         });
@@ -3246,16 +3233,6 @@ function space() {
         tl.add(() => { // Append Scroller
             document.body.appendChild(scroller);
             appendSegments(phonePortrait ? 5 : 3);
-            const snap = createScrollSnap(scroller, {
-                snapDestinationY: '100%',
-                snapStop: true,
-                duration: 200,
-                threshold: 0.1,
-                easing: t => (t < 0.5)
-                    ? 2 * t * t
-                    : 1 - Math.pow(-2 * t + 2, 2) / 2,
-            });
-            snap.bind(() => ScrollTrigger.refresh?.());
 
             window.scrollTo(0, 0);
             scroller.scrollTop = 0;
@@ -4229,7 +4206,6 @@ function space() {
         // Forward wheel/touch to the scroller so it can sit “behind” interactables
         if (scroller && !scroller.dataset.forwardingSetup) {
             scroller.dataset.forwardingSetup = '1';
-            scroller.style.pointerEvents = 'none';
             let lastTouchY = null;
             const forward = (dy) => {
                 scroller.scrollTop += dy;
