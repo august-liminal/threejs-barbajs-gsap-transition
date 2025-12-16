@@ -26,11 +26,18 @@ import { gsap } from 'https://esm.sh/gsap@3.13.0?target=es2020';
 import { ScrollTrigger } from 'https://esm.sh/gsap@3.13.0/ScrollTrigger?target=es2020&external=gsap';
 import { ScrambleTextPlugin } from 'https://esm.sh/gsap@3.13.0/ScrambleTextPlugin?target=es2020&external=gsap';
 import { SplitText } from 'https://esm.sh/gsap@3.13.0/SplitText?target=es2020&external=gsap';
-gsap.registerPlugin(ScrollTrigger, ScrambleTextPlugin, SplitText);
+import Observer from 'https://esm.sh/gsap@3.13.0/Observer?target=es2020&external=gsap';
+gsap.registerPlugin(ScrollTrigger, ScrambleTextPlugin, SplitText, Observer);
 ScrollTrigger.normalizeScroll({
     allowNestedScroll: true,
     type: "touch,wheel"
 });
+
+import Lenis from 'https://esm.sh/lenis@1.3.16?target=es2020';
+// Lenis (configured when a scroller exists)
+let lenis = null;
+gsap.ticker.add((time) => { lenis?.raf(time * 1000); });
+gsap.ticker.lagSmoothing(0);
 
 // Barba
 import barba from 'https://esm.sh/@barba/core@2.9.7?target=es2020';
@@ -342,7 +349,7 @@ async function landing() {
 
     await fontReady;
     landingLayout();
-    if (phonePortrait) (document.querySelector('#entrance') || document.querySelector('.grid-container')?.appendChild(Object.assign(document.createElement('a'), { id: 'entrance' })))?.style.setProperty('--entrance-w', 4), document.querySelector('#entrance')?.style.setProperty('--entrance-h', 4);
+    (document.querySelector('#entrance') || document.querySelector('.grid-container')?.appendChild(Object.assign(document.createElement('a'), { id: 'entrance' })))?.style.setProperty('--entrance-w', 4), document.querySelector('#entrance')?.style.setProperty('--entrance-h', 4);
 
 
 
@@ -498,8 +505,8 @@ function updateLanding(e) {
     let windowW, windowH;
     const rawW = Math.round(Math.abs(pos.x) / cellSize) * 2;
     const rawH = Math.round(Math.abs(pos.y) / cellSize) * 2;
-    windowW = clamp(Math.max(2, rawW), 2, gridSize - 2);
-    windowH = clamp(Math.max(2, rawH), 2, gridSize - 2 * (y / cellSize) - 4);
+    windowW = clamp(Math.max(2, rawW), 2, gridSize - 2) + 2;
+    windowH = clamp(Math.max(2, rawH), 2, gridSize - 2 * (y / cellSize) - 4) + 2;
 
     if (!Number.isFinite(windowW)) windowW = Math.floor(Math.min(window.innerHeight, window.innerWidth) / cellSize / 2) * 2;
     if (!Number.isFinite(windowH)) windowH = Math.floor(Math.min(window.innerHeight, window.innerWidth) / cellSize / 2) * 2;
@@ -508,12 +515,13 @@ function updateLanding(e) {
     const entrance = document.querySelector('#entrance') || document.querySelector('.grid-container').appendChild(Object.assign(document.createElement('a'), { id: 'entrance' }));
     entrance.style.setProperty('--entrance-w', windowW);
     entrance.style.setProperty('--entrance-h', windowH);
-    if (windowH == 2 && windowW == 2) {
-        Object.assign(entrance.style, { background: '#fff', boxShadow: '0 0 2rem #fff' });
+    const glowMultiplier = 4 / Math.pow((windowW / 4 + windowH / 4), 2);
+    if (windowH == 4 && windowW == 4) {
+        Object.assign(entrance.style, { background: '#fff', boxShadow: `0 0 ${4 * glowMultiplier}rem #fff` });
         entrance.setAttribute('href', '/unlock');
         document.documentElement.style.setProperty('--e', '1');
     } else {
-        Object.assign(entrance.style, { background: 'transparent', boxShadow: 'none' });
+        Object.assign(entrance.style, { background: 'transparent', boxShadow: `0 0 ${4 * glowMultiplier}rem #fffa` });
         entrance.removeAttribute('href');
     }
 
@@ -534,7 +542,7 @@ function unlock() {
     // ---- CONSTANTS
     const ENTRY_PAGE = '/';
     const PROTECTED_PAGE = '/space';
-    const API_URL = 'https://website-auth-sage.vercel.app/api/validate-code';    
+    const API_URL = 'https://website-auth-sage.vercel.app/api/validate-code';
 
     // --- viewport helper for mobile url bar/visual viewport
     const getViewportHeight = () => (window.visualViewport?.height || window.innerHeight);
@@ -592,7 +600,7 @@ function unlock() {
 
         unlockModule.style.width = (innerW * cellSize) + 'px';
         unlockModule.style.height = (innerH * cellSize) + 'px'; // keep matrix grid static
-        
+
         cells = new Array(total);
         const frag = document.createDocumentFragment();
         for (let i = 0; i < total; i++) {
@@ -613,13 +621,13 @@ function unlock() {
         moduleOffsetX = window.innerWidth / 2 - document.querySelector('#unlock-module').clientWidth / 2;
         moduleOffsetY = getViewportHeight() / 2 - document.querySelector('#unlock-module').clientHeight / 2
 
-        if (unlockInit) {
+        {
             const code = document.querySelector('.code');
             if (code) code.style.position = 'absolute';
             // ---- LINES: clear previous then place fresh
             container.querySelectorAll('.line-solid, .line-dashed').forEach(n => n.remove());
 
-            
+
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX - 8}px;` }));
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX}px;` }));
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX}px;` }));
@@ -629,11 +637,11 @@ function unlock() {
             if (code && !phonePortrait) {
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-vertical',
-                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;left:0;`
+                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;left:1px;`
                 }));
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-vertical',
-                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;right:0;`                    
+                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;right:1px;`
                 }));
             }
             // horizontals
@@ -641,11 +649,11 @@ function unlock() {
             if (code) {
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-horizontal',
-                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;top:0;`
+                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;top:1px;`
                 }));
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-horizontal',
-                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;bottom:0;`
+                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;bottom:1px;`
                 }));
             }
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `bottom:${paddingY}px;` }));
@@ -655,19 +663,6 @@ function unlock() {
 
     }
     unlockGrid()
-
-    // verticals
-    container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX - 8}px;` }));
-    container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX}px;` }));
-    if (!phonePortrait) container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `left:${codeOffsetX}px;` }));
-    if (!phonePortrait) container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-vertical', style: `right:${codeOffsetX}px;` }));
-    container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX}px;` }));
-    container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX - 8}px;` }));
-    // horizontals
-    container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `top:${moduleOffsetY}px;` }));
-    container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `top:${codeOffsetY}px;` }));
-    container.append(Object.assign(document.createElement('div'), { className: 'line-dashed line-horizontal', style: `bottom:${codeOffsetY}px;` }));
-    container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `bottom:${paddingY}px;` }));
 
     function initMatrixBuffers() {
         centersX = new Float32Array(total);
@@ -877,6 +872,22 @@ function unlock() {
     document.getElementById('submit-btn')?.addEventListener('click', validateCode);
 
     const inputs = document.querySelectorAll('.digit');
+    const submitBtn = document.getElementById('submit-btn');
+    const message = document.getElementById('message');
+    const clearInvalidState = () => {
+        if (!submitBtn) return;
+        if (submitBtn.classList.contains('invalid')) {
+            submitBtn.classList.remove('invalid');
+            submitBtn.textContent = 'Enter';
+        }
+    };
+    const updateSubmitState = () => {
+        if (!submitBtn) return;
+        if (submitBtn.textContent === 'Validating') return;
+        const lastFilled = inputs.length ? inputs[inputs.length - 1].value : '';
+        submitBtn.disabled = !lastFilled;
+        if (!lastFilled) clearInvalidState();
+    };
     const focusFirstEmptyBefore = (idx) => {
         for (let j = 0; j <= idx; j++) {
             if (!inputs[j].value) {
@@ -891,13 +902,22 @@ function unlock() {
             focusFirstEmptyBefore(i);
         });
         input.addEventListener('input', () => {
-            if (!input.value) return;
-            if (focusFirstEmptyBefore(i)) return; // don't advance if earlier empty
+            clearInvalidState();
+            if (!input.value) { // disable if emptied
+                updateSubmitState();
+                return;
+            }
+            if (focusFirstEmptyBefore(i)) { updateSubmitState(); return; } // don't advance if earlier empty
             if (i < inputs.length - 1) inputs[i + 1].focus();
+            updateSubmitState();
         });
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Backspace' && !input.value && i > 0) inputs[i - 1].focus();
             if (e.key === 'Enter') {
+                if (submitBtn?.disabled) {
+                    e.preventDefault();
+                    return;
+                }
                 e.preventDefault();
                 validateCode();
             }
@@ -905,17 +925,19 @@ function unlock() {
             if (focusFirstEmptyBefore(i)) e.preventDefault();
         });
     });
+    updateSubmitState();
 
     async function validateCode() {
         const code = Array.from(document.querySelectorAll('.digit')).map(i => i.value).join('');
-        const button = document.getElementById('submit-btn');
-        const message = document.getElementById('message');
+        const button = submitBtn;
 
-        if (!code || code.length !== 4) {
-            message.innerHTML = '<span style="color:red;">Please enter a 4-digit code</span>';
+        if (!code || code.length !== inputs.length) {
+            message.innerHTML = '<span class="warning-message">Please enter a 4-digit code</span>';
+            updateSubmitState();
             return;
         }
 
+        clearInvalidState();
         button.textContent = 'Validating';
         button.disabled = true;
         message.innerHTML = '';
@@ -964,7 +986,7 @@ function unlock() {
                 })();
 
                 document.querySelectorAll('.text-line').forEach(el => { el.style.opacity = '0'; });
-                message.innerHTML = `<span class="welcome">Crossing the chasm...</span>`;
+                message.innerHTML = `<span class="transition">Crossing the chasm...</span>`;
 
                 //Set state management. Only uncomment after states are done
                 //if(!localStorage.getItem(code)) {
@@ -979,8 +1001,11 @@ function unlock() {
                     new Promise(r => setTimeout(r, MAX_WAIT))
                 ]).then(() => barba.go(PROTECTED_PAGE));
             } else {
-                message.innerHTML = '<span class="warning-message">Invalid code.</span>';
-                console.log('Wrong code');
+                if (button) {
+                    button.textContent = 'invalid';
+                    button.classList.add('invalid');
+                    button.disabled = true;
+                }
 
                 // Immediately run wrong-input feedback
                 (() => {
@@ -1026,13 +1051,16 @@ function unlock() {
             clearTimeout(timeoutId);
             message.innerHTML = '<span style="color:red;">Connection error. Try again.</span>';
         } finally {
-            button.textContent = 'Enter';
-            button.disabled = false;
+            if (button && !button.classList.contains('invalid')) {
+                button.textContent = 'Enter';
+                updateSubmitState();
+            }
         }
     }
 
     // Show page
     document.documentElement.style.visibility = 'visible';
+    requestAnimationFrame(() => { inputs[0]?.focus?.(); });
     unlockInit = true;
     let resizeTimer;
     window.addEventListener('resize', () => {
@@ -1533,6 +1561,11 @@ function space() {
             const opacityTarget = c === cube ? 1 : 0;
             gsap.to(c.material, { duration: 0.5, opacity: opacityTarget, ease: 'power2.out' });
         });
+        gsap.to('#logout-btn', {
+            autoAlpha: 0,
+            duration: 2,
+            zIndex: -1
+        }, 0);
         cubeLabels.forEach(({ element, line }) => {
             gsap.to(element, { duration: 0.5, opacity: 0, ease: 'power2.out' });
             if (line?.material) {
@@ -1625,12 +1658,12 @@ function space() {
     if (localStorage.getItem(key) == 0) {
         // Creating scroller
         const scroller = Object.assign(document.createElement('div'), {
-            className: 'scroller'
+            className: 'welcome-scroller scroller'
         });
         scroller.style.scrollSnapType = 'unset';
         scroller.style.pointerEvents = 'none';
-        
-        
+
+
 
         // Caching Constants
 
@@ -1722,6 +1755,7 @@ function space() {
                     resolve();
                 }
             });
+            tl.set('#logout-btn', { autoAlpha: 0, zIndex: -1 });
 
             // Logo fades in
             tl.from(logoFill, {
@@ -1788,7 +1822,7 @@ function space() {
                 tl.add(() => { // Append Scroller
                     document.body.appendChild(scroller);
                     appendSegments(2);
-                    
+
                     window.scrollTo(0, 0);
                     scroller.scrollTop = 0;
                     ScrollTrigger.refresh();
@@ -1822,12 +1856,12 @@ function space() {
                 tl.add(() => { // Append Scroller
                     document.body.appendChild(scroller);
                     appendSegments(2);
-                    
+
                     window.scrollTo(0, 0);
                     scroller.scrollTop = 0;
                     ScrollTrigger.refresh();
                 }, '<-2')
-            }            
+            }
 
             // TIMELINE
             tl.add(() => {
@@ -1870,6 +1904,7 @@ function space() {
                 scrubTl.to(camera.rotation, {
                     x: THREE.MathUtils.degToRad(10), duration: 3, ease: 'power4.inOut', onUpdate: () => camera.updateProjectionMatrix()
                 }, 0);
+                scrubTl.to('#logout-btn', { autoAlpha: 0.5, zIndex: 9 }, '>')
             }, '<');
         })
     }
@@ -1903,10 +1938,13 @@ function space() {
     // ================================ OUR THESIS ===================================
 
     function thesis() {
-        document.querySelector('#welcome')?.remove(); 
+        if (!document.querySelector('body>.backBtn')) {
+            document.body.appendChild(Object.assign(document.createElement('div'), { className: 'backBtn', textContent: 'Continue', style: 'opacity: 0' }));
+        }
+        document.querySelector('#welcome')?.remove();
         document.querySelector('.scroller')?.remove();
         document.querySelector('#logo-holder').style.opacity = 0;
-        if(localStorage.getItem(key) < 1) localStorage.setItem(key, 1);
+        if (localStorage.getItem(key) < 1) localStorage.setItem(key, 1);
 
         // THREE JS FUNCTION
         function createThesisScene(canvas) {
@@ -2008,7 +2046,7 @@ function space() {
             const cone = new THREE.Mesh(coneGeometry, coneMaterial);
             cone.castShadow = true;
             cone.receiveShadow = true;
-            cone.position.set(-1, 8, 10);
+            cone.position.set(0, 8, 10);
             cone.rotation.set(
                 THREE.MathUtils.degToRad(0),
                 THREE.MathUtils.degToRad(90),
@@ -2021,7 +2059,7 @@ function space() {
             const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
             cylinder.castShadow = true;
             cylinder.receiveShadow = true;
-            cylinder.position.set(-1, 16, 10);
+            cylinder.position.set(0, 16, 10);
             cylinder.rotation.set(
                 THREE.MathUtils.degToRad(5),
                 THREE.MathUtils.degToRad(90),
@@ -2215,7 +2253,7 @@ function space() {
         page.appendChild(guidesContainer);
         //
 
-        const btn = page.querySelector('.backBtn');
+        const btn = document.querySelector('.backBtn');
         btn.textContent = localStorage.getItem(key) == 1 ? 'Continue' : 'Back';
 
         const thesisCanvas = Object.assign(document.createElement('canvas'), { id: 'thesis-canvas' });
@@ -2229,7 +2267,7 @@ function space() {
 
         //creating scroller
         const scroller = Object.assign(document.createElement('div'), {
-            className: 'scroller'
+            className: 'thesis-scroller scroller'
         });
 
         // ============================== TIMELINE
@@ -2237,7 +2275,7 @@ function space() {
         const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
         // Set initial states
-        tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '8rem', xPercent: 100, autoAlpha: 0, top: phonePortrait ? 'calc(100dvh - 8rem)' : 'calc(100dvh - 10rem)' });
+        tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '8rem', translateY: '2rem', autoAlpha: 0, top: phonePortrait ? 'calc(100dvh - 8rem)' : 'calc(100dvh - 16rem)' });
         tl.set('#page-thesis .section>*', { visibility: 'hidden' });
 
         // Definition timeline
@@ -2359,7 +2397,7 @@ function space() {
         }, '<');
         tl.add(() => { // Append Scroller
             document.body.appendChild(scroller);
-            appendSegments(5);
+            appendSegments(6);
 
             window.scrollTo(0, 0);
             scroller.scrollTop = 0;
@@ -2377,6 +2415,7 @@ function space() {
         const coneOverlay = thesis3D?.objects?.coneOverlay;
         const cylinderOverlay = thesis3D?.objects?.cylinderOverlay;
 
+
         tl.add(() => { // Our Core Belief timeline       
 
             const segmentTl = gsap.timeline({
@@ -2389,24 +2428,25 @@ function space() {
                     invalidateOnRefresh: true,
                 }
             });
-            segmentTl.to('#page-thesis #line', {
-                autoAlpha: 0, duration: 0.1
-            }, 0)
+
             segmentTl.to('#liminal-title', {
-                xPercent: -100, autoAlpha: 0
+                translateY: '-10rem', autoAlpha: 0, duration: 0.2
             }, 0);
             segmentTl.to('#liminal-phonetic', {
-                xPercent: -100, autoAlpha: 0
-            }, '-=0.5');
+                translateY: '-10rem', autoAlpha: 0, duration: 0.2
+            }, '<+0.05');
+            segmentTl.to('#page-thesis #line', {
+                autoAlpha: 0, duration: 0.1, duration: 0.05
+            }, '<+0.05')
             segmentTl.to('#liminal-def', {
-                xPercent: -100, autoAlpha: 0
-            }, '-=0.5');
+                translateY: '-10rem', autoAlpha: 0, duration: 0.2
+            }, '>');
             segmentTl.to('#liminal-desc', {
-                xPercent: -100, autoAlpha: 0
-            }, '-=0.5');
+                translateY: '-20rem', autoAlpha: 0, duration: 0.2
+            }, '<+0.05');
             segmentTl.to('#thesis-title', {
-                xPercent: 0, autoAlpha: 1
-            }, '-=0.5');
+                translateY: '0rem', autoAlpha: 1
+            }, '<+0.2');
             if (cam && leftShell && rightShell) {
                 segmentTl.to(cam.rotation, {
                     z: THREE.MathUtils.degToRad(45),
@@ -2532,9 +2572,11 @@ function space() {
             segmentTl.to('#thesis-title', {
                 fontSize: phonePortrait ? '1.25rem' : '2rem', top: '4rem', bottom: 'unset'
             }, 0);
-            segmentTl.to('#who-what', {
-                xPercent: 0, autoAlpha: 1
-            }, '+=0.2');
+            segmentTl.fromTo('#who-what', {
+                translateY: '5rem', autoAlpha: 0
+            }, {
+                translateY: 0, autoAlpha: 1
+            }, '<+0.3');
             segmentTl.to('#who-what-content', {
                 autoAlpha: 1
             }, '>');
@@ -2580,17 +2622,24 @@ function space() {
                 }
             });
             segmentTl.to('#who-what', {
-                xPercent: -100, autoAlpha: 0
+                translateY: '-2rem', autoAlpha: 0
             }, 0);
+            segmentTl.to('#page-thesis .scroll-hint', {
+                color: '#0008'
+            }, '<+0.1');
             segmentTl.to('#who-what-content', {
-                xPercent: -100, autoAlpha: 0
+                translateY: '-2rem', autoAlpha: 0
+            }, '<+0.1');
+            segmentTl.fromTo('#unlock-potential', {
+                translateY: '2rem', autoAlpha: 0
+            }, {
+                translateY: 0, autoAlpha: 1
             }, 0);
-            segmentTl.to('#unlock-potential', {
-                autoAlpha: 1
-            }, 0);
-            segmentTl.to('#unlock-potential-content', {
-                autoAlpha: 1
-            }, 0);
+            segmentTl.fromTo('#unlock-potential-content', {
+                translateY: '2rem', autoAlpha: 0
+            }, {
+                translateY: 0, autoAlpha: 1
+            }, '<+0.2');
             if (cam && leftShell && rightShell) {
                 segmentTl.to(cam.rotation, {
                     z: THREE.MathUtils.degToRad(415),
@@ -2617,25 +2666,68 @@ function space() {
             }
         });
 
-        tl.add(() => { // Domains timeline 
+        tl.add(() => { // Back the Founder timeline 
+            const computeCamXForWhitespace = () => {
+                const content = document.querySelector('#whitespaces-content');
+                const viewportH = window.innerHeight || document.documentElement.clientHeight || 1;
+                if (!content) return -10;
+                const rect = content.getBoundingClientRect();
+                const bottom = rect.top + rect.height;
+                const available = Math.max(0, viewportH - bottom - (4 * 16));
+                const center = rect.top + rect.height + available / 2;
+                const ratio = Math.min(Math.max(center / viewportH, 0), 1);
+                return 10 - 20 * ratio; // 10 => top, -10 => bottom
+            };
+
+            const segmentTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#segment-5',
+                    scroller,
+                    start: 'top bottom',
+                    end: 'top center',
+                    scrub: true,
+                    invalidateOnRefresh: true
+                }
+            });
+            segmentTl.to('.scroll-hint', {
+                autoAlpha: 0
+            });
+            segmentTl.to('#unlock-potential', {
+                translateY: '-2rem', autoAlpha: 0
+            }, '<');
+            segmentTl.to('#unlock-potential-content', {
+                translateY: '-2rem', autoAlpha: 0
+            }, '<+0.1');
+            segmentTl.fromTo('#whitespaces', {
+                translateY: '5rem', autoAlpha: 0
+            }, {
+                translateY: '0', autoAlpha: 1
+            }, 0);
+            segmentTl.fromTo('#whitespaces-content', {
+                translateY: '5rem', autoAlpha: 0
+            }, {
+                translateY: '0', autoAlpha: 1
+            }, '<+0.1');
+
+            segmentTl.to(cam.rotation, {
+                z: THREE.MathUtils.degToRad(450),
+                ease: 'power4.out',
+                onUpdate: () => cam.updateProjectionMatrix()
+            }, 0);
+            segmentTl.to(cam.position, {
+                x: () => computeCamXForWhitespace(), y: 8, z: 110,
+                ease: 'power4.out',
+                onUpdate: () => cam.updateProjectionMatrix()
+            }, '<');
+
+            tl.add(() => {
+                btn?.addEventListener('click', (e) => back(1, e, thesis3D), { once: true });
+            });
+        });
+
+        tl.add(() => { // Back the Founder objects timeline
             const nestedTl = gsap.timeline({ paused: true });
 
-            nestedTl.to(cone.material, {
-                opacity: 1, duration: 0.5
-            }, 0);
-            nestedTl.to(cylinder.material, {
-                opacity: 1, duration: 0.5
-            }, 0);
-            nestedTl.to(cone.rotation, {
-                y: THREE.MathUtils.degToRad(-45),
-                ease: 'power2.out',
-                duration: 0.7
-            }, '<');
-            nestedTl.to(cylinder.rotation, {
-                y: THREE.MathUtils.degToRad(-45),
-                ease: 'power2.out',
-                duration: 0.7
-            }, '<');
             nestedTl.to(cone.rotation, {
                 y: THREE.MathUtils.degToRad(270),
                 ease: 'power4.inOut',
@@ -2655,7 +2747,7 @@ function space() {
                 x: 0, y: 16, z: -1.5,
                 ease: 'power4.inOut',
                 duration: 1.2
-            }, '<');
+            }, '<');            
             nestedTl.to(coneOverlay.material, {
                 opacity: 1, duration: 0.5
             }, '>+0.1');
@@ -2668,76 +2760,90 @@ function space() {
             nestedTl.to(cylinder.material, {
                 opacity: 0, duration: 0.5
             }, '<');
-            nestedTl.fromTo('.backBtn', {
-                autoAlpha: 0, bottom: phonePortrait ? '4rem' : '2em'
-            }, {
-                autoAlpha: 1
-            }, '>');
-            const segmentTl = gsap.timeline({
-                scrollTrigger: {
-                    trigger: '#segment-5',
-                    scroller,
-                    start: 'top bottom',
-                    end: 'bottom bottom',
-                    scrub: true,
-                    invalidateOnRefresh: true,
-                    onEnter: () => {
-                        scroller.style.pointerEvents = 'auto';
-                        nestedTl.play(0);
-                    },
-                    onEnterBack: () => {
-                        scroller.style.pointerEvents = 'auto';
-                    },
-                    onLeaveBack: () => {
-                        nestedTl.reverse()
+
+            const objectsTlForward = gsap.timeline({ paused: true });
+            objectsTlForward.set([cone.material, cylinder.material, coneOverlay.material, cylinderOverlay.material], {opacity: 0});
+            objectsTlForward.set(cone.position, {x: 3, y: 8, z: 10});
+            objectsTlForward.set(cylinder.position, { x: 3, y: 16, z: 10 });
+            objectsTlForward.to(cone.position, { x: -0.2, duration: 0.1 }, 0);
+            objectsTlForward.to(cone.material, { opacity: 1, duration: 0.1 }, '<');
+            objectsTlForward.fromTo(cone.rotation, { y: THREE.MathUtils.degToRad(-60) }, {
+                y: THREE.MathUtils.degToRad(0), ease: 'power4.inOut', duration: 0.1
+            }, '<');
+            objectsTlForward.to(cylinder.position, { x: -0.2, duration: 0.1 }, 0.05);
+            objectsTlForward.to(cylinder.material, { opacity: 1, duration: 0.1 }, '<');
+            objectsTlForward.fromTo(cylinder.rotation, { y: THREE.MathUtils.degToRad(-60) }, {
+                y: THREE.MathUtils.degToRad(0), ease: 'power4.inOut', duration: 0.1
+            }, '<');
+
+            const objectsTlBackward = gsap.timeline({ paused: true });
+            objectsTlBackward.to(cone.material, { opacity: 0, duration: 0.1 }, '<');
+            objectsTlBackward.to(cylinder.material, { opacity: 0, duration: 0.1 }, '<');
+            objectsTlBackward.to(coneOverlay.material, { opacity: 0, duration: 0.1 }, '<');
+            objectsTlBackward.to(cylinderOverlay.material, { opacity: 0, duration: 0.1 }, '<');
+
+
+            let forwardDone = false;
+            let backwardDone = false;
+            ScrollTrigger.create({
+                trigger: '#segment-5',
+                scroller,
+                start: 'top bottom',
+                end: 'top center',
+                scrub: true,
+                invalidateOnRefresh: true,
+                onLeave: () => {
+                    nestedTl.play(0);
+                },
+                onUpdate: (self) => {
+                    const fProg = Math.min(1, Math.max(0, self.progress));
+                    const bProg = 1 - fProg;
+                    if (self.direction > 0) {
+                        objectsTlForward.progress(fProg);
+                        forwardDone = objectsTlForward.progress() >= 1;
+                        if (forwardDone) backwardDone = false;
+                    } else {
+                        if (forwardDone) {
+                            objectsTlBackward.progress(bProg);
+                            backwardDone = objectsTlBackward.progress() >= 1;
+                            if (backwardDone) forwardDone = false;
+                        } else {
+                            objectsTlForward.progress(fProg);
+                        }
                     }
                 }
             });
-            segmentTl.to('#unlock-potential', {
-                autoAlpha: 0
-            });
-            segmentTl.to('#unlock-potential-content', {
-                autoAlpha: 0
-            });
-            segmentTl.to('#unlock-potential-content', {
-                autoAlpha: 0
-            });
-            segmentTl.fromTo('#whitespaces', {
-                yPercent: -50, autoAlpha: 0
-            }, {
-                yPercent: 0, autoAlpha: 1
-            });
-            segmentTl.fromTo('#whitespaces-content', {
-                autoAlpha: 0
-            }, {
-                autoAlpha: 1, delay: 1
-            });
-            segmentTl.to('.scroll-hint', {
-                autoAlpha: 0
-            }, '<');
-            segmentTl.to({}, { duration: 5, ease: 'none' }, '>');
-            if (cam && leftShell && rightShell) {
-                segmentTl.to(cam.rotation, {
-                    z: THREE.MathUtils.degToRad(450),
-                    ease: 'power4.out',
-                    onUpdate: () => cam.updateProjectionMatrix()
-                }, 0);
-                segmentTl.to(cam.position, {
-                    x: -1, y: 8, z: 110,
-                    ease: 'power4.out',
-                    onUpdate: () => cam.updateProjectionMatrix()
-                }, '<');
-            }
-            segmentTl.to({}, {
-                duration: 0,
-                onComplete() {
 
-                }
-            }, 0);
         });
 
-        tl.add(() => {
-            btn?.addEventListener('click', (e) => back(1, e, thesis3D), { once: true });
+        tl.add(() => { // Exit timeline
+            let backCalled = false;
+            const triggerBack = () => {
+                if (backCalled) return;
+                backCalled = true;
+                const target = page?.querySelector('.backBtn') ?? page;
+                back(1, { currentTarget: target }, thesis3D);
+            };
+            const segmentTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#segment-6',
+                    scroller,
+                    start: 'top center',
+                    end: 'top top',
+                    scrub: true,
+                    invalidateOnRefresh: true,
+                    onLeave: triggerBack
+                }
+            });
+            segmentTl.to('#page-thesis', {
+                scale: 0, autoAlpha: 0
+            });
+            segmentTl.to('canvas#thesis-canvas', {
+                scale: 0.5, autoAlpha: 0
+            }, '<');
+            segmentTl.to('body>.backBtn', {
+                autoAlpha: 0
+            }, '<');
         });
     };
 
@@ -2790,12 +2896,12 @@ function space() {
 
         //creating scroller
         const scroller = Object.assign(document.createElement('div'), {
-            className: 'scroller'
+            className: 'what-scroller scroller'
         });
 
         const phoneSectionSegmentIds = ['segment-2', 'segment-3', 'segment-4'];
         const scrollToPhoneSectionSegment = (idx, { behavior = 'smooth' } = {}) => {
-            if (!phonePortrait || idx == null || idx < 0) return;
+            if (idx == null || idx < 0) return;
             const segmentId = phoneSectionSegmentIds[idx];
             if (!segmentId || !scroller) return;
             const target = scroller.querySelector(`#${segmentId}`);
@@ -2881,7 +2987,7 @@ function space() {
             const materials = new Set();
             const sectionIds = ['what-section-1', 'what-section-2', 'what-section-3'];
             const sectionMap = new Map(sectionIds.map((id, index) => [id, { group: groups[index], element: document.getElementById(id), index }]));
-            let hoveredSectionId = null;
+            let activeSectionId = null;
             const sectionResizeObserver = 'ResizeObserver' in window ? new ResizeObserver(() => syncGroupsToSections()) : null;
             sectionIds.forEach(id => {
                 const el = document.getElementById(id);
@@ -2889,7 +2995,7 @@ function space() {
             });
             if (isPhonePortrait) {
                 const firstSection = document.getElementById(sectionIds[0]);
-                firstSection?.classList.add('hovered');
+                firstSection?.classList.add('active');
             }
 
             const loader = new GLTFLoader();
@@ -3048,8 +3154,8 @@ function space() {
                     const normalizedWidth = Math.max(0.001, normSize.x, normSize.y, normSize.z); // use longest dimension
                     const flexRatio = Math.max(0.4, worldWidth / normalizedWidth); // flex child size relative to normalized model
                     const targetScale = baseScale * flexRatio;
-                    const isHovered = entry.element?.classList.contains('hovered') || entry.element?.id === hoveredSectionId;
-                    const hoverFactor = isHovered ? 1.2 : 1;
+                    const isActive = entry.element?.classList.contains('active') || entry.element?.id === activeSectionId;
+                    const hoverFactor = isActive ? 1.2 : 1;
                     entry.group.scale.setScalar(targetScale * hoverFactor);
                     const colorRatio = Math.pow((bounds.width - minWidth) / widthRange, 0.4);
                     entry.group.traverse(child => {
@@ -3129,7 +3235,7 @@ function space() {
                 sectionIds.forEach((id, i) => {
                     const el = document.getElementById(id);
                     if (!el) return;
-                    el.classList.toggle('hovered', i === idx);
+                    el.classList.toggle('active', i === idx);
                 });
                 // If we're reapplying the same index, only refresh scales when forced
                 if (!same || force) {
@@ -3165,7 +3271,7 @@ function space() {
                 clock.start();
                 renderer.setAnimationLoop(renderFrame);
                 if (isPhonePortrait) {
-                    syncGroupsPhone(true); // set initial scales and hovered state
+                    syncGroupsPhone(true); // set initial scales and active state
                     window.addEventListener('pointerdown', onPhoneTap, { passive: true });
                     window.addEventListener('touchstart', onPhoneTap, { passive: true });
                 }
@@ -3215,6 +3321,108 @@ function space() {
         window.what3D = what3D;
         const whatLookAt = new THREE.Vector3(0, 0, 0);
 
+        const sectionSyncState = { suppress: false, target: null };
+        let canInteract = false;
+        const isSectionContainerVisible = () => {
+            const container = document.querySelector('#page-what>.section-container');
+            if (!container) return false;
+            const style = getComputedStyle(container);
+            return style.visibility !== 'hidden' && style.display !== 'none' && parseFloat(style.opacity || '0') > 0.01;
+        };
+        const setScrollerInteractive = () => {
+            canInteract = isSectionContainerVisible();
+            if (!scroller) return;
+            scroller.style.pointerEvents = 'auto'; // keep scroll working
+            scroller.style.cursor = canInteract ? 'pointer' : 'default';
+        };
+
+        const setSectionFromSegment = (idx, { immediate = false } = {}) => {
+            const sections = Array.from(document.querySelectorAll('#page-what > .section-container .section'));
+            if (!sections.length) return;
+            const clamped = Math.max(0, Math.min(idx, sections.length - 1));
+            sections.forEach((section, i) => {
+                section.classList.toggle('active', i === clamped);
+            });
+            if (phonePortrait) {
+                what3D?.setPhoneActive?.(clamped, { force: true, immediate });
+            } else {
+                what3D?.syncToSections?.();
+                requestAnimationFrame(() => what3D?.syncToSections?.());
+            }
+        };
+
+        const setupSectionScrollSync = () => {
+            if (!scroller || scroller.dataset.sectionScrollSync === '1') return;
+            scroller.dataset.sectionScrollSync = '1';
+            const setFromTrigger = (idx) => {
+                if (sectionSyncState.suppress && sectionSyncState.target !== idx) return;
+                setSectionFromSegment(idx);
+            };
+            setSectionFromSegment(0, { immediate: true });
+            phoneSectionSegmentIds.forEach((id, idx) => {
+                const selector = `#${id}`;
+                ScrollTrigger.create({
+                    trigger: selector,
+                    scroller,
+                    start: 'top center',
+                    end: 'bottom center',
+                    onEnter: () => setFromTrigger(idx),
+                    onEnterBack: () => setFromTrigger(idx),
+                    onLeave: () => setFromTrigger(Math.min(phoneSectionSegmentIds.length - 1, idx + 1)),
+                    onLeaveBack: () => setFromTrigger(Math.max(0, idx - 1))
+                });
+            });
+        };
+
+        const bindSectionClicks = () => {
+            const sections = Array.from(document.querySelectorAll('#page-what > .section-container .section'));
+
+            // Fallback: direct clicks (in case pointer-events allow)
+            sections.forEach((section, idx) => {
+                if (section.dataset.sectionClickBound === '1') return;
+                section.dataset.sectionClickBound = '1';
+                section.addEventListener('click', () => {
+                    if (!canInteract) return;
+                    sectionSyncState.suppress = true;
+                    sectionSyncState.target = idx;
+                    setSectionFromSegment(idx, { immediate: true });
+                    scrollToPhoneSectionSegment(idx, { behavior: 'auto' });
+                    ScrollTrigger.update();
+                    setTimeout(() => {
+                        sectionSyncState.suppress = false;
+                        sectionSyncState.target = null;
+                    }, 0);
+                });
+            });
+
+            // Proxy clicks through the scroller overlay so tapping anywhere still hits sections
+            if (scroller && scroller.dataset.sectionClickProxy !== '1') {
+                scroller.dataset.sectionClickProxy = '1';
+                const onProxyClick = (evt) => {
+                    if (!canInteract) return;
+                    const { clientX, clientY } = evt;
+                    const previous = scroller.style.pointerEvents;
+                    scroller.style.pointerEvents = 'none';
+                    const hit = document.elementFromPoint(clientX, clientY);
+                    scroller.style.pointerEvents = previous;
+                    const targetSection = hit?.closest?.('#page-what > .section-container .section');
+                    if (!targetSection) return;
+                    const idx = sections.indexOf(targetSection);
+                    if (idx < 0) return;
+                    sectionSyncState.suppress = true;
+                    sectionSyncState.target = idx;
+                    setSectionFromSegment(idx, { immediate: true });
+                    scrollToPhoneSectionSegment(idx, { behavior: 'auto' });
+                    ScrollTrigger.update();
+                    setTimeout(() => {
+                        sectionSyncState.suppress = false;
+                        sectionSyncState.target = null;
+                    }, 0);
+                };
+                scroller.addEventListener('click', onProxyClick);
+            }
+        };
+
 
 
 
@@ -3232,7 +3440,10 @@ function space() {
         // Definition timeline    
         tl.add(() => { // Append Scroller
             document.body.appendChild(scroller);
-            appendSegments(phonePortrait ? 5 : 3);
+            appendSegments(5);
+            setupSectionScrollSync();
+            bindSectionClicks();
+            setScrollerInteractive();
 
             window.scrollTo(0, 0);
             scroller.scrollTop = 0;
@@ -3260,16 +3471,19 @@ function space() {
                 const segmentTl = gsap.timeline({
                     scrollTrigger: {
                         trigger: '#segment-2',
-                        // endTrigger: '#segment-4',
                         scroller,
                         start: 'top bottom',
                         end: 'bottom bottom',
                         scrub: true,
-                        invalidateOnRefresh: true
+                        invalidateOnRefresh: true,
+                        onEnter: () => setScrollerInteractive(),
+                        onEnterBack: () => setScrollerInteractive(),
+                        onLeave: () => setScrollerInteractive(),
+                        onLeaveBack: () => setScrollerInteractive()
                     }
                 });
                 segmentTl.to('#what-title', {
-                    fontSize: phonePortrait ? '1.5rem' : '2rem', top: '4rem'
+                    fontSize: '1.5rem', top: '4rem'
                 }, 0);
                 segmentTl.to('#what-canvas', {
                     autoAlpha: 1, duration: 1
@@ -3283,24 +3497,6 @@ function space() {
                     stagger: 0.2
                 }, '<');
 
-                const setSectionFromSegment = (idx, opts = {}) => {
-                    if (idx == null || idx < 0) return;
-                    what3D?.setPhoneActive?.(idx, { force: true, immediate: opts.immediate });
-                };
-                setSectionFromSegment(0, { immediate: true });
-                phoneSectionSegmentIds.forEach((id, idx) => {
-                    const selector = `#${id}`;
-                    ScrollTrigger.create({
-                        trigger: selector,
-                        scroller,
-                        start: 'top center',
-                        end: 'bottom center',
-                        onEnter: () => setSectionFromSegment(idx),
-                        onEnterBack: () => setSectionFromSegment(idx),
-                        onLeave: () => setSectionFromSegment(Math.min(phoneSectionSegmentIds.length - 1, idx + 1)),
-                        onLeaveBack: () => setSectionFromSegment(Math.max(0, idx - 1))
-                    });
-                });
             } else {
                 const segmentTl = gsap.timeline({
                     scrollTrigger: {
@@ -3310,13 +3506,14 @@ function space() {
                         end: 'bottom bottom',
                         scrub: true,
                         invalidateOnRefresh: true,
-                        onComplete: () => {
-                            if (!phonePortrait) document.querySelector('.scroller').style.pointerEvents = 'none';
-                        }
+                        onEnter: () => setScrollerInteractive(),
+                        onEnterBack: () => setScrollerInteractive(),
+                        onLeave: () => setScrollerInteractive(),
+                        onLeaveBack: () => setScrollerInteractive()
                     }
                 });
                 segmentTl.to('#what-title', {
-                    fontSize: phonePortrait ? '1.5rem' : '2rem', top: '4rem'
+                    fontSize: '2rem', top: '4rem'
                 }, 0);
                 segmentTl.to('#what-canvas', {
                     autoAlpha: 1, duration: 1
@@ -3324,58 +3521,18 @@ function space() {
                 segmentTl.to('.section-container', {
                     autoAlpha: 1, duration: 0.5
                 }, 0);
-                if (!phonePortrait) segmentTl.to('#page-what>.section-container .section', {
-                    zIndex: 9
-                }, 0);
                 segmentTl.to('#page-what>.section-container i', {
                     scaleY: 1,
                     duration: 0.5,
                     stagger: 0.2
                 }, '<');
-                if (!phonePortrait) segmentTl.to('.scroll-hint', {
+                segmentTl.to('.scroll-hint', {
                     opacity: 0, duration: 0.2, onComplete: () => {
                         segmentTl.to('#page-what .scroll-hint', {
                             right: '4rem', duration: 0
                         });
                     }
                 }, '<-0.5');
-
-                if (!phonePortrait) {
-                    segmentTl.add(() => {
-                        const sections = document.querySelectorAll('#page-what > .section-container .section');
-                        const clearHovered = () => {
-                            document.querySelectorAll('#page-what > .section-container .section.hovered').forEach(s => {
-                                s.classList.remove('hovered');
-                            });
-                        };
-                        sections.forEach(section => {
-                            section.addEventListener('mouseenter', () => {
-                                clearHovered();
-                                sections.forEach(s => {
-                                    s.removeAttribute('style');
-                                    s.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
-                                    s.style.zIndex = '9';
-                                });
-                                section.removeAttribute('style');
-                                section.querySelectorAll('div').forEach(div => div.removeAttribute('style'));
-                                section.classList.add('hovered');
-                                section.style.zIndex = '0';
-
-
-                                what3D?.syncToSections?.();
-                                requestAnimationFrame(() => what3D?.syncToSections?.());
-
-                                if (section.id === 'what-section-3') {
-                                    scroller.style.pointerEvents = 'auto';
-                                    document.querySelector('#page-what .scroll-hint').style.opacity = '1'
-                                } else {
-                                    scroller.style.pointerEvents = 'none';
-                                    document.querySelector('#page-what .scroll-hint').style.opacity = '0'
-                                }
-                            });
-                        });
-                    }, '>')
-                }
             }
         });
         tl.add(() => { // We Are Liminal timeline
@@ -3390,7 +3547,7 @@ function space() {
             };
 
             const stConfig = {
-                trigger: phonePortrait ? '#segment-5' : '#segment-3',
+                trigger: '#segment-5',
                 scroller,
                 start: 'top bottom',
                 end: 'top top',
@@ -3400,14 +3557,14 @@ function space() {
                 onEnterBack: () => { clearPhoneSectionStyles(); }
             };
             if (phonePortrait) {
-                const hoveredSelector = '#page-what>.section-container .section.hovered > div';
+                const activeSelector = '#page-what>.section-container .section.active > div';
                 stConfig.onEnter = () => {
                     clearPhoneSectionStyles();
                     what3D?.setPhoneActive?.(2, { force: true, immediate: true });
                 };
                 stConfig.onUpdate = (self) => {
                     const p = self.progress;
-                    document.querySelectorAll(hoveredSelector).forEach(el => {
+                    document.querySelectorAll(activeSelector).forEach(el => {
                         el.style.opacity = String(1 - p);
                         el.style.transform = `translateY(${(-64 * p)}px)`;
                     });
@@ -3563,6 +3720,13 @@ function space() {
 
     function us() {
         const page = document.querySelector('#page-profile');
+
+        // // Normalize desc newlines (caret ^ -> double U+000A)
+        // page?.querySelectorAll('#profile-desc > div, #profile-desc > span')?.forEach(node => {
+        //     if (!node?.textContent) return;
+        //     const normalized = normalizeCaret(node.textContent);
+        //     if (normalized !== node.textContent) node.textContent = normalized;
+        // });
 
         // show page
         page.removeAttribute('hidden');
@@ -3732,39 +3896,31 @@ function space() {
         });
 
         // Profile Toggler
-
         (function setupProfileToggle() {
             const sections = ['profile-name', 'profile-title', 'profile-desc'];
             const toggles = document.querySelector('#profile-toggle');
             if (!toggles) return;
 
             const textCache = new WeakMap();
-            const rememberText = (nodes) => {
-                nodes.forEach((node) => {
-                    if (!textCache.has(node)) {
-                        textCache.set(node, node.textContent ?? '');
-                    }
-                });
-            };
-            const primeTextCache = () => {
-                sections.forEach((id) => {
-                    rememberText(
-                        Array.from(document.querySelectorAll(`#${id} [data-user]`))
-                    );
-                });
-            };
+            const getRaw = (node) => node?.textContent ?? '';
+            const isDescContainer = (node) => node?.closest?.('#profile-desc');
 
-            primeTextCache();
+            const rememberText = (nodes) => nodes.forEach((node) => {
+                if (!textCache.has(node)) textCache.set(node, getRaw(node));
+            });
+
+            // Prime cache for all leaf nodes
+            rememberText(Array.from(document.querySelectorAll('#profile-name [data-user], #profile-title [data-user], #profile-desc [data-user] p')));
 
             const showUser = (userId) => {
                 sections.forEach((id) => {
                     document
                         .querySelectorAll(`#${id} [data-user]`)
-                        .forEach((span) => {
-                            const isActive = span.dataset.user === userId;
-                            span.hidden = !isActive;
-                            if (isActive) {
-                                span.textContent = textCache.get(span) ?? span.textContent;
+                        .forEach((el) => {
+                            const isActive = el.dataset.user === userId;
+                            el.hidden = !isActive;
+                            if (isActive && el.childElementCount === 0) {
+                                el.textContent = textCache.get(el) ?? getRaw(el);
                             }
                         });
                 });
@@ -3774,21 +3930,18 @@ function space() {
                 setPortrait(userId);
             };
 
-            const getUserNodes = (userId) => {
-                const nodes = sections
-                    .map((id) => document.querySelector(`#${id} [data-user="${userId}"]`))
-                    .filter(Boolean);
-                rememberText(nodes);
-                return nodes;
-            };
+            const getUserNodes = (userId) => sections.flatMap((id) =>
+                Array.from(document.querySelectorAll(`#${id} [data-user="${userId}"]`))
+            );
+            const getUserParas = (userId) =>
+                Array.from(document.querySelectorAll(`#profile-desc [data-user="${userId}"] p`));
 
-            const scrambleInConfig = (target) => ({
-                text: textCache.get(target) ?? '',
+            const scrambleInConfig = (text) => ({
+                text,
                 chars: 'upperAndLowerCase',
                 speed: 0.6,
                 revealDelay: 0.1
             });
-
             const scrambleOutConfig = {
                 text: '',
                 chars: 'upperAndLowerCase',
@@ -3796,46 +3949,84 @@ function space() {
                 revealDelay: 0
             };
 
-            let activeUser = 'sonny';
+            let activeUser = toggles.querySelector('[data-user]')?.dataset.user || 'sonny';
             showUser(activeUser);
 
             const animateSwap = (nextUser) => {
                 if (nextUser === activeUser) return;
 
-                const outgoing = getUserNodes(activeUser);
-                const incoming = getUserNodes(nextUser);
+                const outgoingNodes = getUserNodes(activeUser);
+                const incomingNodes = getUserNodes(nextUser);
+                const outgoingParas = getUserParas(activeUser);
+                const incomingParas = getUserParas(nextUser);
+                rememberText([...outgoingParas, ...incomingParas]);
+                const incomingTexts = incomingParas.map(p => textCache.get(p) ?? getRaw(p));
+                const outgoingOther = outgoingNodes.filter(n => !isDescContainer(n) && n.childElementCount === 0);
+                const incomingOther = incomingNodes.filter(n => !isDescContainer(n) && n.childElementCount === 0);
+
+                const resetInline = (nodes) => nodes.forEach(n => {
+                    n.style.removeProperty('opacity');
+                    n.style.removeProperty('visibility');
+                    n.style.removeProperty('transform');
+                });
+                resetInline([...outgoingNodes, ...incomingNodes, ...outgoingParas, ...incomingParas]);
 
                 const tl = gsap.timeline({ defaults: { duration: 0.35, ease: 'power2.out' } });
-                tl.to(outgoing, {
-                    autoAlpha: 0,
-                    y: 10,
-                    stagger: 0.05,
-                    scrambleText: scrambleOutConfig
-                })
-                    .add(() => {
-                        activeUser = nextUser;
-                        toggles.querySelectorAll('[data-user]').forEach((btn) =>
-                            btn.toggleAttribute('current', btn.dataset.user === nextUser)
-                        );
-                        setPortrait(nextUser);
-                        outgoing.forEach((node) => {
-                            node.hidden = true;
-                            node.textContent = textCache.get(node) ?? node.textContent;
-                        });
-                        incoming.forEach((node) => {
-                            node.hidden = false;
-                            node.textContent = '';
-                        });
-                    })
-                    .fromTo(incoming, {
+
+                // Scramble out paragraphs (last -> first)
+                if (outgoingParas.length) {
+                    outgoingParas.slice().reverse().forEach((p, idx) => {
+                        tl.to(p, { scrambleText: scrambleOutConfig }, idx === 0 ? 0 : '<+0.1');
+                    });
+                }
+                // Scramble out other leaves (name/title)
+                if (outgoingOther.length) {
+                    tl.to(outgoingOther, {
                         autoAlpha: 0,
-                        y: -10
+                        stagger: 0.05,
+                        scrambleText: scrambleOutConfig
+                    }, '<+0.2');
+                }
+
+                tl.add(() => {
+                    activeUser = nextUser;
+                    toggles.querySelectorAll('[data-user]').forEach((btn) =>
+                        btn.toggleAttribute('current', btn.dataset.user === nextUser)
+                    );
+                    setPortrait(nextUser);
+                    outgoingNodes.forEach(n => n.hidden = true);
+                    incomingNodes.forEach(n => {
+                        n.hidden = false;
+                        n.style.removeProperty('opacity');
+                        n.style.removeProperty('visibility');
+                    });
+                    incomingParas.forEach(p => { p.textContent = ''; });
+                }, '>');
+
+                // Scramble in other leaves
+                if (incomingOther.length) {
+                    tl.fromTo(incomingOther, {
+                        autoAlpha: 0,
                     }, {
                         autoAlpha: 1,
-                        y: 0,
-                        stagger: 0.05,
-                        scrambleText: (_, target) => scrambleInConfig(target)
+                        scrambleText: (_, target) => scrambleInConfig(textCache.get(target) ?? getRaw(target))
                     }, '<');
+                }
+
+                // Scramble in paragraphs (first -> last)
+                if (incomingParas.length) {
+                    let pos = incomingOther.length ? '>' : '<';
+                    incomingParas.forEach((p, idx) => {
+                        const txt = incomingTexts[idx] ?? '';
+                        tl.fromTo(p, {
+                            autoAlpha: 0
+                        }, {
+                            autoAlpha: 1,
+                            scrambleText: scrambleInConfig(txt)
+                        }, pos);
+                        pos = '<+0.1'; // chain sequentially
+                    });
+                }
             };
 
             toggles.addEventListener('click', (evt) => {
@@ -3909,55 +4100,46 @@ function space() {
             if (!toggles) return;
 
             const textCache = new WeakMap();
-            const rememberText = (nodes) => {
-                nodes.forEach((node) => {
-                    if (!textCache.has(node)) {
-                        textCache.set(node, node.textContent ?? '');
-                    }
-                });
-            };
-            const primeTextCache = () => {
-                sections.forEach((id) => {
-                    rememberText(
-                        Array.from(document.querySelectorAll(`#${id} [data-user]`))
-                    );
-                });
-            };
+            const getRaw = (node) => node?.textContent ?? '';
+            const isDescContainer = (node) => node?.closest?.('#portfolio-desc');
 
-            primeTextCache();
+            const rememberText = (nodes) => nodes.forEach((node) => {
+                if (!textCache.has(node)) textCache.set(node, getRaw(node));
+            });
+
+            // Cache leaf text
+            rememberText(Array.from(document.querySelectorAll('#portfolio-name [data-user], #portfolio-desc [data-user] p')));
 
             const showUser = (userId) => {
                 sections.forEach((id) => {
                     document
                         .querySelectorAll(`#${id} [data-user]`)
-                        .forEach((span) => {
-                            const isActive = span.dataset.user === userId;
-                            span.hidden = !isActive;
-                            if (isActive) {
-                                span.textContent = textCache.get(span) ?? span.textContent;
+                        .forEach((el) => {
+                            const isActive = el.dataset.user === userId;
+                            el.hidden = !isActive;
+                            if (isActive && el.childElementCount === 0) {
+                                el.textContent = textCache.get(el) ?? getRaw(el);
                             }
                         });
                 });
                 toggles.querySelectorAll('[data-user]').forEach(btn => {
                     btn.toggleAttribute('current', btn.dataset.user === userId);
                 });
+                portfolio3D?.swap?.(userId);
             };
 
-            const getUserNodes = (userId) => {
-                const nodes = sections
-                    .map((id) => document.querySelector(`#${id} [data-user="${userId}"]`))
-                    .filter(Boolean);
-                rememberText(nodes);
-                return nodes;
-            };
+            const getUserNodes = (userId) => sections.flatMap((id) =>
+                Array.from(document.querySelectorAll(`#${id} [data-user="${userId}"]`))
+            );
+            const getUserParas = (userId) =>
+                Array.from(document.querySelectorAll(`#portfolio-desc [data-user="${userId}"] p`));
 
-            const scrambleInConfig = (target) => ({
-                text: textCache.get(target) ?? '',
+            const scrambleInConfig = (text) => ({
+                text,
                 chars: 'upperAndLowerCase',
                 speed: 0.6,
                 revealDelay: 0.1
             });
-
             const scrambleOutConfig = {
                 text: '',
                 chars: 'upperAndLowerCase',
@@ -3965,48 +4147,81 @@ function space() {
                 revealDelay: 0
             };
 
-            const defaultUser = toggles.querySelector('[data-user]')?.dataset.user || 'xweave';
-            let activeUser = defaultUser;
-            portfolio3D?.swap?.(activeUser);
+            let activeUser = toggles.querySelector('[data-user]')?.dataset.user || 'xweave';
             showUser(activeUser);
 
             const animateSwap = (nextUser) => {
                 if (nextUser === activeUser) return;
 
-                const outgoing = getUserNodes(activeUser);
-                const incoming = getUserNodes(nextUser);
+                const outgoingNodes = getUserNodes(activeUser);
+                const incomingNodes = getUserNodes(nextUser);
+                const outgoingParas = getUserParas(activeUser);
+                const incomingParas = getUserParas(nextUser);
+                rememberText([...outgoingParas, ...incomingParas]);
+                const incomingTexts = incomingParas.map(p => textCache.get(p) ?? getRaw(p));
+                const outgoingOther = outgoingNodes.filter(n => !isDescContainer(n) && n.childElementCount === 0);
+                const incomingOther = incomingNodes.filter(n => !isDescContainer(n) && n.childElementCount === 0);
+
+                const resetInline = (nodes) => nodes.forEach(n => {
+                    n.style.removeProperty('opacity');
+                    n.style.removeProperty('visibility');
+                    n.style.removeProperty('transform');
+                });
+                resetInline([...outgoingNodes, ...incomingNodes, ...outgoingParas, ...incomingParas]);
 
                 const tl = gsap.timeline({ defaults: { duration: 0.35, ease: 'power2.out' } });
-                tl.to(outgoing, {
-                    autoAlpha: 0,
-                    y: 10,
-                    stagger: 0.05,
-                    scrambleText: scrambleOutConfig
-                })
-                    .add(() => {
-                        outgoing.forEach((node) => {
-                            node.hidden = true;
-                            node.textContent = textCache.get(node) ?? node.textContent;
-                        });
-                        incoming.forEach((node) => {
-                            node.hidden = false;
-                            node.textContent = '';
-                        });
-                        activeUser = nextUser;
-                        toggles.querySelectorAll('[data-user]').forEach((btn) =>
-                            btn.toggleAttribute('current', btn.dataset.user === nextUser)
-                        );
-                        portfolio3D?.swap?.(nextUser);
-                    })
-                    .fromTo(incoming, {
+
+                if (outgoingParas.length) {
+                    outgoingParas.slice().reverse().forEach((p, idx) => {
+                        tl.to(p, { scrambleText: scrambleOutConfig }, idx === 0 ? 0 : '<+0.1');
+                    });
+                }
+                if (outgoingOther.length) {
+                    tl.to(outgoingOther, {
                         autoAlpha: 0,
-                        y: -10
+                        stagger: 0.05,
+                        scrambleText: scrambleOutConfig
+                    }, '<+0.2');
+                }
+
+                tl.add(() => {
+                    activeUser = nextUser;
+                    toggles.querySelectorAll('[data-user]').forEach((btn) =>
+                        btn.toggleAttribute('current', btn.dataset.user === nextUser)
+                    );
+                    outgoingNodes.forEach(n => n.hidden = true);
+                    incomingNodes.forEach(n => {
+                        n.hidden = false;
+                        n.style.removeProperty('opacity');
+                        n.style.removeProperty('visibility');
+                    });
+                    incomingParas.forEach(p => { p.textContent = ''; });
+                    portfolio3D?.swap?.(nextUser);
+                }, '>');
+
+                if (incomingOther.length) {
+                    tl.fromTo(incomingOther, {
+                        autoAlpha: 0,
                     }, {
                         autoAlpha: 1,
-                        y: 0,
                         stagger: 0.05,
-                        scrambleText: (_, target) => scrambleInConfig(target)
+                        scrambleText: (_, target) => scrambleInConfig(textCache.get(target) ?? getRaw(target))
+                    }, '<');
+                }
+
+                if (incomingParas.length) {
+                    let pos = incomingOther.length ? '>' : '<';
+                    incomingParas.forEach((p, idx) => {
+                        const txt = incomingTexts[idx] ?? '';
+                        tl.fromTo(p, {
+                            autoAlpha: 0,
+                        }, {
+                            autoAlpha: 1,
+                            scrambleText: scrambleInConfig(txt)
+                        }, pos);
+                        pos = '<+0.1';
                     });
+                }
             };
 
             toggles.addEventListener('click', (evt) => {
@@ -4050,7 +4265,7 @@ function space() {
             camera.position.set(0, 0, 6);
             scene.add(camera);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 10));
+            scene.add(new THREE.AmbientLight(0xffffff, 1));
             const dir = new THREE.DirectionalLight(0xffffff, 20);
             dir.position.set(-10, 6, 5);
             scene.add(dir);
@@ -4198,21 +4413,36 @@ function space() {
     // Appending Scroll Segment
     function appendSegments(number) {
         const scroller = document.querySelector('.scroller');
-        for (let i = 0; i < number; i++)
-            scroller.appendChild(Object.assign(document.createElement('div'), {
+        if (!scroller) return;
+        const target = scroller.querySelector('.smoother-content') || scroller;
+        for (let i = 0; i < number; i++) {
+            target.appendChild(Object.assign(document.createElement('div'), {
                 className: 'segment', id: `segment-${i + 1}`
-            }));        
+            }));
+        }
+        initLenisForScroller(scroller);
 
         // Forward wheel/touch to the scroller so it can sit “behind” interactables
         if (scroller && !scroller.dataset.forwardingSetup) {
             scroller.dataset.forwardingSetup = '1';
             let lastTouchY = null;
             const forward = (dy) => {
-                scroller.scrollTop += dy;
+                const next = scroller.scrollTop + dy;
+                if (lenis) {
+                    lenis.scrollTo(next, { immediate: false });
+                } else {
+                    scroller.scrollTop = next;
+                }
                 ScrollTrigger.update();
             };
             const onWheel = (e) => {
                 if (!document.body.contains(scroller)) { window.removeEventListener('wheel', onWheel, wheelOpts); return; }
+                const dy = e.deltaY;
+                const isMouseWheel = (e.deltaMode === 1) || (Math.abs(dy % 120) < 0.01);
+                if (scroller.dataset.segmentSnapWheel === '1' && isMouseWheel) {
+                    e.preventDefault();
+                    return; // Observer-driven snapping will handle mouse wheels
+                }
                 forward(e.deltaY);
                 e.preventDefault();
             };
@@ -4231,6 +4461,27 @@ function space() {
             window.addEventListener('touchmove', onTouchMove, touchOpts);
             window.addEventListener('touchend', onTouchEnd);
         }
+    }
+
+    // Lenis helper for the hidden scroller
+    function initLenisForScroller(wrapper) {
+        if (!wrapper) return null;
+        if (!wrapper.querySelector('.smoother-content')) {
+            const content = document.createElement('div');
+            content.className = 'smoother-content';
+            while (wrapper.firstChild) {
+                content.appendChild(wrapper.firstChild);
+            }
+            wrapper.appendChild(content);
+        }
+        lenis?.destroy?.();
+        lenis = new Lenis({
+            wrapper,
+            content: wrapper.querySelector('.smoother-content')
+        });
+        lenis.on('scroll', ScrollTrigger.update);
+        window.lenis = lenis;
+        return lenis;
     }
 
     // Back Button
@@ -4278,6 +4529,7 @@ function space() {
         const tl = gsap.timeline({
             defaults: { ease: 'power2.out' },
             onComplete() {
+                document.querySelectorAll('body > .backBtn').forEach(btn => btn.remove());
                 ScrollTrigger.getAll().forEach(st => {
                     const scrollEl = st.scroller || st.vars?.scroller || ScrollTrigger.defaultScroller || window;
                     if (scrollEl === scroller || scroller?.contains(st.trigger)) st.kill();
@@ -4286,6 +4538,7 @@ function space() {
                 gsap.killTweensOf(page.querySelectorAll('*'));
                 gsap.set(page.querySelectorAll('*'), { clearProps: 'all' });
                 gsap.set(page, { clearProps: 'all' });
+                gsap.to('#logout-btn', { autoAlpha: 0.5, zIndex: 2, duration: 1 }, 0);
                 page.hidden = true;
                 scroller?.remove();
                 window.scrollTo(0, 0);
@@ -4333,18 +4586,18 @@ function space() {
         cubeUs.visible = true;
         cubePortfolio.visible = true;
 
-        if (state < 4) {
-            menuPortfolio?.setAttribute('hidden', '');
-            cubePortfolio.visible = false;
-        }
-        if (state < 3) {
-            menuUs?.setAttribute('hidden', '');
-            cubeUs.visible = false;
-        }
-        if (state < 2) {
-            menuWhat?.setAttribute('hidden', '');
-            cubeWhat.visible = false;
-        }
+        // if (state < 4) {
+        //     menuPortfolio?.setAttribute('hidden', '');
+        //     cubePortfolio.visible = false;
+        // }
+        // if (state < 3) {
+        //     menuUs?.setAttribute('hidden', '');
+        //     cubeUs.visible = false;
+        // }
+        // if (state < 2) {
+        //     menuWhat?.setAttribute('hidden', '');
+        //     cubeWhat.visible = false;
+        // }
     }
 }
 
