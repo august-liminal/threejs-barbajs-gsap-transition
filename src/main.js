@@ -162,6 +162,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             .text-4xl { font-size: 3rem; line-height: 1.1; }
             .text-xl { font-size: 2.25rem; line-height: 1.5; }
             .text-lg { font-size: 1.5rem; }
+            .text-md { max-width: none; }
             #welcome h1 { height: 1.25em; }
             #welcome .scroll-hint { margin: 0;l }
 
