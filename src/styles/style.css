@@ -500,7 +500,7 @@ div:has(>#user_message) {
     z-index: -1;
     position: relative;
     width: 100%;
-    scroll-snap-type: y mandatory;
+    scroll-snap-type: y proximity;
     overscroll-behavior: contain;
     height: 100dvh;
     overflow-y: auto;
@@ -515,11 +515,6 @@ div:has(>#user_message) {
     height: 100dvh;
     scroll-snap-align: none;
     scroll-snap-stop: normal;
-}
-
-.scroller .segment.snap {
-    scroll-snap-align: end;
-        scroll-snap-stop: always;
 }
 
 .page {
@@ -871,13 +866,14 @@ canvas#space {
 
 /* Our Thesis */
 
-.thesis-scroller #segment-3, 
+
+.thesis-scroller #segment-3,
+.thesis-scroller #segment-4,
 .thesis-scroller #segment-5 {
     height: 50dvh;
 }
 
-.thesis-scroller #segment-2,
-.thesis-scroller #segment-4 {
+.thesis-scroller #segment-2 {
     height: 25dvh;
 }
 
@@ -964,6 +960,17 @@ canvas#space {
 .what-scroller .segment {
     scroll-snap-align: end;
     scroll-snap-stop: always;
+}
+
+.what-scroller #segment-6 {
+    scroll-snap-align: end;
+    scroll-snap-stop: always;
+}
+
+.what-scroller #segment-5 {
+    height: 300dvh;
+    scroll-snap-align: none;
+    scroll-snap-stop: normal;
 }
 
 #page-what .scroll-hint {

@@ -1418,6 +1418,30 @@ function space() {
         labelEntry.hoverSources[source] = isHover;
         const active = labelEntry.hoverSources.cube || labelEntry.hoverSources.label;
         labelEntry.element.classList.toggle('hovered', active);
+
+        if (cube) {
+            // Ensure each cube has its own material and stored colors
+            if (!cube.userData.hoverColorSetup) {
+                cube.material = cube.material.clone();
+                cube.material.color = cube.material.color.clone();
+                cube.material.userData.baseColor = cube.material.color.clone();
+                cube.material.userData.hoverColor = new THREE.Color(0xffffff);
+                cube.material.transparent = true;
+                cube.userData.hoverColorSetup = true;
+            }
+            const mat = cube.material;
+            const targetColor = active ? mat.userData.hoverColor : mat.userData.baseColor;
+            const targetScale = active ? 1.2 : 1;
+            gsap.to(cube.scale, { x: targetScale, y: targetScale, z: targetScale, duration: 0.25, ease: 'power2.out' });
+            gsap.to(mat.color, {
+                r: targetColor.r,
+                g: targetColor.g,
+                b: targetColor.b,
+                duration: 0.5,
+                ease: 'power2.out'
+            });
+            gsap.to(mat, { opacity: active ? 1 : 0.85, duration: 0.25, ease: 'power2.out' });
+        }
     }
 
     canvas.addEventListener('pointermove', (event) => {
@@ -1551,7 +1575,20 @@ function space() {
     const focusFov = 0.1;
 
     function focusOnCube(cube, onComplete) {
+        document.querySelector('#welcome')?.remove();
+        document.querySelector('.scroller')?.remove();
+        document.querySelector('#logo-holder').style.opacity = 0;
+        if (localStorage.getItem(key) < 1) localStorage.setItem(key, 1);
+
         const allCubes = [cubeThesis, cubeWhat, cubeUs, cubePortfolio];
+        // Reset any hover-driven transforms/colors before focusing
+        allCubes.forEach(c => {
+            gsap.killTweensOf(c.scale);
+            gsap.set(c.scale, { x: 1, y: 1, z: 1 });
+            if (c.material?.userData?.baseColor) {
+                c.material.color.copy(c.material.userData.baseColor);
+            }
+        });
         allCubes.forEach(c => {
             if (!c.material.userData?.isCloned) {
                 c.material = c.material.clone();
@@ -1943,8 +1980,7 @@ function space() {
         }
         document.querySelector('#welcome')?.remove();
         document.querySelector('.scroller')?.remove();
-        document.querySelector('#logo-holder').style.opacity = 0;
-        if (localStorage.getItem(key) < 1) localStorage.setItem(key, 1);
+        document.querySelector('#logo-holder').style.opacity = 0;        
 
         // THREE JS FUNCTION
         function createThesisScene(canvas) {
@@ -2252,9 +2288,6 @@ function space() {
 
         page.appendChild(guidesContainer);
         //
-
-        const btn = document.querySelector('.backBtn');
-        btn.textContent = localStorage.getItem(key) == 1 ? 'Continue' : 'Back';
 
         const thesisCanvas = Object.assign(document.createElement('canvas'), { id: 'thesis-canvas' });
         document.body.appendChild(thesisCanvas);
@@ -2610,13 +2643,13 @@ function space() {
             }
         });
 
-        tl.add(() => { // Unlocked Potential timeline            
+        tl.add(() => { // Ultimate Co-Founder timeline            
             const segmentTl = gsap.timeline({
                 scrollTrigger: {
                     trigger: '#segment-4',
                     scroller,
                     start: 'top bottom',
-                    end: 'bottom bottom',
+                    end: 'top center',
                     scrub: true,
                     invalidateOnRefresh: true,
                 }
@@ -2727,26 +2760,19 @@ function space() {
 
         tl.add(() => { // Back the Founder objects timeline
             const nestedTl = gsap.timeline({ paused: true });
-
-            nestedTl.to(cone.rotation, {
-                y: THREE.MathUtils.degToRad(270),
-                ease: 'power4.inOut',
-                duration: 1.2
+            nestedTl.set(coneOverlay.material, { opacity: 0 }, 0);
+            nestedTl.set(cylinderOverlay.material, { opacity: 0 }, 0);
+            nestedTl.to(cone.rotation, { 
+                y: THREE.MathUtils.degToRad(270), ease: 'power4.inOut', duration: 1.2
             }, '>');
             nestedTl.to(cone.position, {
-                x: 0, y: 8, z: -1,
-                ease: 'power4.inOut',
-                duration: 1.2
+                x: 0, y: 8, z: -1, ease: 'power4.inOut', duration: 1.2
             }, '<');
             nestedTl.to(cylinder.rotation, {
-                y: THREE.MathUtils.degToRad(270),
-                ease: 'power4.inOut',
-                duration: 1.2
+                y: THREE.MathUtils.degToRad(270), ease: 'power4.inOut', duration: 1.2
             }, '<+0.1');
             nestedTl.to(cylinder.position, {
-                x: 0, y: 16, z: -1.5,
-                ease: 'power4.inOut',
-                duration: 1.2
+                x: 0, y: 16, z: -1.5, ease: 'power4.inOut', duration: 1.2
             }, '<');            
             nestedTl.to(coneOverlay.material, {
                 opacity: 1, duration: 0.5
@@ -2762,29 +2788,28 @@ function space() {
             }, '<');
 
             const objectsTlForward = gsap.timeline({ paused: true });
-            objectsTlForward.set([cone.material, cylinder.material, coneOverlay.material, cylinderOverlay.material], {opacity: 0});
-            objectsTlForward.set(cone.position, {x: 3, y: 8, z: 10});
-            objectsTlForward.set(cylinder.position, { x: 3, y: 16, z: 10 });
-            objectsTlForward.to(cone.position, { x: -0.2, duration: 0.1 }, 0);
+            objectsTlForward.to(cone.position, { x: -0.2, y: 8, z: 10, duration: 0.1 }, 0);
             objectsTlForward.to(cone.material, { opacity: 1, duration: 0.1 }, '<');
             objectsTlForward.fromTo(cone.rotation, { y: THREE.MathUtils.degToRad(-60) }, {
                 y: THREE.MathUtils.degToRad(0), ease: 'power4.inOut', duration: 0.1
             }, '<');
-            objectsTlForward.to(cylinder.position, { x: -0.2, duration: 0.1 }, 0.05);
+            objectsTlForward.to(cylinder.position, { x: -0.2, y: 16, z: 10, duration: 0.1 }, 0.05);
             objectsTlForward.to(cylinder.material, { opacity: 1, duration: 0.1 }, '<');
             objectsTlForward.fromTo(cylinder.rotation, { y: THREE.MathUtils.degToRad(-60) }, {
                 y: THREE.MathUtils.degToRad(0), ease: 'power4.inOut', duration: 0.1
-            }, '<');
+            }, '<');            
+            objectsTlForward.eventCallback('onComplete', () => nestedTl.play(0));
 
             const objectsTlBackward = gsap.timeline({ paused: true });
-            objectsTlBackward.to(cone.material, { opacity: 0, duration: 0.1 }, '<');
-            objectsTlBackward.to(cylinder.material, { opacity: 0, duration: 0.1 }, '<');
             objectsTlBackward.to(coneOverlay.material, { opacity: 0, duration: 0.1 }, '<');
             objectsTlBackward.to(cylinderOverlay.material, { opacity: 0, duration: 0.1 }, '<');
 
 
-            let forwardDone = false;
-            let backwardDone = false;
+            let usingBackward = false;
+            objectsTlForward.eventCallback('onStart', () => {
+                nestedTl.pause(0).progress(0);
+                gsap.set([coneOverlay.material, cylinderOverlay.material], { opacity: 0 });
+            });
             ScrollTrigger.create({
                 trigger: '#segment-5',
                 scroller,
@@ -2792,22 +2817,21 @@ function space() {
                 end: 'top center',
                 scrub: true,
                 invalidateOnRefresh: true,
-                onLeave: () => {
-                    nestedTl.play(0);
-                },
                 onUpdate: (self) => {
                     const fProg = Math.min(1, Math.max(0, self.progress));
                     const bProg = 1 - fProg;
-                    if (self.direction > 0) {
+                    if (!usingBackward) {
                         objectsTlForward.progress(fProg);
-                        forwardDone = objectsTlForward.progress() >= 1;
-                        if (forwardDone) backwardDone = false;
-                    } else {
-                        if (forwardDone) {
+                        if (self.direction > 0 && objectsTlForward.progress() >= 1) {
+                            usingBackward = true;
+                            objectsTlForward.progress(1); // keep forward timeline pinned once completed
                             objectsTlBackward.progress(bProg);
-                            backwardDone = objectsTlBackward.progress() >= 1;
-                            if (backwardDone) forwardDone = false;
-                        } else {
+                        }
+                    } else {
+                        objectsTlBackward.progress(bProg);
+                        objectsTlForward.progress(1); // prevent forward timeline from rewinding while backward is active
+                        if (self.direction < 0 && objectsTlBackward.progress() >= 1) {
+                            usingBackward = false;
                             objectsTlForward.progress(fProg);
                         }
                     }
@@ -2828,21 +2852,21 @@ function space() {
                 scrollTrigger: {
                     trigger: '#segment-6',
                     scroller,
-                    start: 'top center',
+                    start: 'top bottom',
                     end: 'top top',
                     scrub: true,
-                    invalidateOnRefresh: true,
+                    invalidateOnRefresh: true,                    
                     onLeave: triggerBack
                 }
             });
             segmentTl.to('#page-thesis', {
-                scale: 0, autoAlpha: 0
+                scale: 0, autoAlpha: 0, ease: 'power4.out'
             });
             segmentTl.to('canvas#thesis-canvas', {
-                scale: 0.5, autoAlpha: 0
+                scale: 0.5, autoAlpha: 0, ease: 'power4.out'
             }, '<');
             segmentTl.to('body>.backBtn', {
-                autoAlpha: 0
+                autoAlpha: 0, ease: 'power4.out'
             }, '<');
         });
     };
@@ -2851,13 +2875,14 @@ function space() {
 
     function what() {
         const page = document.querySelector('#page-what');
+        if (!document.querySelector('body>.backBtn')) {
+            document.body.appendChild(Object.assign(document.createElement('div'), { className: 'backBtn', textContent: 'Continue', style: 'opacity: 0' }));
+        }
 
         // show page
         page.removeAttribute('hidden');
         page.setAttribute('style', 'position: absolute; inset: 0');
 
-        const btn = page.querySelector('.backBtn');
-        btn.textContent = localStorage.getItem(key) == 2 ? 'Continue' : 'Back';
 
         // Inject fresh SVG each time this page loads; replace the placeholder string with your SVG markup
         const liminalSvg = page.querySelector('.liminal-svg');
@@ -3550,7 +3575,7 @@ function space() {
                 trigger: '#segment-5',
                 scroller,
                 start: 'top bottom',
-                end: 'top top',
+                end: 'bottom bottom',
                 scrub: true,
                 invalidateOnRefresh: true,
                 onLeaveBack: () => { clearPhoneSectionStyles(); },
@@ -3619,7 +3644,7 @@ function space() {
                 };
                 const orbitState = { phi: 0, theta: 0, radius: 0 };
                 segmentTl.to(orbitState, {
-                    ease: 'none',
+                    ease: 'power2.out',
                     immediateRender: false,
                     onStart: captureStartState,
                     onUpdate: function () {
@@ -3631,7 +3656,7 @@ function space() {
                         tempOffset.setFromSpherical(new THREE.Spherical(orbitState.radius, orbitState.phi, orbitState.theta));
                         // also slide downward on world Y while rotating
                         const easedDrop = THREE.MathUtils.clamp(Math.pow(t, 4), 0, 1); // ~power4.in
-                        const yDrop = THREE.MathUtils.lerp(0, -camSpherical.radius * 1, easedDrop);
+                        const yDrop = THREE.MathUtils.lerp(0, -camSpherical.radius, easedDrop);
                         whatCam.position.copy(whatLookAt).add(tempOffset).add(new THREE.Vector3(0, yDrop, 0));
                         whatCam.lookAt(whatLookAt);
                         whatCam.updateProjectionMatrix();
@@ -3707,11 +3732,23 @@ function space() {
                 }
                 prevProg = prog;
             });
-        });
+        });        
         tl.add(() => {
             btn?.addEventListener('click', (e) => {
                 back(2, e, what3D);
             }, { once: true });
+        });
+        tl.add(() => {
+            const target = page?.querySelector('.backBtn') ?? page;
+            const triggerBackOnScroll = (evt) => {
+                window.removeEventListener('wheel', triggerBackOnScroll, wheelOpts);
+                window.removeEventListener('touchmove', triggerBackOnScroll, touchOpts);
+                back(2, { currentTarget: target, originalEvent: evt }, what3D);
+            };
+            const wheelOpts = { passive: true, once: true, capture: true };
+            const touchOpts = { passive: true, once: true, capture: true };
+            window.addEventListener('wheel', triggerBackOnScroll, wheelOpts);
+            window.addEventListener('touchmove', triggerBackOnScroll, touchOpts);
         });
 
     };
@@ -3733,7 +3770,7 @@ function space() {
         page.setAttribute('style', 'position: absolute; inset: 0');
 
         const btn = page.querySelector('.backBtn');
-        btn.textContent = localStorage.getItem(key) == 3 ? 'Continue' : 'Back';
+        btn.textContent = 'Back';
         if (phonePortrait) document.querySelector('#profile-back-btn .backBtn').textContent = '';
         const portraitContainer = document.getElementById('profile-portrait-container');
         const portraitCanvas = portraitContainer?.querySelector('canvas#profile-portrait');
@@ -4477,7 +4514,11 @@ function space() {
         lenis?.destroy?.();
         lenis = new Lenis({
             wrapper,
-            content: wrapper.querySelector('.smoother-content')
+            content: wrapper.querySelector('.smoother-content'),
+            // duration: 1.1,                   // higher = longer glide (default 1)
+            smoothTouch: true,               // smooth on touch
+            smoothWheel: true,               // smooth on wheel
+            wheelMultiplier: 1.5   // boost wheel delta
         });
         lenis.on('scroll', ScrollTrigger.update);
         window.lenis = lenis;
