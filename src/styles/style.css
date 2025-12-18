@@ -3,6 +3,7 @@
     --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1748926717051---font--heading-font: 'Space Grostesk';
     --ai-gen-82921b10-4b39-48f0-b346-808cf4903d29-1748926717051---font--button-font: 'Space Mono';
     overflow: hidden;
+    font-size: clamp(12px, 1vmax, 16px);
 }
 
 * {
@@ -816,7 +817,7 @@ canvas#space {
     content: '';
     position: absolute;
     background: #fff;
-    width: 100%;
+    width: calc(100% + 1rem);
     scale: 50% 100%;
     opacity: 0;
     height: calc(100% + 2px);
@@ -828,6 +829,7 @@ canvas#space {
 .label#menuUs::after,
 .label#menuPortfolio::after {
     transform-origin: 100% 50%;
+    left: -1rem;
 }
 
 .label#menuThesis::after,
@@ -854,25 +856,25 @@ canvas#space {
 .label#menuPortfolio {
     position: relative;
     border-width: 1px 0 0 0;
-    padding: 0.5rem 2rem 0.5rem 0.5rem;
+    padding: 0.5rem 1rem 0.5rem 0;
 }
 
 .label#menuWhat {
     position: relative;
     border-width: 1px 0 0 0;
-    padding: 0.5rem 0.5rem 0.5rem 2rem;
+    padding: 0.5rem 0 0.5rem 1rem;
 }
 
 .label#menuThesis {
     position: relative;
     border-width: 0 0 1px 0;
-    padding: 0.5rem 0.5rem 0.5rem 2rem;
+    padding: 0.5rem 0 0.5rem 1rem;
 }
 
 .label#menuUs {
     position: relative;
     border-width: 0 0 1px 0;
-    padding: 0.5rem 2rem 0.5rem 0.5rem;
+    padding: 0.5rem 1rem 0.5rem 0;
 }
 
 #menuThesis::before {
@@ -995,9 +997,15 @@ canvas#space {
     scroll-snap-stop: normal;
 }
 
-#page-what .scroll-hint {
+#page-what>.scroll-hint {
     position: absolute;
     bottom: 4rem;
+    transition: opacity 0.2s;
+}
+
+#page-what .text-lg .scroll-hint {
+    position: absolute;
+    bottom: -4rem;
     transition: opacity 0.2s;
 }
 
@@ -1015,9 +1023,14 @@ canvas#space {
     pointer-events: auto;
 }
 
+#page-what>.section-container .section>.gap {
+    flex: 1 1 0;
+}
+
 #page-what>.section-container .section>div {
     opacity: 0 !important;
     transition: opacity 0.5s ease-out;
+    position: relative;
 }
 
 #page-what>.section-container i {
@@ -1099,7 +1112,7 @@ canvas#space {
 
 .liminal-svg {
     position: relative;
-    margin: 4rem;
+    margin: 2rem;
     will-change: opacity, filter;
 }
 

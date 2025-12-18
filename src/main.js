@@ -146,6 +146,9 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
         textContent: `
             :root { font-size: 14px; --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); }
             body { height: 100dvh; box-sizing: border-box; }
+
+            .scroller { z-index: 1; }
+            .scroller .segment {scroll-snap-align: end; scroll-snap-stop: always; }
             
 
             .text-line { font-size: 1rem; text-align: center; inset: -1.5rem 0px auto; }
@@ -1419,9 +1422,9 @@ function space() {
         const active = labelEntry.hoverSources.cube || labelEntry.hoverSources.label;
         labelEntry.element.classList.toggle('hovered', active);
 
-        if (cube) {            
+        if (cube) {
             const targetScale = active ? 1.25 : 1;
-            gsap.to(cube.scale, { x: targetScale, y: targetScale, z: targetScale, duration: 0.25, ease: 'power2.out' });            
+            gsap.to(cube.scale, { x: targetScale, y: targetScale, z: targetScale, duration: 0.25, ease: 'power2.out' });
         }
     }
 
@@ -1961,7 +1964,7 @@ function space() {
         }
         document.querySelector('#welcome')?.remove();
         document.querySelector('.scroller')?.remove();
-        document.querySelector('#logo-holder').style.opacity = 0;        
+        document.querySelector('#logo-holder').style.opacity = 0;
 
         // THREE JS FUNCTION
         function createThesisScene(canvas) {
@@ -2724,7 +2727,7 @@ function space() {
             }, '<+0.1');
             segmentTl.fromTo('.backBtn-thesis', {
                 translateY: '2rem', autoAlpha: 0
-            },{
+            }, {
                 translateY: 0, autoAlpha: 1
             }, 0)
 
@@ -2751,7 +2754,7 @@ function space() {
             }, 0)
             nestedTl.set(coneOverlay.material, { opacity: 0 }, 0);
             nestedTl.set(cylinderOverlay.material, { opacity: 0 }, 0);
-            nestedTl.to(cone.rotation, { 
+            nestedTl.to(cone.rotation, {
                 y: THREE.MathUtils.degToRad(270), ease: 'power4.inOut', duration: 1.2
             }, '>');
             nestedTl.to(cone.position, {
@@ -2762,7 +2765,7 @@ function space() {
             }, '<+0.1');
             nestedTl.to(cylinder.position, {
                 x: 0, y: 16, z: -1.5, ease: 'power4.inOut', duration: 1.2
-            }, '<');            
+            }, '<');
             nestedTl.to(coneOverlay.material, {
                 opacity: 1, duration: 0.5
             }, '>+0.1');
@@ -2786,11 +2789,11 @@ function space() {
             objectsTlForward.to(cylinder.material, { opacity: 1, duration: 0.1 }, '<');
             objectsTlForward.fromTo(cylinder.rotation, { y: THREE.MathUtils.degToRad(-60) }, {
                 y: THREE.MathUtils.degToRad(0), ease: 'power4.inOut', duration: 0.1
-            }, '<');            
+            }, '<');
             const objectsTlBackward = gsap.timeline({ paused: true });
             objectsTlBackward.to(coneOverlay.material, { opacity: 0, duration: 0.1 }, '<');
             objectsTlBackward.to(cylinderOverlay.material, { opacity: 0, duration: 0.1 }, '<');
-            
+
             let usingBackward = false;
             objectsTlForward.eventCallback('onStart', () => {
                 nestedTl.pause(0).progress(0);
@@ -2798,7 +2801,7 @@ function space() {
             objectsTlForward.eventCallback('onComplete', () => {
                 nestedTl.play(0);
             });
-            
+
             ScrollTrigger.create({
                 trigger: '#segment-5',
                 scroller,
@@ -2844,10 +2847,10 @@ function space() {
                     start: 'top bottom',
                     end: 'top top',
                     scrub: true,
-                    invalidateOnRefresh: true,                    
+                    invalidateOnRefresh: true,
                     onLeave: triggerBack
                 }
-            });            
+            });
             segmentTl.to('.backBtn-thesis i', {
                 width: '100%', background: '#fff8', duration: 1
             }, 0);
@@ -2868,9 +2871,140 @@ function space() {
             document.body.insertAdjacentHTML('beforeend', "<div class='backBtn backBtn-what' style='opacity:0'><i></i><span>Continue</span></div>");
         }
 
+
+        const sectionSyncState = { suppress: false, target: null };
+        let canInteract = false;
+        const isSectionContainerVisible = () => {
+            const container = document.querySelector('#page-what>.section-container');
+            if (!container) return false;
+            const style = getComputedStyle(container);
+            return style.visibility !== 'hidden' && style.display !== 'none' && parseFloat(style.opacity || '0') > 0.01;
+        };
+        const setScrollerInteractive = () => {
+            canInteract = isSectionContainerVisible();
+            if (!scroller) return;
+            scroller.style.pointerEvents = 'auto'; // keep scroll working
+            scroller.style.cursor = canInteract ? 'pointer' : 'default';
+        };
+
+        const setSectionFromSegment = (idx, { immediate = false } = {}) => {
+            const sections = Array.from(document.querySelectorAll('#page-what > .section-container .section'));
+            if (!sections.length) return;
+            const clamped = Math.max(0, Math.min(idx, sections.length - 1));
+            sections.forEach((section, i) => {
+                section.classList.toggle('active', i === clamped);
+            });
+            what3D?.setActiveSectionId?.(sections[clamped]?.id ?? null);
+            if (phonePortrait) {
+                what3D?.setPhoneActive?.(clamped, { force: true, immediate });
+            } else {
+                what3D?.syncToSections?.();
+                requestAnimationFrame(() => what3D?.syncToSections?.());
+            }
+        };
+
+        const setupSectionScrollSync = () => {
+            if (!scroller || scroller.dataset.sectionScrollSync === '1') return;
+            scroller.dataset.sectionScrollSync = '1';
+            const setFromTrigger = (idx) => {
+                if (sectionSyncState.suppress && sectionSyncState.target !== idx) return;
+                setSectionFromSegment(idx);
+            };
+            setSectionFromSegment(0, { immediate: true });
+            phoneSectionSegmentIds.forEach((id, idx) => {
+                const selector = `#${id}`;
+                ScrollTrigger.create({
+                    trigger: selector,
+                    scroller,
+                    start: 'top center',
+                    end: 'bottom center',
+                    onEnter: () => setFromTrigger(idx),
+                    onEnterBack: () => setFromTrigger(idx),
+                    onLeave: () => setFromTrigger(Math.min(phoneSectionSegmentIds.length - 1, idx + 1)),
+                    onLeaveBack: () => setFromTrigger(Math.max(0, idx - 1))
+                });
+            });
+        };
+
+        const bindSectionClicks = () => {
+            const sections = Array.from(document.querySelectorAll('#page-what > .section-container .section'));
+
+            // Fallback: direct clicks (in case pointer-events allow)
+            sections.forEach((section, idx) => {
+                if (section.dataset.sectionClickBound === '1') return;
+                section.dataset.sectionClickBound = '1';
+                section.addEventListener('click', () => {
+                    if (!canInteract) return;
+                    sectionSyncState.suppress = true;
+                    sectionSyncState.target = idx;
+                    setSectionFromSegment(idx, { immediate: true });
+                    scrollToPhoneSectionSegment(idx, { behavior: 'auto' });
+                    ScrollTrigger.update();
+                    setTimeout(() => {
+                        sectionSyncState.suppress = false;
+                        sectionSyncState.target = null;
+                    }, 0);
+                });
+            });
+
+            // Proxy clicks through the scroller overlay so tapping anywhere still hits sections
+            if (scroller && scroller.dataset.sectionClickProxy !== '1') {
+                scroller.dataset.sectionClickProxy = '1';
+                const onProxyClick = (evt) => {
+                    if (!canInteract) return;
+                    const { clientX, clientY } = evt;
+                    const previous = scroller.style.pointerEvents;
+                    scroller.style.pointerEvents = 'none';
+                    const hit = document.elementFromPoint(clientX, clientY);
+                    scroller.style.pointerEvents = previous;
+                    const targetSection = hit?.closest?.('#page-what > .section-container .section');
+                    if (!targetSection) return;
+                    const idx = sections.indexOf(targetSection);
+                    if (idx < 0) return;
+                    sectionSyncState.suppress = true;
+                    sectionSyncState.target = idx;
+                    setSectionFromSegment(idx, { immediate: true });
+                    scrollToPhoneSectionSegment(idx, { behavior: 'auto' });
+                    ScrollTrigger.update();
+                    setTimeout(() => {
+                        sectionSyncState.suppress = false;
+                        sectionSyncState.target = null;
+                    }, 0);
+                };
+                scroller.addEventListener('click', onProxyClick);
+            }
+        };
+
         // show page
         page.removeAttribute('hidden');
         page.setAttribute('style', 'position: absolute; inset: 0');
+
+        // Measure safe zone for desktop layouts (only when visible)
+        const sectionsForMeasure = Array.from(document.querySelectorAll('#page-what>.section-container .section'));
+        let safeHeight = 0;
+        let safeTop = 0;
+        let safeBottom = 0;
+        if (!phonePortrait) {
+            sectionsForMeasure.forEach(s => s.style.transition = 'none');
+            const vh = window.innerHeight;
+            sectionsForMeasure.forEach(section => {
+                section.classList.add('active');
+                const gap = section.querySelector('.gap');
+                const rect = gap.getBoundingClientRect();
+                const topDist = Math.max(0, rect.top);
+                const bottomDist = Math.max(0, vh - rect.bottom);
+                safeTop = Math.max(safeTop, topDist);
+                safeBottom = Math.max(safeBottom, bottomDist);
+                section.classList.remove('active');
+            });
+            safeHeight = Math.max(0, vh - safeTop - safeBottom);
+            sectionsForMeasure.forEach(s => s.style.removeProperty('transition'));
+        }
+        const safeZone = {
+            height: safeHeight,
+            top: safeTop
+        };
+        safeZone.center = safeZone.top + safeZone.height / 2;
 
 
         // Inject fresh SVG each time this page loads; replace the placeholder string with your SVG markup
@@ -2966,7 +3100,7 @@ function space() {
                 0.1,
                 200
             );
-            camera.position.set(0, 0, 60);
+            camera.position.set(0, 0, 50);
             const lookAtTarget = phonePortrait
                 ? new THREE.Vector3(0, -4.5, 0)
                 : new THREE.Vector3(0, -0.5, 0);
@@ -2997,12 +3131,14 @@ function space() {
             });
 
             const models = [];
+            const modelHeights = [];
             const geometries = new Set();
             const materials = new Set();
             const sectionIds = ['what-section-1', 'what-section-2', 'what-section-3'];
             const sectionMap = new Map(sectionIds.map((id, index) => [id, { group: groups[index], element: document.getElementById(id), index }]));
             let activeSectionId = null;
-            const sectionResizeObserver = 'ResizeObserver' in window ? new ResizeObserver(() => syncGroupsToSections()) : null;
+            const scaleTweens = new Map();
+            const sectionResizeObserver = 'ResizeObserver' in window ? new ResizeObserver(() => syncGroupsToSections({ immediate: true })) : null;
             sectionIds.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) sectionResizeObserver?.observe(el);
@@ -3025,7 +3161,7 @@ function space() {
             const templateSizes = Array(groupCount).fill(null);
             const templateSizeFallback = new THREE.Vector3(1, 1, 1);
 
-            const scaleFactor = Math.max(window.innerHeight / window.innerWidth, window.innerWidth / window.innerHeight) * 0.4
+            // const scaleFactor = Math.max(window.innerHeight / window.innerWidth, window.innerWidth / window.innerHeight)
             const perGroupOffsets = phonePortrait
                 ? [
                     { pos: [0, 0.1, 0], rot: [10, 0, 0], scale: 0.42 },
@@ -3033,9 +3169,9 @@ function space() {
                     { pos: [0, 0, 0], rot: [80, 0, 20], scale: 0.45 }
                 ]
                 : [
-                    { pos: [0, 0.1, 0], rot: [10, 0, 0], scale: 1 * scaleFactor },
-                    { pos: [0, 0.1, 0], rot: [0, 0, 0], scale: 1.1 * scaleFactor },
-                    { pos: [0, 0.1, 0], rot: [80, 0, 20], scale: 1 * scaleFactor }
+                    { pos: [0, 0.1, 0], rot: [10, 0, 0], scale: 5 },
+                    { pos: [0, 0.1, 0], rot: [0, 0, 0], scale: 3 },
+                    { pos: [0, 0.1, 0], rot: [80, 0, 20], scale: 2.2 }
                 ];
 
             modelPaths.forEach((url, index) => {
@@ -3110,9 +3246,12 @@ function space() {
                     clone.position.sub(centerWorld); // center to group origin
                     const [ox = 0, oy = 0, oz = 0] = cfg.pos ?? [0, 0, 0];
                     clone.position.add(new THREE.Vector3(ox, oy, oz)); // apply offset after centering
+                    clone.updateMatrixWorld(true);
+                    const measuredHeight = new THREE.Box3().setFromObject(clone).getSize(new THREE.Vector3()).y;
+                    modelHeights[index] = measuredHeight || (templateSizes[index]?.y ?? templateSizeFallback.y);
                     models[index] = clone;
                     lights[index] = null;
-                    syncGroupsToSections();
+                    syncGroupsToSections({ immediate: true });
                 }, undefined, (error) => {
                     console.error(`[createWhatScene] Failed to load ${url.href}`, error);
                 });
@@ -3131,14 +3270,29 @@ function space() {
                 const distance = (targetZ - camera.position.z) / tempDir.z;
                 return camera.position.x + tempDir.x * distance;
             }
+            function ndcToWorldY(ndcY) {
+                tempVec.set(0, ndcY, 0).unproject(camera);
+                tempDir.copy(tempVec).sub(camera.position).normalize();
+                const distance = (targetZ - camera.position.z) / tempDir.z;
+                return camera.position.y + tempDir.y * distance;
+            }
 
-            function syncGroupsToSections() {
+            function syncGroupsToSections({ immediate = false } = {}) {
                 if (isPhonePortrait) {
                     syncGroupsPhone();
                     return;
                 }
                 const rect = canvas.getBoundingClientRect();
                 if (!rect.width || !rect.height) return;
+                const mapPxToNdcY = (px) => 1 - (((px - rect.top) / rect.height) * 2);
+                const safeZoneValid = safeZone.height > 0 && rect.height > 0;
+                const safeTopNdc = safeZoneValid ? mapPxToNdcY(safeZone.top) : 0;
+                const safeBottomNdc = safeZoneValid ? mapPxToNdcY(safeZone.top + safeZone.height) : 0;
+                const defaultWorldHeight = Math.abs(ndcToWorldY(1) - ndcToWorldY(-1));
+                const safeWorldTop = safeZoneValid ? ndcToWorldY(safeTopNdc) : ndcToWorldY(1);
+                const safeWorldBottom = safeZoneValid ? ndcToWorldY(safeBottomNdc) : ndcToWorldY(-1);
+                const safeWorldCenterY = safeZoneValid ? (safeWorldTop + safeWorldBottom) / 2 : ndcToWorldY(0);
+                const safeWorldHeight = safeZoneValid ? Math.abs(safeWorldBottom - safeWorldTop) : defaultWorldHeight;
                 const measurements = [];
                 sectionIds.forEach(id => {
                     const entry = sectionMap.get(id);
@@ -3160,17 +3314,37 @@ function space() {
                     const rightNdc = ((bounds.right - rect.left) / rect.width) * 2 - 1;
                     const worldLeft = ndcToWorldX(leftNdc);
                     const worldRight = ndcToWorldX(rightNdc);
-                    const worldWidth = Math.max(0.001, worldRight - worldLeft);
-                    entry.group.position.set((worldLeft + worldRight) / 2, 0, targetZ);
+                    entry.group.position.set((worldLeft + worldRight) / 2, safeWorldCenterY, targetZ);
                     const cfg = perGroupOffsets[entry.index] ?? {};
-                    const baseScale = cfg.scale ?? 1;
-                    const normSize = templateSizes[entry.index] ?? templateSizeFallback;
-                    const normalizedWidth = Math.max(0.001, normSize.x, normSize.y, normSize.z); // use longest dimension
-                    const flexRatio = Math.max(0.4, worldWidth / normalizedWidth); // flex child size relative to normalized model
-                    const targetScale = baseScale * flexRatio;
+                    const cfgScale = cfg.scale ?? 1;
+                    const baseModelHeight = Math.max(
+                        0.001,
+                        modelHeights[entry.index]
+                            ?? (templateSizes[entry.index]?.y ?? templateSizeFallback.y) * cfgScale
+                    );
                     const isActive = entry.element?.classList.contains('active') || entry.element?.id === activeSectionId;
-                    const hoverFactor = isActive ? 1.2 : 1;
-                    entry.group.scale.setScalar(targetScale * hoverFactor);
+                    const desiredHeight = safeWorldHeight > 0
+                        ? safeWorldHeight * (isActive ? 0.6 : (1 / 3))
+                        : baseModelHeight;
+                    const targetScale = desiredHeight / baseModelHeight;
+                    const tweenKey = entry.group;
+                    const existingTween = scaleTweens.get(tweenKey);
+                    if (Math.abs(entry.group.scale.x - targetScale) < 1e-3 || immediate) {
+                        existingTween?.kill();
+                        scaleTweens.delete(tweenKey);
+                        entry.group.scale.setScalar(targetScale);
+                    } else {
+                        existingTween?.kill();
+                        const tween = gsap.to(entry.group.scale, {
+                            x: targetScale,
+                            y: targetScale,
+                            z: targetScale,
+                            duration: 0.3,
+                            ease: 'power1.out',
+                            onComplete: () => scaleTweens.delete(tweenKey)
+                        });
+                        scaleTweens.set(tweenKey, tween);
+                    }
                     const colorRatio = Math.pow((bounds.width - minWidth) / widthRange, 0.4);
                     entry.group.traverse(child => {
                         if (child.isMesh && child.material?.userData) {
@@ -3187,13 +3361,15 @@ function space() {
             function syncGroupsPhone(immediate = false) {
                 const rect = canvas.getBoundingClientRect();
                 if (!rect.width || !rect.height) return;
+                const safeNdcY = safeZone.height ? (((safeZone.center - rect.top) / rect.height) * 2 - 1) : 0;
+                const safeWorldY = safeZone.height ? ndcToWorldY(safeNdcY) : 0;
                 const positionsNdc = [-2 / 3, 0, 2 / 3]; // three equal slots across the width
                 positionsNdc.forEach((ndcX, idx) => {
                     const worldX = ndcToWorldX(ndcX);
                     const group = groups[idx];
                     if (!group) return;
-                    group.position.set(worldX, 0, targetZ);
-                    const baseScale = perGroupOffsets[idx]?.scale ?? 1;
+                    group.position.set(worldX, safeWorldY, targetZ);
+                    const baseScale = (perGroupOffsets[idx]?.scale ?? 1) * (safeZone.height && rect.height ? (safeZone.height / rect.height) / 3 : 1);
                     const normSize = templateSizes[idx] ?? templateSizeFallback;
                     const normalizedWidth = Math.max(0.001, normSize.x, normSize.y, normSize.z);
                     const targetScale = baseScale * (10 / normalizedWidth);
@@ -3213,13 +3389,13 @@ function space() {
                 renderer.setSize(size.width, size.height, false);
                 camera.aspect = size.width / Math.max(1, size.height);
                 camera.updateProjectionMatrix();
-                syncGroupsToSections();
+                syncGroupsToSections({ immediate: true });
                 camera.lookAt(lookAtTarget);
             }
 
             resize();
             window.addEventListener('resize', resize);
-            syncGroupsToSections();
+            syncGroupsToSections({ immediate: true });
 
             function renderFrame() {
                 if (!running) return;
@@ -3306,6 +3482,8 @@ function space() {
                 window.removeEventListener('resize', resize);
                 sectionResizeObserver?.disconnect();
                 renderer.dispose();
+                scaleTweens.forEach(t => t?.kill?.());
+                scaleTweens.clear();
                 materials.forEach(material => material.dispose());
                 geometries.forEach(geometry => geometry.dispose());
                 canvas.remove();
@@ -3327,118 +3505,14 @@ function space() {
                 getViewportSize,
                 setPhoneActive: (idx) => setPhoneActive(idx),
                 getPhoneActiveIndex: () => activePhoneIndex,
-                getLastPhoneSelection: () => lastPhoneSelection
+                getLastPhoneSelection: () => lastPhoneSelection,
+                setActiveSectionId: (id) => { activeSectionId = id; }
             };
         }
 
         const what3D = createWhatScene();
         window.what3D = what3D;
-        const whatLookAt = new THREE.Vector3(0, 0, 0);
-
-        const sectionSyncState = { suppress: false, target: null };
-        let canInteract = false;
-        const isSectionContainerVisible = () => {
-            const container = document.querySelector('#page-what>.section-container');
-            if (!container) return false;
-            const style = getComputedStyle(container);
-            return style.visibility !== 'hidden' && style.display !== 'none' && parseFloat(style.opacity || '0') > 0.01;
-        };
-        const setScrollerInteractive = () => {
-            canInteract = isSectionContainerVisible();
-            if (!scroller) return;
-            scroller.style.pointerEvents = 'auto'; // keep scroll working
-            scroller.style.cursor = canInteract ? 'pointer' : 'default';
-        };
-
-        const setSectionFromSegment = (idx, { immediate = false } = {}) => {
-            const sections = Array.from(document.querySelectorAll('#page-what > .section-container .section'));
-            if (!sections.length) return;
-            const clamped = Math.max(0, Math.min(idx, sections.length - 1));
-            sections.forEach((section, i) => {
-                section.classList.toggle('active', i === clamped);
-            });
-            if (phonePortrait) {
-                what3D?.setPhoneActive?.(clamped, { force: true, immediate });
-            } else {
-                what3D?.syncToSections?.();
-                requestAnimationFrame(() => what3D?.syncToSections?.());
-            }
-        };
-
-        const setupSectionScrollSync = () => {
-            if (!scroller || scroller.dataset.sectionScrollSync === '1') return;
-            scroller.dataset.sectionScrollSync = '1';
-            const setFromTrigger = (idx) => {
-                if (sectionSyncState.suppress && sectionSyncState.target !== idx) return;
-                setSectionFromSegment(idx);
-            };
-            setSectionFromSegment(0, { immediate: true });
-            phoneSectionSegmentIds.forEach((id, idx) => {
-                const selector = `#${id}`;
-                ScrollTrigger.create({
-                    trigger: selector,
-                    scroller,
-                    start: 'top center',
-                    end: 'bottom center',
-                    onEnter: () => setFromTrigger(idx),
-                    onEnterBack: () => setFromTrigger(idx),
-                    onLeave: () => setFromTrigger(Math.min(phoneSectionSegmentIds.length - 1, idx + 1)),
-                    onLeaveBack: () => setFromTrigger(Math.max(0, idx - 1))
-                });
-            });
-        };
-
-        const bindSectionClicks = () => {
-            const sections = Array.from(document.querySelectorAll('#page-what > .section-container .section'));
-
-            // Fallback: direct clicks (in case pointer-events allow)
-            sections.forEach((section, idx) => {
-                if (section.dataset.sectionClickBound === '1') return;
-                section.dataset.sectionClickBound = '1';
-                section.addEventListener('click', () => {
-                    if (!canInteract) return;
-                    sectionSyncState.suppress = true;
-                    sectionSyncState.target = idx;
-                    setSectionFromSegment(idx, { immediate: true });
-                    scrollToPhoneSectionSegment(idx, { behavior: 'auto' });
-                    ScrollTrigger.update();
-                    setTimeout(() => {
-                        sectionSyncState.suppress = false;
-                        sectionSyncState.target = null;
-                    }, 0);
-                });
-            });
-
-            // Proxy clicks through the scroller overlay so tapping anywhere still hits sections
-            if (scroller && scroller.dataset.sectionClickProxy !== '1') {
-                scroller.dataset.sectionClickProxy = '1';
-                const onProxyClick = (evt) => {
-                    if (!canInteract) return;
-                    const { clientX, clientY } = evt;
-                    const previous = scroller.style.pointerEvents;
-                    scroller.style.pointerEvents = 'none';
-                    const hit = document.elementFromPoint(clientX, clientY);
-                    scroller.style.pointerEvents = previous;
-                    const targetSection = hit?.closest?.('#page-what > .section-container .section');
-                    if (!targetSection) return;
-                    const idx = sections.indexOf(targetSection);
-                    if (idx < 0) return;
-                    sectionSyncState.suppress = true;
-                    sectionSyncState.target = idx;
-                    setSectionFromSegment(idx, { immediate: true });
-                    scrollToPhoneSectionSegment(idx, { behavior: 'auto' });
-                    ScrollTrigger.update();
-                    setTimeout(() => {
-                        sectionSyncState.suppress = false;
-                        sectionSyncState.target = null;
-                    }, 0);
-                };
-                scroller.addEventListener('click', onProxyClick);
-            }
-        };
-
-
-
+        const whatLookAt = new THREE.Vector3(0, 0, 0); 
 
         // ============================== TIMELINE
 
@@ -3540,13 +3614,9 @@ function space() {
                     duration: 0.5,
                     stagger: 0.2
                 }, '<');
-                segmentTl.to('.scroll-hint', {
-                    opacity: 0, duration: 0.2, onComplete: () => {
-                        segmentTl.to('#page-what .scroll-hint', {
-                            right: '4rem', duration: 0
-                        });
-                    }
-                }, '<-0.5');
+                segmentTl.to('#page-what>.scroll-hint', {
+                    autoAlpha: 0
+                }, '<+0.2')
             }
         });
         tl.add(() => { // We Are Liminal timeline
@@ -3586,9 +3656,7 @@ function space() {
             }
 
             const segmentTl = gsap.timeline({ scrollTrigger: stConfig });
-            segmentTl.to('#page-what .scroll-hint', {
-                autoAlpha: 0, duration: 0.01
-            });
+            
             segmentTl.to('#what-title', {
                 autoAlpha: 0, duration: 0.5
             });
@@ -3610,54 +3678,79 @@ function space() {
                 zIndex: 0
             }, '<');
             if (whatCam) {
-                const tempOffset = new THREE.Vector3();
-                const triRadius = 1;
-                const triHeight = Math.sin(THREE.MathUtils.degToRad(60)) * triRadius;
-                const trianglePositions = [
-                    new THREE.Vector3(-triRadius, 0, -triHeight),
-                    new THREE.Vector3(triRadius, 0, -triHeight),
-                    new THREE.Vector3(0, 0, triHeight * 2)
-                ];
-                let camOffset = null; // vector from target to camera
-                let camSpherical = null; // spherical form of camOffset (captured once)
-                let startPos = [];
-                let startScale = [];
-                let startRotX = [];
-                const captureStartState = () => {
-                    // Always recapture so we start from the latest selection/state
-                    camOffset = new THREE.Vector3().copy(whatCam.position).sub(whatLookAt);
-                    camSpherical = new THREE.Spherical().setFromVector3(camOffset);
-                    startPos = whatGroups.map(g => g.position.clone());
-                    startScale = whatGroups.map(g => g.scale.clone());
-                    startRotX = whatGroups.map(g => g.rotation.x);
-                };
                 const orbitState = { phi: 0, theta: 0, radius: 0 };
+                let captured = null;
+
+                const captureStartState = () => {
+                    const camOffset = new THREE.Vector3().copy(whatCam.position).sub(whatLookAt);
+                    const camSpherical = new THREE.Spherical().setFromVector3(camOffset);
+                    const startPos = whatGroups.map(g => g.position.clone());
+                    const startScale = whatGroups.map(g => g.scale.clone());
+                    const startRotX = whatGroups.map(g => g.rotation.x);
+
+                    const tempSize = new THREE.Vector3();
+                    const sizes = whatGroups.map(g => new THREE.Box3().setFromObject(g).getSize(tempSize.clone()));
+                    const heights = sizes.map(s => s.y || 0);
+                    const validHeights = heights.filter(h => h > 0);
+                    const targetHeight = validHeights.length
+                        ? validHeights.reduce((min, h) => Math.min(min, h), Infinity)
+                        : 1;
+                    const targetScale = whatGroups.map((g, idx) => {
+                        const h = Math.max(heights[idx] || targetHeight, 1e-3);
+                        const factor = targetHeight / h; // shrink larger items down; avoid inflating smaller ones
+                        return startScale[idx].clone().multiplyScalar(factor);
+                    });
+                    const sizeAfterScale = sizes.map((s, idx) => {
+                        const h = Math.max(heights[idx] || targetHeight, 1e-3);
+                        const factor = targetHeight / h;
+                        return s.clone().multiplyScalar(factor);
+                    });
+                    const maxFootprint = sizeAfterScale.reduce(
+                        (max, s) => Math.max(max, Math.max(s.x, s.z)),
+                        targetHeight
+                    );
+                    // Increase spacing multiplier to minimize overlap during interpolation
+                    const triRadius = Math.max(0.75, (maxFootprint / 2));
+                    const triHeight = Math.sin(THREE.MathUtils.degToRad(60)) * triRadius;
+                    const trianglePositions = [
+                        new THREE.Vector3(-triRadius, 0, -triHeight),
+                        new THREE.Vector3(triRadius, 0, -triHeight),
+                        new THREE.Vector3(0, 0, triHeight * 2)
+                    ];
+
+                    captured = { camSpherical, startPos, startScale, startRotX, targetScale, trianglePositions };
+                };
+
                 segmentTl.to(orbitState, {
                     ease: 'power2.out',
                     immediateRender: false,
                     onStart: captureStartState,
                     onUpdate: function () {
-                        if (!camSpherical) return;
+                        if (!captured) captureStartState();
+                        const { camSpherical, startPos, startScale, startRotX, targetScale, trianglePositions } = captured;
                         const t = this.progress();
+
                         orbitState.radius = camSpherical.radius;
                         orbitState.phi = THREE.MathUtils.lerp(camSpherical.phi, 0.0001, t); // toward top-down
                         orbitState.theta = THREE.MathUtils.lerp(camSpherical.theta, camSpherical.theta + Math.PI / 2, t); // spin 90° around Y
-                        tempOffset.setFromSpherical(new THREE.Spherical(orbitState.radius, orbitState.phi, orbitState.theta));
-                        // also slide downward on world Y while rotating
-                        const easedDrop = THREE.MathUtils.clamp(Math.pow(t, 4), 0, 1); // ~power4.in
+
+                        const offset = new THREE.Vector3().setFromSpherical(new THREE.Spherical(orbitState.radius, orbitState.phi, orbitState.theta));
+                        const easedDrop = THREE.MathUtils.clamp(Math.pow(t, 4), 0, 1);
                         const yDrop = THREE.MathUtils.lerp(0, -camSpherical.radius, easedDrop);
-                        whatCam.position.copy(whatLookAt).add(tempOffset).add(new THREE.Vector3(0, yDrop, 0));
+                        whatCam.position.copy(whatLookAt).add(offset).add(new THREE.Vector3(0, yDrop, 0));
                         whatCam.lookAt(whatLookAt);
                         whatCam.updateProjectionMatrix();
+
                         whatGroups.forEach((group, index) => {
                             const pos = trianglePositions[index % trianglePositions.length];
                             group.position.copy(startPos[index]).lerp(pos, t);
-                            group.scale.copy(startScale[index]).lerp(new THREE.Vector3(1, 1, 1), t);
+                            group.scale.copy(startScale[index]).lerp(targetScale[index], t);
                             group.rotation.x = THREE.MathUtils.lerp(startRotX[index], THREE.MathUtils.degToRad(90), t);
-                            group.visible = t < 0.999; // hide once the move finishes; restores when scrubbing back
+                            group.visible = t < 0.999;
                         });
                     }
                 }, '<');
+
                 if (phonePortrait && what3D?.lookAtTarget) {
                     segmentTl.to(what3D.lookAtTarget, {
                         x: 0, y: 0, z: 0,
@@ -3676,7 +3769,7 @@ function space() {
             segmentTl.fromTo('#we-are-liminal', { autoAlpha: 0, scale: 0 }, { autoAlpha: 1, scale: 1, duration: 0.5 }, '<');
             segmentTl.fromTo('#we-are-liminal-content', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, '>');
             segmentTl.fromTo('.backBtn-what', { autoAlpha: 0 }, { autoAlpha: 1 }, 1);
-        });        
+        });
         tl.add(() => { // Exit timeline
             let backCalled = false;
             const triggerBack = () => {
