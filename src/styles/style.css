@@ -734,7 +734,7 @@ canvas#space {
 .backBtn {
     padding: 1em 2em;
     border: 1px solid #fff8;
-    color: #fffa;
+    color: #fff;
     text-transform: uppercase;
     position: absolute;
     cursor: pointer;
@@ -742,11 +742,27 @@ canvas#space {
     left: 4rem;
 }
 
-#page-thesis .backBtn,
-#page-what .backBtn {
+.backBtn-thesis,
+.backBtn-what {
     font-size: 0.75rem;
     padding: 1em 2em;
     border: 1px solid;
+}
+
+.backBtn-thesis i, 
+.backBtn-what i {
+    position: absolute;
+    height: 100%;
+    width: 0%;
+    background: #fff4;
+    left: 0;
+    top: 0;
+    transition: width 0.1s ease-out;
+}
+
+.backBtn:hover i {
+    width: 100% !important;
+    background: #fff8 !important;
 }
 
 .guides-container {
@@ -866,6 +882,10 @@ canvas#space {
 
 /* Our Thesis */
 
+.backBtn-thesis {
+    bottom: 4rem;
+    left: 2rem;
+}
 
 .thesis-scroller #segment-3,
 .thesis-scroller #segment-4,
@@ -885,6 +905,7 @@ canvas#space {
     height: calc(50% - 3rem);
     align-content: flex-end;
     text-shadow: 0 0 8px #fff;
+    margin-left: -0.05em;
 }
 
 #thesis-title {
@@ -953,16 +974,17 @@ canvas#space {
 
 /* What we are not */
 
+.backBtn-what {
+    bottom: 4rem;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
 .what-scroller {
     z-index: 1;
 }
 
 .what-scroller .segment {
-    scroll-snap-align: end;
-    scroll-snap-stop: always;
-}
-
-.what-scroller #segment-6 {
     scroll-snap-align: end;
     scroll-snap-stop: always;
 }
@@ -1053,6 +1075,7 @@ canvas#space {
 }
 
 #what-section-4 {
+    height: calc(100dvh - 4rem);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1066,18 +1089,17 @@ canvas#space {
 
 #we-are-liminal {
     transform-origin: 50% 100%;
-    margin-bottom: 2rem;
 }
 
 #we-are-liminal-content {
     max-width: 40ch;
     text-align: center;
     align-content: start !important;
-    margin-top: 4rem;
 }
 
 .liminal-svg {
     position: relative;
+    margin: 4rem;
     will-change: opacity, filter;
 }
 

@@ -1419,28 +1419,9 @@ function space() {
         const active = labelEntry.hoverSources.cube || labelEntry.hoverSources.label;
         labelEntry.element.classList.toggle('hovered', active);
 
-        if (cube) {
-            // Ensure each cube has its own material and stored colors
-            if (!cube.userData.hoverColorSetup) {
-                cube.material = cube.material.clone();
-                cube.material.color = cube.material.color.clone();
-                cube.material.userData.baseColor = cube.material.color.clone();
-                cube.material.userData.hoverColor = new THREE.Color(0xffffff);
-                cube.material.transparent = true;
-                cube.userData.hoverColorSetup = true;
-            }
-            const mat = cube.material;
-            const targetColor = active ? mat.userData.hoverColor : mat.userData.baseColor;
-            const targetScale = active ? 1.2 : 1;
-            gsap.to(cube.scale, { x: targetScale, y: targetScale, z: targetScale, duration: 0.25, ease: 'power2.out' });
-            gsap.to(mat.color, {
-                r: targetColor.r,
-                g: targetColor.g,
-                b: targetColor.b,
-                duration: 0.5,
-                ease: 'power2.out'
-            });
-            gsap.to(mat, { opacity: active ? 1 : 0.85, duration: 0.25, ease: 'power2.out' });
+        if (cube) {            
+            const targetScale = active ? 1.25 : 1;
+            gsap.to(cube.scale, { x: targetScale, y: targetScale, z: targetScale, duration: 0.25, ease: 'power2.out' });            
         }
     }
 
@@ -1976,7 +1957,7 @@ function space() {
 
     function thesis() {
         if (!document.querySelector('body>.backBtn')) {
-            document.body.appendChild(Object.assign(document.createElement('div'), { className: 'backBtn', textContent: 'Continue', style: 'opacity: 0' }));
+            document.body.insertAdjacentHTML('beforeend', "<div class='backBtn backBtn-thesis' style='opacity:0'><i></i><span>Continue</span></div>");
         }
         document.querySelector('#welcome')?.remove();
         document.querySelector('.scroller')?.remove();
@@ -2723,7 +2704,7 @@ function space() {
                 }
             });
             segmentTl.to('.scroll-hint', {
-                autoAlpha: 0
+                autoAlpha: 0, translateY: '-2rem'
             });
             segmentTl.to('#unlock-potential', {
                 translateY: '-2rem', autoAlpha: 0
@@ -2741,6 +2722,11 @@ function space() {
             }, {
                 translateY: '0', autoAlpha: 1
             }, '<+0.1');
+            segmentTl.fromTo('.backBtn-thesis', {
+                translateY: '2rem', autoAlpha: 0
+            },{
+                translateY: 0, autoAlpha: 1
+            }, 0)
 
             segmentTl.to(cam.rotation, {
                 z: THREE.MathUtils.degToRad(450),
@@ -2754,12 +2740,15 @@ function space() {
             }, '<');
 
             tl.add(() => {
-                btn?.addEventListener('click', (e) => back(1, e, thesis3D), { once: true });
+                document.querySelector('.backBtn-thesis').addEventListener('click', (e) => back(1, e, thesis3D), { once: true });
             });
         });
 
         tl.add(() => { // Back the Founder objects timeline
             const nestedTl = gsap.timeline({ paused: true });
+            nestedTl.add(() => {
+                console.log(coneOverlay.material.opacity);
+            }, 0)
             nestedTl.set(coneOverlay.material, { opacity: 0 }, 0);
             nestedTl.set(cylinderOverlay.material, { opacity: 0 }, 0);
             nestedTl.to(cone.rotation, { 
@@ -2798,18 +2787,18 @@ function space() {
             objectsTlForward.fromTo(cylinder.rotation, { y: THREE.MathUtils.degToRad(-60) }, {
                 y: THREE.MathUtils.degToRad(0), ease: 'power4.inOut', duration: 0.1
             }, '<');            
-            objectsTlForward.eventCallback('onComplete', () => nestedTl.play(0));
-
             const objectsTlBackward = gsap.timeline({ paused: true });
             objectsTlBackward.to(coneOverlay.material, { opacity: 0, duration: 0.1 }, '<');
             objectsTlBackward.to(cylinderOverlay.material, { opacity: 0, duration: 0.1 }, '<');
-
-
+            
             let usingBackward = false;
             objectsTlForward.eventCallback('onStart', () => {
                 nestedTl.pause(0).progress(0);
-                gsap.set([coneOverlay.material, cylinderOverlay.material], { opacity: 0 });
             });
+            objectsTlForward.eventCallback('onComplete', () => {
+                nestedTl.play(0);
+            });
+            
             ScrollTrigger.create({
                 trigger: '#segment-5',
                 scroller,
@@ -2830,10 +2819,10 @@ function space() {
                     } else {
                         objectsTlBackward.progress(bProg);
                         objectsTlForward.progress(1); // prevent forward timeline from rewinding while backward is active
-                        if (self.direction < 0 && objectsTlBackward.progress() >= 1) {
-                            usingBackward = false;
-                            objectsTlForward.progress(fProg);
-                        }
+                        // if (self.direction < 0 && objectsTlBackward.progress() >= 1) {
+                        //     usingBackward = false;
+                        //     objectsTlForward.progress(fProg);
+                        // }
                     }
                 }
             });
@@ -2858,15 +2847,15 @@ function space() {
                     invalidateOnRefresh: true,                    
                     onLeave: triggerBack
                 }
-            });
+            });            
+            segmentTl.to('.backBtn-thesis i', {
+                width: '100%', background: '#fff8', duration: 1
+            }, 0);
             segmentTl.to('#page-thesis', {
-                scale: 0, autoAlpha: 0, ease: 'power4.out'
-            });
+                scale: 0, autoAlpha: 0, ease: 'power4.in', duration: 0.8
+            }, '<+0.1');
             segmentTl.to('canvas#thesis-canvas', {
-                scale: 0.5, autoAlpha: 0, ease: 'power4.out'
-            }, '<');
-            segmentTl.to('body>.backBtn', {
-                autoAlpha: 0, ease: 'power4.out'
+                scale: 0.5, autoAlpha: 0, ease: 'power4.in', duration: 0.8
             }, '<');
         });
     };
@@ -2876,7 +2865,7 @@ function space() {
     function what() {
         const page = document.querySelector('#page-what');
         if (!document.querySelector('body>.backBtn')) {
-            document.body.appendChild(Object.assign(document.createElement('div'), { className: 'backBtn', textContent: 'Continue', style: 'opacity: 0' }));
+            document.body.insertAdjacentHTML('beforeend', "<div class='backBtn backBtn-what' style='opacity:0'><i></i><span>Continue</span></div>");
         }
 
         // show page
@@ -3465,7 +3454,7 @@ function space() {
         // Definition timeline    
         tl.add(() => { // Append Scroller
             document.body.appendChild(scroller);
-            appendSegments(5);
+            appendSegments(6);
             setupSectionScrollSync();
             bindSectionClicks();
             setScrollerInteractive();
@@ -3678,79 +3667,45 @@ function space() {
                     }, '<');
                 }
             }
-            const nestedTl = gsap.timeline({ paused: true });
-            nestedTl.set('#what-section-4', {
-                autoAlpha: 1, onComplete: () => {
-                    const el = document.querySelector('#what-section-4');
-                    if (el) {
-                        el.style.removeProperty('transform');
-                        el.style.removeProperty('scale');
-                    }
-                }
-            });
-            nestedTl.fromTo('.liminal-svg', { scale: 0 }, { scale: 1, duration: 1.5, ease: 'power4.out' });
-            nestedTl.fromTo('.liminal-svg>div', { autoAlpha: 0 }, { autoAlpha: 1, duration: 1.5 }, '<');
-            nestedTl.fromTo('.liminal-svg>svg', { autoAlpha: 0 }, { autoAlpha: 1, duration: 2.5, ease: 'power4.out' }, '<+0.1');
-            nestedTl.fromTo('#we-are-liminal', { autoAlpha: 0, scale: 0 }, { autoAlpha: 1, scale: 1, duration: 0.5 }, '<');
-            nestedTl.fromTo('#we-are-liminal-content', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, '>');
-            nestedTl.fromTo('.backBtn', { autoAlpha: 0 }, { autoAlpha: 1 }, '>');
-
-            segmentTl.eventCallback('onStart', () => {
-                gsap.set('#what-section-4', { autoAlpha: 0, scale: 0, clearProps: 'transform,opacity' });
-            });
-            segmentTl.eventCallback('onComplete', () => nestedTl.play(0));
-            segmentTl.eventCallback('onReverseComplete', () => {
-                nestedTl.pause(0);
-                gsap.set('#what-section-4', { autoAlpha: 0, scale: 0, clearProps: 'transform,opacity' });
-            });
-
-            // Scrub fade-out on reverse: tie nested fade-out to segment progress (only visible when scrolling back up)
-            const fadeBackTl = gsap.timeline({ paused: true, defaults: { ease: 'none' } });
-            fadeBackTl.to('#what-section-4', {
-                autoAlpha: 0,
-                scale: 0,
-                duration: 3,
-                onComplete: () => gsap.set('#what-section-4', { clearProps: 'transform,opacity' })
-            }, '<');
-            let prevProg = 0;
-
-            segmentTl.eventCallback('onUpdate', function () {
-                const prog = segmentTl.progress();
-                if (prog < prevProg) {
-                    fadeBackTl.progress(1 - prog);
-                } else {
-                    fadeBackTl.progress(0);
-                }
-                // Tolerance: if the playhead nearly reaches the end, fire the nested timeline
-                if (prog >= 0.98 && prog > prevProg) {
-                    nestedTl.play(0);
-                }
-                // Tolerance reset: if playhead is near the start, force-clear to avoid flashes on next forward scroll
-                if (prog <= 0.02) {
-                    nestedTl.pause(0);
-                    gsap.set('#what-section-4', { autoAlpha: 0, scale: 0, clearProps: 'transform,opacity' });
-                }
-                prevProg = prog;
-            });
+            segmentTl.fromTo('#what-section-4', { autoAlpha: 0, scale: 0 }, {
+                autoAlpha: 1, scale: 1, duration: 0
+            }, '>-0.2');
+            segmentTl.fromTo('.liminal-svg', { scale: 0 }, { scale: 1, duration: 1.5, ease: 'power4.out' }, '<');
+            segmentTl.fromTo('.liminal-svg>div', { autoAlpha: 0.8 }, { autoAlpha: 1, duration: 1.5 }, '<');
+            segmentTl.fromTo('.liminal-svg>svg', { autoAlpha: 0.8 }, { autoAlpha: 1, duration: 2.5, ease: 'power4.out' }, '<+0.1');
+            segmentTl.fromTo('#we-are-liminal', { autoAlpha: 0, scale: 0 }, { autoAlpha: 1, scale: 1, duration: 0.5 }, '<');
+            segmentTl.fromTo('#we-are-liminal-content', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, '>');
+            segmentTl.fromTo('.backBtn-what', { autoAlpha: 0 }, { autoAlpha: 1 }, 1);
         });        
-        tl.add(() => {
-            btn?.addEventListener('click', (e) => {
-                back(2, e, what3D);
-            }, { once: true });
-        });
-        tl.add(() => {
-            const target = page?.querySelector('.backBtn') ?? page;
-            const triggerBackOnScroll = (evt) => {
-                window.removeEventListener('wheel', triggerBackOnScroll, wheelOpts);
-                window.removeEventListener('touchmove', triggerBackOnScroll, touchOpts);
-                back(2, { currentTarget: target, originalEvent: evt }, what3D);
+        tl.add(() => { // Exit timeline
+            let backCalled = false;
+            const triggerBack = () => {
+                if (backCalled) return;
+                backCalled = true;
+                const target = page?.querySelector('.backBtn') ?? page;
+                back(2, { currentTarget: target }, what3D);
             };
-            const wheelOpts = { passive: true, once: true, capture: true };
-            const touchOpts = { passive: true, once: true, capture: true };
-            window.addEventListener('wheel', triggerBackOnScroll, wheelOpts);
-            window.addEventListener('touchmove', triggerBackOnScroll, touchOpts);
+            const segmentTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#segment-6',
+                    scroller,
+                    start: 'top bottom',
+                    end: 'top center',
+                    scrub: true,
+                    invalidateOnRefresh: true,
+                    onLeave: triggerBack
+                }
+            });
+            segmentTl.to('.backBtn-what i', {
+                width: '100%', background: '#fff8', duration: 1
+            }, 0);
+            segmentTl.to('#page-what', {
+                scale: 0, autoAlpha: 0, ease: 'power4.in', duration: 0.8
+            }, '<+0.1');
+            segmentTl.to('canvas#what-canvas', {
+                scale: 0.5, autoAlpha: 0, ease: 'power4.in', duration: 0.8
+            }, '<');
         });
-
     };
 
     // =============================== PROFILE
@@ -4527,7 +4482,7 @@ function space() {
 
     // Back Button
     function back(ref, e, threeInstance) {
-        const page = e.currentTarget.closest('.page');
+        const page = e?.currentTarget?.closest?.('.page') || document.querySelector('.page:not([hidden])') || document.querySelector('.page');
         const scroller = document.querySelector('.scroller')
 
         const userId = localStorage.getItem('userId');
@@ -4570,17 +4525,19 @@ function space() {
         const tl = gsap.timeline({
             defaults: { ease: 'power2.out' },
             onComplete() {
-                document.querySelectorAll('body > .backBtn').forEach(btn => btn.remove());
                 ScrollTrigger.getAll().forEach(st => {
                     const scrollEl = st.scroller || st.vars?.scroller || ScrollTrigger.defaultScroller || window;
                     if (scrollEl === scroller || scroller?.contains(st.trigger)) st.kill();
                 });
-                gsap.killTweensOf(page);
-                gsap.killTweensOf(page.querySelectorAll('*'));
-                gsap.set(page.querySelectorAll('*'), { clearProps: 'all' });
-                gsap.set(page, { clearProps: 'all' });
+                if (page) {
+                    gsap.killTweensOf(page);
+                    const children = page.querySelectorAll('*');
+                    gsap.killTweensOf(children);
+                    gsap.set(children, { clearProps: 'all' });
+                    gsap.set(page, { clearProps: 'all' });
+                    page.hidden = true;
+                }
                 gsap.to('#logout-btn', { autoAlpha: 0.5, zIndex: 2, duration: 1 }, 0);
-                page.hidden = true;
                 scroller?.remove();
                 window.scrollTo(0, 0);
                 threeInstance?.stop?.();
@@ -4594,6 +4551,14 @@ function space() {
         tl.to(page, {
             autoAlpha: 0, duration: 1
         }, 0);
+        const bodyBackBtns = document.querySelectorAll('body > .backBtn');
+        if (bodyBackBtns.length) {
+            tl.to(bodyBackBtns, {
+                autoAlpha: 0,
+                duration: 0.3,
+                onComplete: () => bodyBackBtns.forEach(btn => btn.remove())
+            }, 0);
+        }
         if (instanceCanvases.length) {
             tl.to(instanceCanvases, {
                 autoAlpha: 0, duration: 1
