@@ -4551,6 +4551,11 @@ function space() {
     // Lenis helper for the hidden scroller
     function initLenisForScroller(wrapper) {
         if (!wrapper) return null;
+        if (phonePortrait) {
+            lenis?.destroy?.();
+            lenis = null;
+            return null;
+        }
         if (!wrapper.querySelector('.smoother-content')) {
             const content = document.createElement('div');
             content.className = 'smoother-content';
