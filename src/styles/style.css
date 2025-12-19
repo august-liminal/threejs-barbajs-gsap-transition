@@ -889,6 +889,35 @@ canvas#space {
     left: 2rem;
 }
 
+.label-thesis {
+    filter: none;
+}
+
+.label-thesis {
+    color: #fff;
+    min-width: 24ch;
+    position: relative;
+    padding: 0.25rem 0;
+}
+
+.label-thesis .content {
+    position: absolute;
+    text-transform: none;
+    top: 2.5rem;
+    left: 0;
+}
+
+.label-thesis {
+    border-width: 0 0 1px 0;
+    opacity: 0;
+}
+
+.thesis-scroller div {
+    display: flex;
+    flex-direction: column;
+    gap: 10rem;
+}
+
 .thesis-scroller #segment-3,
 .thesis-scroller #segment-4,
 .thesis-scroller #segment-5 {
@@ -984,6 +1013,12 @@ canvas#space {
 
 .what-scroller {
     z-index: 1;
+}
+
+.what-scroller div {
+    display: flex;
+    flex-direction: column;
+    gap: 10rem;
 }
 
 .what-scroller .segment {
@@ -1108,6 +1143,7 @@ canvas#space {
     max-width: 40ch;
     text-align: center;
     align-content: start !important;
+    padding-bottom: 2rem;
 }
 
 .liminal-svg {

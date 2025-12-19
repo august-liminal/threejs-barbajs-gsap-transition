@@ -147,8 +147,8 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             :root { font-size: 14px; --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); }
             body { height: 100dvh; box-sizing: border-box; }
 
-            .scroller { z-index: 1; }
-            .scroller .segment {scroll-snap-align: end; scroll-snap-stop: always; }
+            .scroller { z-index: 1; scroll-snap-type: y mandatory;}
+            .scroller .segment {height: 100dvh !important; scroll-snap-align: end !important; scroll-snap-stop: always !important; }
             
 
             .text-line { font-size: 1rem; text-align: center; inset: -1.5rem 0px auto; }
@@ -1977,6 +1977,7 @@ function space() {
             };
 
             const scene = new THREE.Scene();
+            // scene.add(new THREE.AxesHelper(10));
             const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
             const camera = new THREE.PerspectiveCamera(
                 30,
@@ -2033,6 +2034,7 @@ function space() {
                 emissiveIntensity: 1.2
             });
             const core = new THREE.Mesh(coreGeometry, coreMaterial);
+            core.name = 'core';
             core.layers.enable(BLOOM_SCENE);
             scene.add(core);
 
@@ -2042,6 +2044,34 @@ function space() {
             orbLight.shadow.mapSize.set(1024, 1024);
             orbLight.shadow.bias = -0.0005;
             core.add(orbLight);
+
+            const orbRepeatMaterial = coreMaterial.clone();
+            orbRepeatMaterial.emissive = new THREE.Color(0x222222);
+            orbRepeatMaterial.emissiveIntensity = 1.6;
+            orbRepeatMaterial.transparent = true;
+            const orbRepeat = new THREE.Mesh(new THREE.SphereGeometry(0.7, 64, 64), orbRepeatMaterial);
+            orbRepeat.name = 'orbRepeat';
+            orbRepeat.layers.enable(BLOOM_SCENE);
+            orbRepeat.position.set(-10, 10, 10);            
+            scene.add(orbRepeat);
+
+            const orbScientistMaterial = coreMaterial.clone();
+            orbScientistMaterial.emissive = new THREE.Color(0x222222);
+            orbScientistMaterial.emissiveIntensity = 1.6;
+            orbScientistMaterial.transparent = true;
+            const orbScientist = new THREE.Mesh(new THREE.SphereGeometry(0.3, 64, 64), orbScientistMaterial);
+            orbScientist.name = 'orbScientist';
+            orbScientist.layers.enable(BLOOM_SCENE);
+            orbScientist.position.set(10, 30, 15);            
+            scene.add(orbScientist);
+
+            const thesisLabelRenderer = new CSS2DRenderer();
+            thesisLabelRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            thesisLabelRenderer.domElement.id = 'thesis-label-container';
+            thesisLabelRenderer.domElement.style.position = 'absolute';
+            thesisLabelRenderer.domElement.style.inset = '0';
+            thesisLabelRenderer.domElement.style.pointerEvents = 'none';
+            document.body.appendChild(thesisLabelRenderer.domElement);
 
             const pointLight = new THREE.PointLight(0xffffff, 100000, 0, 2)
             pointLight.position.set(-5, -50, 40);
@@ -2102,6 +2132,57 @@ function space() {
             cylinderOverlay.position.set(0, 16, 0);
             scene.add(cylinderOverlay);
 
+            const orbLabels = [];
+            const thesisConnectorMaterial = new THREE.LineDashedMaterial({
+                color: 0xffffff,
+                scale: 1,
+                dashSize: 0.1,
+                gapSize: 0.05,
+                transparent: true,
+                opacity: 0.5
+            });            
+            const attachOrbLabel = (target, text, offset = [2, 1.2, 0], anchor = [0, 0.5]) => {
+                const targetName = target?.name || 'target';
+                const div = Object.assign(document.createElement('div'), {
+                    className: `label label-thesis`,
+                    id: `label-${targetName}`,
+                    innerHTML: `<span>${text}</span><span class='content'></span>`
+                });
+                const label = new CSS2DObject(div);
+                label.center.set(...anchor);
+                scene.add(label);
+
+                const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+                const line = new THREE.Line(geometry, thesisConnectorMaterial);
+                line.name = `thesis-connector-${targetName}`;
+                line.userData.thesisConnector = true;
+                line.userData.excludeBloom = true;
+                target.add(line);
+
+                const entry = {
+                    target,
+                    label,
+                    element: div,
+                    line,
+                    positions: geometry.attributes.position,
+                    offset: new THREE.Vector3().fromArray(offset)
+                };
+                orbLabels.push(entry);
+                return entry;
+            };
+
+            const coreLabelEntry = attachOrbLabel(core, 'Topflight Founder', [2.5, 0, 0], [1, 1]);            
+            const repeatLabelEntry = attachOrbLabel(orbRepeat, 'Repeat Founder', [1.5, 0, 0], [1, 1]);
+            const scientistLabelEntry = attachOrbLabel(orbScientist, 'Entrepreneurial Scientist', [0.9, 0, 0], [1, 1]);
+
+            const coreContent = coreLabelEntry.element.querySelector('.content');
+            const repeatContent = repeatLabelEntry.element.querySelector('.content');
+            const scientistContent = scientistLabelEntry.element.querySelector('.content');
+            if (coreContent) coreContent.textContent = 'Founders with >$1B in exits';
+            if (repeatContent) repeatContent.textContent = 'Founders who have raised >$5M in previous startup(s)';
+            if (scientistContent) scientistContent.textContent = 'Founders working on breakthrough technologies';
+            thesisLabelRenderer.render(scene, camera); // ensure labels exist in DOM before timelines
+
             const shellGeometry = new THREE.SphereGeometry(12, 80, 80);
 
             shellGeometry.computeTangents?.();
@@ -2117,7 +2198,7 @@ function space() {
             scene.add(leftShell);
             const rightShell = new THREE.Mesh(shellGeometry.clone(), shellMaterial.clone());
             rightShell.position.set(30, 0, -4);
-            scene.add(rightShell);
+            scene.add(rightShell);           
 
             const renderScene = new RenderPass(scene, camera);
 
@@ -2178,8 +2259,8 @@ function space() {
 
             const clock = new THREE.Clock();
             let running = false;
-
-            // scene.add(new THREE.AxesHelper(10));
+            const tempWorld = new THREE.Vector3();
+            const tempEnd = new THREE.Vector3();
 
             function resize() {
                 const width = canvas.clientWidth;
@@ -2190,17 +2271,40 @@ function space() {
                 camera.updateProjectionMatrix();
                 bloomComposer.setSize(width, height);
                 finalComposer.setSize(width, height);
+                thesisLabelRenderer.setSize(width, height);
             }
 
             window.addEventListener('resize', resize);
             resize();
 
+            const tempHiddenLines = [];
             function renderFrame() {
+                tempHiddenLines.length = 0;
+                scene.traverse(obj => {
+                    if (obj.isLine && obj.userData?.excludeBloom) {
+                        obj.visible = false;
+                        tempHiddenLines.push(obj);
+                    }
+                });
+                orbLabels.forEach(({ target, label, line, positions, offset }) => {
+                    target.getWorldPosition(tempWorld);
+                    tempEnd.copy(tempWorld).add(offset);
+                    label.position.copy(tempEnd);
+                    const startLocal = target.worldToLocal(tempWorld.clone());
+                    const endLocal = target.worldToLocal(tempEnd.clone());
+                    positions.setXYZ(0, startLocal.x, startLocal.y, startLocal.z);
+                    positions.setXYZ(1, endLocal.x, endLocal.y, endLocal.z);
+                    positions.needsUpdate = true;
+                    line.computeLineDistances();
+                });
                 scene.traverse(darkenNonBloomed);
                 bloomComposer.render();
                 scene.traverse(restoreMaterial);
+                tempHiddenLines.forEach(l => { l.visible = true; });
                 finalComposer.render();
+                thesisLabelRenderer.render(scene, camera);
             }
+
 
             function start() {
                 if (running) return;
@@ -2226,21 +2330,34 @@ function space() {
                 camera,
                 scene,
                 renderer,
-                objects: { core, leftShell, rightShell, orangeLight, pointLight, cone, cylinder, coneOverlay, cylinderOverlay },
+                labelRenderer: thesisLabelRenderer,
+                labels: {
+                    core: coreLabelEntry?.element,
+                    orbRepeat: repeatLabelEntry?.element,
+                    orbScientist: scientistLabelEntry?.element
+                },
+                objects: { core, orbRepeat, orbScientist, leftShell, rightShell, orangeLight, pointLight, cone, cylinder, coneOverlay, cylinderOverlay },
                 dispose() {
                     stop();
                     window.removeEventListener('resize', resize);
+                    thesisLabelRenderer.domElement?.remove();
                     renderer.dispose();
                     bloomRenderTarget.dispose();
                     finalRenderTarget.dispose();
                     coreGeometry.dispose();
                     [leftShell, rightShell].forEach(mesh => mesh.geometry.dispose());
                     coreMaterial.dispose();
+                    orbRepeatMaterial.dispose();
+                    orbScientistMaterial.dispose();
                     shellMaterial.dispose();
                     coneGeometry.dispose();
                     coneMaterial.dispose();
                     cylinderGeometry.dispose();
                     cylinderMaterial.dispose();
+                    orbLabels.forEach(({ line }) => {
+                        line.geometry?.dispose?.();
+                    });
+                    thesisConnectorMaterial.dispose();
                     mixPass.material.dispose();
                     bloomPass.dispose?.();
                     scene.environment = null;
@@ -2425,6 +2542,8 @@ function space() {
         // ========== SCROLL TRIGGER
 
         const cam = thesis3D?.camera;
+        const orbRepeat = thesis3D?.objects?.orbRepeat;
+        const orbScientist = thesis3D?.objects?.orbScientist;
         const leftShell = thesis3D?.objects?.leftShell;
         const rightShell = thesis3D?.objects?.rightShell;
         const orangeLight = thesis3D?.objects?.orangeLight;
@@ -2433,6 +2552,19 @@ function space() {
         const coneOverlay = thesis3D?.objects?.coneOverlay;
         const cylinderOverlay = thesis3D?.objects?.cylinderOverlay;
 
+        const labelCoreEl = document.getElementById('label-core');
+        const labelRepeatEl = document.getElementById('label-orbRepeat');
+        const labelScientistEl = document.getElementById('label-orbScientist');
+        const connectors = [];
+        thesis3D.scene.traverse(o => {
+            if (o.isLine && o.userData?.thesisConnector) {
+                // optional: give each its own material so fades are independent
+                o.material = o.material.clone();
+                connectors.push(o);
+            }
+        });
+
+        const [coreLine, repeatLine, scientistLine] = connectors;
 
         tl.add(() => { // Our Core Belief timeline       
 
@@ -2593,11 +2725,17 @@ function space() {
             segmentTl.fromTo('#who-what', {
                 translateY: '5rem', autoAlpha: 0
             }, {
-                translateY: 0, autoAlpha: 1
+                translateY: 0, autoAlpha: 1, duration: 0.2
             }, '<+0.3');
             segmentTl.to('#who-what-content', {
-                autoAlpha: 1
+                autoAlpha: 1, duration: 0.2
             }, '>');
+            if (labelCoreEl) segmentTl.to(labelCoreEl, { opacity: 1, duration: 0.2 }, '>');
+            segmentTl.fromTo(coreLine.material, { opacity: 0}, { opacity: 0.5, duration: 0.2, ease: 'power1.out' }, '<');
+            if (labelRepeatEl) segmentTl.to(labelRepeatEl, { opacity: 1, duration: 0.2 }, '<+0.1');
+            segmentTl.fromTo(repeatLine.material, { opacity: 0 }, { opacity: 0.5, duration: 0.2, ease: 'power1.out' }, '<');
+            if (labelScientistEl) segmentTl.to(labelScientistEl, { opacity: 1, duration: 0.2 }, '<+0.1');
+            segmentTl.fromTo(scientistLine.material, { opacity: 0 }, { opacity: 0.5, duration: 0.2, ease: 'power1.out' }, '<');
             if (cam && leftShell && rightShell) {
                 segmentTl.to(cam.rotation, {
                     z: THREE.MathUtils.degToRad(225),
@@ -2605,7 +2743,7 @@ function space() {
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, 0);
                 segmentTl.to(cam.position, {
-                    x: 5, y: 5, z: 100,
+                    x: 2.5, y: 3.5, z: 50,
                     ease: 'power2.out',
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, '<');
@@ -2615,6 +2753,14 @@ function space() {
                 }, '<');
                 segmentTl.to(rightShell.position, {
                     x: 0, z: -100,
+                    ease: 'power2.out'
+                }, '<');
+                segmentTl.to(orbRepeat.position, {
+                    x: 1, y: 4,  z: 0,
+                    ease: 'power2.out'
+                }, '<');
+                segmentTl.to(orbScientist.position, {
+                    x: 3, y: 7.5, z: 0,
                     ease: 'power2.out'
                 }, '<');
                 segmentTl.to(orangeLight.position, {
@@ -2634,11 +2780,15 @@ function space() {
                     trigger: '#segment-4',
                     scroller,
                     start: 'top bottom',
-                    end: 'top center',
+                    end: 'bottom bottom',
                     scrub: true,
                     invalidateOnRefresh: true,
                 }
             });
+            segmentTl.to([labelCoreEl, labelRepeatEl, labelScientistEl], {opacity: 0, duration: 0.1}, 0);
+            segmentTl.to(coreLine.material, { opacity: 0, duration: 0.1 }, 0);
+            segmentTl.to(repeatLine.material, { opacity: 0, duration: 0.1 }, 0);
+            segmentTl.to(scientistLine.material, { opacity: 0, duration: 0.1 }, 0);
             segmentTl.to('#who-what', {
                 translateY: '-2rem', autoAlpha: 0
             }, 0);
@@ -2647,7 +2797,7 @@ function space() {
             }, '<+0.1');
             segmentTl.to('#who-what-content', {
                 translateY: '-2rem', autoAlpha: 0
-            }, '<+0.1');
+            }, 0.1);
             segmentTl.fromTo('#unlock-potential', {
                 translateY: '2rem', autoAlpha: 0
             }, {
@@ -2681,6 +2831,8 @@ function space() {
                     intensity: 0,
                     ease: 'power2.out'
                 }, '<');
+                segmentTl.to(orbScientist.material, {opacity: 0, duration: 0.1}, '>');
+                segmentTl.to(orbRepeat.material, { opacity: 0, duration: 0.1 }, '<');
             }
         });
 
@@ -2702,7 +2854,7 @@ function space() {
                     trigger: '#segment-5',
                     scroller,
                     start: 'top bottom',
-                    end: 'top center',
+                    end: 'bottom bottom',
                     scrub: true,
                     invalidateOnRefresh: true
                 }
@@ -2807,7 +2959,7 @@ function space() {
                 trigger: '#segment-5',
                 scroller,
                 start: 'top bottom',
-                end: 'top center',
+                end: 'bottom bottom',
                 scrub: true,
                 invalidateOnRefresh: true,
                 onUpdate: (self) => {
@@ -2846,7 +2998,7 @@ function space() {
                     trigger: '#segment-6',
                     scroller,
                     start: 'top bottom',
-                    end: 'top top',
+                    end: 'bottom bottom',
                     scrub: true,
                     invalidateOnRefresh: true,
                     onLeave: triggerBack
@@ -2857,7 +3009,7 @@ function space() {
             }, 0);
             segmentTl.to('#page-thesis', {
                 scale: 0, autoAlpha: 0, ease: 'power4.in', duration: 0.8
-            }, '<+0.1');
+            }, '<');
             segmentTl.to('canvas#thesis-canvas', {
                 scale: 0.5, autoAlpha: 0, ease: 'power4.in', duration: 0.8
             }, '<');
@@ -3784,7 +3936,7 @@ function space() {
                     trigger: '#segment-6',
                     scroller,
                     start: 'top bottom',
-                    end: 'top center',
+                    end: 'bottom bottom',
                     scrub: true,
                     invalidateOnRefresh: true,
                     onLeave: triggerBack
@@ -3795,7 +3947,7 @@ function space() {
             }, 0);
             segmentTl.to('#page-what', {
                 scale: 0, autoAlpha: 0, ease: 'power4.in', duration: 0.8
-            }, '<+0.1');
+            }, '<');
             segmentTl.to('canvas#what-canvas', {
                 scale: 0.5, autoAlpha: 0, ease: 'power4.in', duration: 0.8
             }, '<');
