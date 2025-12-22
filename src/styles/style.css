@@ -912,12 +912,6 @@ canvas#space {
     opacity: 0;
 }
 
-.thesis-scroller div {
-    display: flex;
-    flex-direction: column;
-    gap: 10rem;
-}
-
 .thesis-scroller #segment-3,
 .thesis-scroller #segment-4,
 .thesis-scroller #segment-5 {
@@ -930,6 +924,7 @@ canvas#space {
 
 #page-thesis .scroll-hint {
     mix-blend-mode: difference;
+    text-shadow: 0 0 8px #0004;
 }
 
 #liminal-title {
@@ -1013,12 +1008,6 @@ canvas#space {
 
 .what-scroller {
     z-index: 1;
-}
-
-.what-scroller div {
-    display: flex;
-    flex-direction: column;
-    gap: 10rem;
 }
 
 .what-scroller .segment {
