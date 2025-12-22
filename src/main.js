@@ -4022,6 +4022,9 @@ function space() {
             segmentTl.fromTo('#we-are-liminal-content', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, '>');
             segmentTl.fromTo('.backBtn-what', { autoAlpha: 0 }, { autoAlpha: 1 }, 1);
         });
+        tl.add(() => {
+            document.querySelector('.backBtn-what').addEventListener('click', (e) => back(2, e, what3D), { once: true });
+        });
         tl.add(() => { // Exit timeline
             let backCalled = false;
             const triggerBack = () => {
