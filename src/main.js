@@ -2338,9 +2338,12 @@ function space() {
                     target.getWorldPosition(tempWorld);
                     tempEnd.copy(tempWorld).add(offset);
                     label.position.copy(tempEnd);
+
+                    // start at label anchor
                     label.getWorldPosition(tempLabel);
 
-                    const radius = getSurfaceOffset(target, tempEnd).distanceTo(tempWorld); // already scaled
+                    // end on orb surface along line toward orb center
+                    const radius = getSurfaceOffset(target, tempLabel).distanceTo(tempWorld);
                     tempDir.copy(tempLabel).sub(tempWorld);
                     const len = tempDir.length() || 1;
                     const surfacePoint = tempWorld.clone().add(tempDir.multiplyScalar(radius / len));
