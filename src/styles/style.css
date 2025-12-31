@@ -36,7 +36,7 @@ body.is-transitioning {
 
 .text-4xl {
     font-family: 'Space Grotesk';
-    font-size: 8rem;
+    font-size: 6rem;
     line-height: 1em;
 }
 
@@ -55,6 +55,7 @@ body.is-transitioning {
 .text-md {
     font-family: 'Space Mono';
     font-size: 1rem;
+    letter-spacing: 0.02em;
     line-height: 1.5em;
     max-width: 32vw;
 }
@@ -486,10 +487,21 @@ main#liminalspace {
     padding: 4rem;
 }
 
-#liminalspace .scroll-hint {
-    color: #fff8;
+.guides-container {
+    pointer-events: none;
+}
+
+.scroll-hint {
+    color: #fff6;
+    font-family: 'Space Mono';
     text-transform: uppercase;
-    font-size: 0.825rem;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+    mix-blend-mode: difference;
+    position: fixed;
+    z-index: 10;
+    bottom: 4rem;
+    left: 4rem;
 }
 
 div:has(>#user_message) {
@@ -640,7 +652,54 @@ div:has(>#user_message) {
     z-index: 10;
     text-transform: uppercase;
     opacity: 0.5;
-    font-size: 0.825rem;
+    font-size: 1rem;
+    transition: color 0.2s, opacity 0.2s, filter 0.2s
+}
+
+#logout-btn::after {
+    content: '';
+    background: #fff;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 50%;
+    height: 50%;
+    opacity: 0;
+    transition: width 0.2s, height 0.2s, opacity 0.2s;
+}
+
+#logout-btn:hover {
+    color: #000;
+    opacity: 1;
+    filter: drop-shadow(0 0 4px #fff);
+}
+
+#logout-btn:hover::after {
+    width: 100%;
+    height: 100%;
+    opacity: 1;
+    z-index: -1;
+}
+
+#liminalspace::before{
+    content: '';
+    background: #000;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    z-index: 9;
+    pointer-events: none;
+    transition: opacity 1s;
+}
+
+#liminalspace:has(#logout-btn:hover)::before {    
+    opacity: 1;
+    transition: opacity 1s;
 }
 
 #welcome .inner-content {
@@ -648,8 +707,8 @@ div:has(>#user_message) {
     flex-direction: column;
     justify-content: flex-start;
     height: 100%;
-    bottom: 0;
     text-shadow: 0 0 64px #000, 0 0 24px #000;
+    padding-bottom: 2rem;
 }
 
 #welcome h1 {
@@ -891,6 +950,7 @@ canvas#space {
 
 .label-thesis {
     filter: none;
+    font-size: 1rem;
 }
 
 .label-thesis {
@@ -922,15 +982,10 @@ canvas#space {
     height: 25dvh;
 }
 
-#page-thesis .scroll-hint {
-    mix-blend-mode: difference;
-    text-shadow: 0 0 8px #0004;
-}
-
 #liminal-title {
     height: calc(50% - 3rem);
+    font-size: 6.25rem;
     align-content: flex-end;
-    text-shadow: 0 0 8px #fff;
     margin-left: -0.05em;
 }
 
@@ -950,12 +1005,14 @@ canvas#space {
 #liminal-desc {
     flex: 1;
     align-content: flex-end;
-    margin-bottom: 1rem;
+    margin-bottom: 4rem;
     max-width: 48ch;
+    font-size: 2rem;
+    letter-spacing: -0.005em;
 }
 
 #who-what {
-    margin-top: 4rem;
+    margin-top: 3rem;
     align-content: flex-end;
     margin-bottom: 4rem;
 }
@@ -964,6 +1021,22 @@ canvas#space {
     flex: 1;
     align-content: flex-end;
     margin-bottom: 1rem;
+    justify-items: left;
+}
+#unlock-potential .flex-col {
+    display: flex;
+    flex-direction: column;
+    font-family: 'Space Mono';
+        font-size: 2rem;
+        line-height: 1.25em;
+        letter-spacing: -0.005em;
+}
+
+#unlock-potential .flex-col .flex-row {
+    display: flex;
+    flex-direction: row;
+    gap: 1em;
+    justify-content: space-between;
 }
 
 #unlock-potential-content {
@@ -971,11 +1044,11 @@ canvas#space {
 }
 
 #whitespaces {
-    margin-top: 4rem;
-    margin-bottom: 2rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 0.4em;
+    margin-bottom: 2rem;    
+}
+
+#whitespaces .text-lg {
+    margin-bottom: 1rem;
 }
 
 #whitespaces span {
@@ -1016,7 +1089,7 @@ canvas#space {
 }
 
 .what-scroller #segment-5 {
-    height: 300dvh;
+    height: 1000dvh;
     scroll-snap-align: none;
     scroll-snap-stop: normal;
 }
@@ -1045,6 +1118,7 @@ canvas#space {
     transition: flex 0.3s ease;
     position: relative;
     pointer-events: auto;
+    overflow: hidden;
 }
 
 #page-what>.section-container .section>.gap {
@@ -1081,7 +1155,7 @@ canvas#space {
 }
 
 #page-what>.section-container .section.active {
-    flex: 2 1 0;
+    flex: 5 1 0;
 }
 
 #page-what>.section-container .section.active>div {
@@ -1091,13 +1165,8 @@ canvas#space {
 
 #what-title {
     position: fixed;
-}
-
-#vc,
-#vs,
-#acc {
-    margin-top: 2rem;
-}
+    font-family: 'Space Grotesk';
+} 
 
 #vc-def,
 #vs-def,
@@ -1795,7 +1864,7 @@ main[data-barba-namespace="portfolio"] {
 }
 
 
-/*LENIS*/
+/*-------------------LENIS-------------------*/
 html.lenis,
 html.lenis body {
     height: auto;

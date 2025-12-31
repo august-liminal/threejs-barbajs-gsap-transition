@@ -1585,8 +1585,7 @@ function space() {
         });
         gsap.to('#logout-btn', {
             autoAlpha: 0,
-            duration: 2,
-            zIndex: -1
+            duration: 3
         }, 0);
         cubeLabels.forEach(({ element, line }) => {
             gsap.to(element, { duration: 0.5, opacity: 0, ease: 'power2.out' });
@@ -1926,7 +1925,8 @@ function space() {
                 scrubTl.to(camera.rotation, {
                     x: THREE.MathUtils.degToRad(10), duration: 3, ease: 'power4.inOut', onUpdate: () => camera.updateProjectionMatrix()
                 }, 0);
-                scrubTl.to('#logout-btn', { autoAlpha: 0.5, zIndex: 9 }, '>')
+                scrubTl.to('#logout-btn', { autoAlpha: 0.5, zIndex: 9 }, '>');
+                scrubTl.to('.scroll-hint', { autoAlpha: 0, duration: 1 }, '<');
             }, '<');
         })
     }
@@ -1938,6 +1938,7 @@ function space() {
         root.querySelector('#welcome').remove();
 
         gsap.set(camera.position, { x: 0, y: 0, z: 150 });
+        gsap.set('.scroll-hint', { autoAlpha: 0}, '>');
         gsap.set(camera.rotation, {
             x: THREE.MathUtils.degToRad(10),
             onUpdate: () => camera.updateProjectionMatrix()
@@ -2481,7 +2482,7 @@ function space() {
         gsap.set(scientistLine.material, { opacity: 0 });
 
         // Set initial states
-        tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '8rem', translateY: '2rem', autoAlpha: 0, top: phonePortrait ? 'calc(100dvh - 8rem)' : 'calc(100dvh - 16rem)' });
+        tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '6rem', translateY: '2rem', autoAlpha: 0, top: phonePortrait ? 'calc(100dvh - 8rem)' : 'calc(100dvh - 12rem)' });
         tl.set('#page-thesis .section>*', { visibility: 'hidden' });
 
         // Definition timeline
@@ -2570,8 +2571,8 @@ function space() {
                 autoAlpha: 0,
                 duration: 0.5
             }, '+=1');
-            tl.from('.scroll-hint', {
-                autoAlpha: 0,
+            tl.to('.scroll-hint', {
+                autoAlpha: 1,
                 duration: 0.5
             }, '+=0.5');
         }
@@ -2793,8 +2794,14 @@ function space() {
                     }
                 });
             segmentTl.to('#thesis-title', {
-                fontSize: phonePortrait ? '1.25rem' : '2rem', top: '4rem', bottom: 'unset'
+                translateY: '-2em', autoAlpha: 0
             }, 0);
+            segmentTl.set('#thesis-title', {
+                'font-family': 'Space Mono', top: '8rem', bottom: 'unset', fontSize: phonePortrait ? '1.25rem' : '2rem', translateY: 0
+            }, '>');
+            segmentTl.to('#thesis-title', {
+                autoAlpha: 1, top: '4rem', bottom: 'unset'
+            }, '>');
             segmentTl.fromTo('#who-what', {
                 translateY: '5rem', autoAlpha: 0
             }, {
@@ -2868,12 +2875,12 @@ function space() {
             segmentTl.to(coreLine.material, { opacity: 0, duration: 0.1 }, 0);
             segmentTl.to(repeatLine.material, { opacity: 0, duration: 0.1 }, 0);
             segmentTl.to(scientistLine.material, { opacity: 0, duration: 0.1 }, 0);
+            segmentTl.to('#thesis-title', {
+                translateY: '-1em', autoAlpha: 0
+            }, 0);
             segmentTl.to('#who-what', {
                 translateY: '-2rem', autoAlpha: 0
-            }, 0);
-            segmentTl.to('#page-thesis .scroll-hint', {
-                color: '#0008'
-            }, '<+0.1');
+            }, '>');
             segmentTl.to('#who-what-content', {
                 translateY: '-2rem', autoAlpha: 0
             }, 0.1);
@@ -2952,7 +2959,7 @@ function space() {
                 }
             });
             segmentTl.to('.scroll-hint', {
-                autoAlpha: 0, translateY: '-2rem'
+                autoAlpha: 0, translateY: '-2em'
             });
             segmentTl.to('#unlock-potential', {
                 translateY: '-2rem', autoAlpha: 0
@@ -3800,7 +3807,7 @@ function space() {
             autoAlpha: 0, duration: 1, ease: 'power2.out', onComplete: () => stopThree()
         }, 0);
         tl.to('#what-title', {
-            yPercent: 0, autoAlpha: 1, duration: 0.5
+            yPercent: 0, autoAlpha: 1, duration: 0.2
         }, 0)
         tl.to('#page-what .scroll-hint', {
             autoAlpha: 1, duration: 0.5
@@ -3810,7 +3817,7 @@ function space() {
         const whatGroups = what3D?.groups ?? [];
 
         tl.add(() => { // Three-section timeline
-            if (phonePortrait) {
+            
                 const segmentTl = gsap.timeline({
                     scrollTrigger: {
                         trigger: '#segment-2',
@@ -3826,7 +3833,7 @@ function space() {
                     }
                 });
                 segmentTl.to('#what-title', {
-                    fontSize: '1.5rem', top: '4rem'
+                    translateY: '-1em', autoAlpha: 0, duration: 0.2
                 }, 0);
                 segmentTl.to('#what-canvas', {
                     autoAlpha: 1, duration: 1
@@ -3839,40 +3846,6 @@ function space() {
                     duration: 0.5,
                     stagger: 0.2
                 }, '<');
-
-            } else {
-                const segmentTl = gsap.timeline({
-                    scrollTrigger: {
-                        trigger: '#segment-2',
-                        scroller,
-                        start: 'top bottom',
-                        end: 'bottom bottom',
-                        scrub: true,
-                        invalidateOnRefresh: true,
-                        onEnter: () => setScrollerInteractive(),
-                        onEnterBack: () => setScrollerInteractive(),
-                        onLeave: () => setScrollerInteractive(),
-                        onLeaveBack: () => setScrollerInteractive()
-                    }
-                });
-                segmentTl.to('#what-title', {
-                    fontSize: '2rem', top: '4rem'
-                }, 0);
-                segmentTl.to('#what-canvas', {
-                    autoAlpha: 1, duration: 1
-                }, 0)
-                segmentTl.to('.section-container', {
-                    autoAlpha: 1, duration: 0.5
-                }, 0);
-                segmentTl.to('#page-what>.section-container i', {
-                    scaleY: 1,
-                    duration: 0.5,
-                    stagger: 0.2
-                }, '<');
-                segmentTl.to('#page-what>.scroll-hint', {
-                    autoAlpha: 0
-                }, '<+0.2')
-            }
         });
         tl.add(() => { // We Are Liminal timeline
             const sectionContentSel = '#page-what>.section-container .section > div';
@@ -3979,6 +3952,7 @@ function space() {
                 segmentTl.to(orbitState, {
                     ease: 'power2.out',
                     immediateRender: false,
+                    duration: 0.6,
                     onStart: captureStartState,
                     onUpdate: function () {
                         if (!captured) captureStartState();
@@ -4865,7 +4839,7 @@ function space() {
             y: 0,
             z: 0,
             onUpdate: () => camera.updateProjectionMatrix()
-        });
+        });        
         camera.fov = defaultFov;
         camera.updateProjectionMatrix();
         const allCubes = [cubeThesis, cubeWhat, cubeUs, cubePortfolio];
@@ -4894,6 +4868,8 @@ function space() {
                     page.hidden = true;
                 }
                 gsap.to('#logout-btn', { autoAlpha: 0.5, zIndex: 2, duration: 1 }, 0);
+                gsap.set('.scroll-hint', { autoAlpha: 0 }, 0);              
+
                 scroller?.remove();
                 window.scrollTo(0, 0);
                 threeInstance?.stop?.();
