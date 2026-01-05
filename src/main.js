@@ -641,11 +641,11 @@ function unlock() {
             if (code && !phonePortrait) {
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-vertical',
-                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;left:1px;`
+                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;left:0;`
                 }));
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-vertical',
-                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;right:1px;`
+                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;right:0;`
                 }));
             }
             // horizontals
@@ -653,11 +653,11 @@ function unlock() {
             if (code) {
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-horizontal',
-                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;top:1px;`
+                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;top:0;`
                 }));
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-horizontal',
-                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;bottom:1px;`
+                    style: `position:absolute;width:100vw;left:${-codeOffsetX}px;bottom:0;`
                 }));
             }
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `bottom:${paddingY}px;` }));
@@ -4982,6 +4982,41 @@ function portfolioPage() {
 }
 
 // -----------------------------------------------------
+// EXPERIENCE PAGE
+// -----------------------------------------------------
+function experiencePage() {
+    if (!location.pathname.endsWith('/experience')) return;
+
+    const container = document.querySelector('.experience-container');
+    
+    if (container) {
+        const fontSize = 16;
+        const minCell = Math.max(24, 0.5 * fontSize);
+        const vh = window.visualViewport?.height || window.innerHeight;
+        const vw = window.innerWidth;
+        const dimH = Math.max(12, Math.floor(vh / minCell / 2) * 2);
+        const dimW = Math.max(12, Math.floor(vw / minCell / 2) * 2);
+        const cell = vh / dimH;
+        const innerH = dimH - (phonePortrait ? 4 : 8);
+        const innerW = dimW - (phonePortrait ? 2 : 4);
+        const padY = (vh - innerH * cell) / 2;
+        const padX = (vw - innerW * cell) / 2;
+        container.style.inset = `${padY}px ${padX}px`;
+        container.style.height = `calc(100dvh - ${padY * 2}px`
+    }
+
+    const videoIds = ['vid-1', 'vid-2', 'vid-2', 'vid-4'];
+    const pickedId = videoIds[Math.floor(Math.random() * videoIds.length)];
+    videoIds.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.visibility = id === pickedId ? 'visible' : 'hidden';
+    });
+
+    document.documentElement.style.visibility = 'visible';
+}
+
+// -----------------------------------------------------
 // PAGE TRANSITION ANIMATION TIMELINE
 // -----------------------------------------------------
 
@@ -5179,6 +5214,25 @@ const Page = {
             tl.from('.portfolio-list a', {
                 autoAlpha: 0, duration: 0.3
             }, '>+0.5');
+            return tl;
+        },
+        leave: ({ current }) => {
+            const tl = gsap.timeline();
+            tl.to(current.container, { autoAlpha: 0, duration: 0.3 });
+            return tl;
+        }
+    },
+
+    experience: { // EXPERIENCE PAGE
+        build: () => { experiencePage(); },
+        enter: ({ next }) => {
+            const tl = gsap.timeline();
+            tl.from('.experience-container', {
+                scale: 1.2, autoAlpha: 0, duration: 0.5
+            });
+            tl.from('.experience-container a', { 
+                autoAlpha: 0, duration: 0.5 
+            }, '>');
             return tl;
         },
         leave: ({ current }) => {
