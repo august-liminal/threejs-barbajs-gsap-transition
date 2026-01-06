@@ -387,14 +387,17 @@ div:has(#unlock-module) {
 }
 
 .text-experience {
+    display: none;
     right: 0.5em;
     bottom: -1.5em;
 }
 
 .text-thesis {
+    display: none;
     right: 0.5em;
     top: -1.5em;
 }
+
 
 .code {
     display: flex;

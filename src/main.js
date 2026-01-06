@@ -546,7 +546,7 @@ function unlock() {
     // ---- CONSTANTS
     const ENTRY_PAGE = '/';
     const PROTECTED_PAGE = '/space';
-    const API_URL = 'https://website-auth-sage.vercel.app/api/validate-code';
+    const API_URL = 'https://liminal-website-auth-v2.vercel.app/api/validate';
 
     // --- viewport helper for mobile url bar/visual viewport
     const getViewportHeight = () => (window.visualViewport?.height || window.innerHeight);
@@ -606,7 +606,7 @@ function unlock() {
         unlockModule.style.width = (innerW * cellSize) + 'px';
         unlockModule.style.height = (innerH * cellSize) + 'px'; // keep matrix grid static
 
-        /*cells = new Array(total);
+        cells = new Array(total);
         const frag = document.createDocumentFragment();
         for (let i = 0; i < total; i++) {
             const cell = document.createElement('div');
@@ -616,7 +616,7 @@ function unlock() {
             cells[i] = cell;
         }
         unlockModule.appendChild(frag);
-        */
+        
 
         paddingY = (getViewportHeight() - innerH * cellSize) / 2;
         paddingX = (window.innerWidth - innerW * cellSize) / 2;
@@ -992,7 +992,7 @@ function unlock() {
             if (!response.ok) throw new Error('HTTP ' + response.status);
             const result = await response.json();
 
-            /*
+            
 
             if (result.valid) { // ============== VALID CODE ANIMATIONS
                 // Session
@@ -1083,7 +1083,7 @@ function unlock() {
                     }, duration);
                 })();
             }
-                */
+                
         } catch (err) {
             clearTimeout(timeoutId);
             message.innerHTML = '<span style="color:red;">Connection error. Try again.</span>';
