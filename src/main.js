@@ -686,8 +686,9 @@ function unlock() {
         }
     }
 
-    // =============== TEXT MATRIX (single mode) ===============
+    // =============== TEXT MATRIX ===============
 
+    /*
     const RAMP = Array.from(" .:-=+*#%@");
     const MIN_SCALE = 0.1, MAX_SCALE = 3;
     const RIPPLE_DECAY = 0.01;
@@ -869,6 +870,31 @@ function unlock() {
             };
             startAnim(0);
         });
+    }
+        */
+
+    // ===================== BACKGROUND VIDEOS ========================
+
+    const videoContainer = document.getElementById('bg-video');
+    if (videoContainer) {
+        const videoFiles = [
+            'dust/1.mp4', 
+            'dust/2.mp4',
+            'dust/3.mp4'
+        ];
+
+        const videoFiles2 = [
+            'depth/1.mp4',
+            'depth/2.mp4',
+            'depth/3.mp4'
+        ];
+
+        const picked = videoFiles[Math.floor(Math.random() * videoFiles.length)];
+        const source = document.createElement('source');
+        const src = new URL('./videos/' + picked, import.meta.url).href;
+        source.src = src;
+        source.type = 'video/mp4';
+        videoContainer.appendChild(source);
     }
 
     // ===================== VALIDATION ========================
