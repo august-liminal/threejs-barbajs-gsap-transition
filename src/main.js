@@ -595,6 +595,7 @@ function unlock() {
         innerW = dimensionW - (phonePortrait ? 2 : 4);
         total = innerH * innerW;
 
+        
         // ---- GRID CALCULATION
         document.querySelector('.code')?.style && (document.querySelector('.code').style.top = (innerH / 2 - 1) * cellSize + 'px');
 
@@ -605,7 +606,7 @@ function unlock() {
         unlockModule.style.width = (innerW * cellSize) + 'px';
         unlockModule.style.height = (innerH * cellSize) + 'px'; // keep matrix grid static
 
-        cells = new Array(total);
+        /*cells = new Array(total);
         const frag = document.createDocumentFragment();
         for (let i = 0; i < total; i++) {
             const cell = document.createElement('div');
@@ -615,6 +616,7 @@ function unlock() {
             cells[i] = cell;
         }
         unlockModule.appendChild(frag);
+        */
 
         paddingY = (getViewportHeight() - innerH * cellSize) / 2;
         paddingX = (window.innerWidth - innerW * cellSize) / 2;
@@ -668,6 +670,7 @@ function unlock() {
     }
     unlockGrid()
 
+    
     function initMatrixBuffers() {
         centersX = new Float32Array(total);
         centersY = new Float32Array(total);
@@ -685,6 +688,7 @@ function unlock() {
             }
         }
     }
+    
 
     // =============== TEXT MATRIX ===============
 
@@ -988,6 +992,8 @@ function unlock() {
             if (!response.ok) throw new Error('HTTP ' + response.status);
             const result = await response.json();
 
+            /*
+
             if (result.valid) { // ============== VALID CODE ANIMATIONS
                 // Session
                 localStorage.setItem('userName', result.user_name);
@@ -1077,6 +1083,7 @@ function unlock() {
                     }, duration);
                 })();
             }
+                */
         } catch (err) {
             clearTimeout(timeoutId);
             message.innerHTML = '<span style="color:red;">Connection error. Try again.</span>';
