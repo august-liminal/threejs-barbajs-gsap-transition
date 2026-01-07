@@ -173,6 +173,8 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             #liminal-desc { font-size: 1.5rem }
 
             #who-what { margin-bottom: 1rem; }
+            #thesis-section-4 #whitespaces { display: flex; flex-wrap: wrap; }
+            #thesis-section-4 #whitespaces div { display: flex; flex-wrap: wrap; }
 
             #page-what>.section-container { pointer-events: none; }
             #page-what>.section-container i { display: none; }
