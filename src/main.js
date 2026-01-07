@@ -2953,7 +2953,9 @@ function space() {
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, 0);
                 segmentTl.to(cam.position, {
-                    x: -0.4, y: 1, z: 10,
+                    x: phonePortrait ? -0.2 : -0.4, 
+                    y: phonePortrait ? 0.2 : 1, 
+                    z: phonePortrait ? 8 : 10,
                     ease: 'power2.out',
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, '<');
