@@ -155,18 +155,24 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             .welcome { top: 50%;}
             #submit-btn {font-size: 1rem; }
 
+            .portfolio-list { padding: 1rem; }
+            .portfolio-item { font-size: 1.5rem; }
+
             main[data-barba-namespace="space"] {height: 0}
             #liminalspace section { padding: 4rem 1.25rem; }
             .section { padding: 4rem 1.25rem; }
             #liminalspace #logo-holder { inset: 4rem 1.25rem; width: 3rem; height: 3rem; }
             .text-4xl { font-size: 3rem; line-height: 1.1; }
-            .text-xl { font-size: 2.25rem; line-height: 1.5; }
+            .text-xl { font-size: 2rem; line-height: 1.5; }
             .text-lg { font-size: 1.5rem; }
             .text-md { max-width: none; }
             #welcome h1 { height: 1.25em; }
-            #welcome .scroll-hint { margin: 0;l }
+            .scroll-hint { left: 1.25rem; bottom: 1.25rem; font-size: 0.875rem  }
+            #logout-btn { right: 1.25rem; bottom: 1.25rem; font-size: 0.875rem; padding: 0 }
 
-            #who-what { height: 6rem; margin-bottom: 1rem; }
+            #liminal-desc { font-size: 1.5rem }
+
+            #who-what { margin-bottom: 1rem; }
 
             #page-what>.section-container { pointer-events: none; }
             #page-what>.section-container i { display: none; }
@@ -229,10 +235,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
         `
     });
     document.head.append(style);
-    const unlockPotential = document.querySelector('#unlock-potential');
-    if (unlockPotential) {
-        unlockPotential.innerHTML = "Runway <br>+ Activation <br>+ Agency <br>= The ultimate <span style='white-space:nowrap'>co-founder</span>";
-    }
+    
 }
 
 // ================================================================
@@ -595,7 +598,7 @@ function unlock() {
         innerW = dimensionW - (phonePortrait ? 2 : 4);
         total = innerH * innerW;
 
-        
+
         // ---- GRID CALCULATION
         document.querySelector('.code')?.style && (document.querySelector('.code').style.top = (innerH / 2 - 1) * cellSize + 'px');
 
@@ -606,7 +609,7 @@ function unlock() {
         unlockModule.style.width = (innerW * cellSize) + 'px';
         unlockModule.style.height = (innerH * cellSize) + 'px'; // keep matrix grid static
 
-        cells = new Array(total);
+        /*cells = new Array(total);
         const frag = document.createDocumentFragment();
         for (let i = 0; i < total; i++) {
             const cell = document.createElement('div');
@@ -615,8 +618,8 @@ function unlock() {
             frag.appendChild(cell);
             cells[i] = cell;
         }
-        unlockModule.appendChild(frag);
-        
+        unlockModule.appendChild(frag);*/
+
 
         paddingY = (getViewportHeight() - innerH * cellSize) / 2;
         paddingX = (window.innerWidth - innerW * cellSize) / 2;
@@ -665,13 +668,13 @@ function unlock() {
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `bottom:${paddingY}px;` }));
         }
 
-        initMatrixBuffers();
+        //initMatrixBuffers();
 
     }
     unlockGrid()
 
-    
-    function initMatrixBuffers() {
+
+    /*function initMatrixBuffers() {
         centersX = new Float32Array(total);
         centersY = new Float32Array(total);
         jitter = new Float32Array(total);
@@ -687,8 +690,8 @@ function unlock() {
                 jitter[idx] = h * 0.03;
             }
         }
-    }
-    
+    }*/
+
 
     // =============== TEXT MATRIX ===============
 
@@ -882,7 +885,7 @@ function unlock() {
     const videoContainer = document.getElementById('bg-video');
     if (videoContainer) {
         const videoFiles = [
-            'dust/1.mp4', 
+            'dust/1.mp4',
             'dust/2.mp4',
             'dust/3.mp4'
         ];
@@ -992,7 +995,7 @@ function unlock() {
             if (!response.ok) throw new Error('HTTP ' + response.status);
             const result = await response.json();
 
-            
+
 
             if (result.valid) { // ============== VALID CODE ANIMATIONS
                 // Session
@@ -1022,6 +1025,7 @@ function unlock() {
                 })();
 
                 document.querySelectorAll('.text-line').forEach(el => { el.style.opacity = '0'; });
+                document.querySelector('#bg-video').style.opacity = '0';
                 message.innerHTML = `<span class="transition">Crossing the chasm...</span>`;
 
                 //Set state management. Only uncomment after states are done
@@ -1033,7 +1037,7 @@ function unlock() {
                 // Start dissolve but don't block navigation on it
                 const MAX_WAIT = 900;
                 Promise.race([
-                    textMatrixControl?.dissolve?.({ duration: 700, spread: 400 }) ?? Promise.resolve(),
+                    //textMatrixControl?.dissolve?.({ duration: 700, spread: 400 }) ?? Promise.resolve(),
                     new Promise(r => setTimeout(r, MAX_WAIT))
                 ]).then(() => barba.go(PROTECTED_PAGE));
             } else {
@@ -1049,7 +1053,7 @@ function unlock() {
                     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
 
                     // --- Block the matrix render temporarily ---
-                    matrixBlocked = true;
+                    /*matrixBlocked = true;
                     if (wrongTimer) clearTimeout(wrongTimer);
 
                     // --- Turn every cell into 'X' ---
@@ -1080,10 +1084,10 @@ function unlock() {
                         matrixBlocked = false;
                         wrongTimer = null;
                         lastChar.fill(-1); // force next render refresh
-                    }, duration);
+                    }, duration);*/
                 })();
             }
-                
+
         } catch (err) {
             clearTimeout(timeoutId);
             message.innerHTML = '<span style="color:red;">Connection error. Try again.</span>';
@@ -1971,7 +1975,7 @@ function space() {
         root.querySelector('#welcome').remove();
 
         gsap.set(camera.position, { x: 0, y: 0, z: 150 });
-        gsap.set('.scroll-hint', { autoAlpha: 0}, '>');
+        gsap.set('.scroll-hint', { autoAlpha: 0 }, '>');
         gsap.set(camera.rotation, {
             x: THREE.MathUtils.degToRad(10),
             onUpdate: () => camera.updateProjectionMatrix()
@@ -2011,7 +2015,7 @@ function space() {
             };
 
             const scene = new THREE.Scene();
-            // scene.add(new THREE.AxesHelper(10));
+            scene.add(new THREE.AxesHelper(10));
             const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
             const camera = new THREE.PerspectiveCamera(
                 30,
@@ -2058,11 +2062,11 @@ function space() {
                     delete materials[obj.uuid];
                 }
             }
-            const scaleFactor = phonePortrait ? 0.8 : window.innerWidth/window.innerHeight;
+            const scaleFactor = phonePortrait ? 0.8 : window.innerWidth / window.innerHeight;
 
             const coreSize = 1 * scaleFactor;
-            const orbRepeatSize = 0.5 * scaleFactor;
-            const orbScientistSize = 0.25 * scaleFactor;
+            const orbRepeatSize = phonePortrait ? 0.4 * scaleFactor : 0.5 * scaleFactor;
+            const orbScientistSize = phonePortrait ? 0.1 * scaleFactor : 0.25 * scaleFactor;
 
             const coreGeometry = new THREE.SphereGeometry(coreSize, 64, 64);
             const coreMaterial = new THREE.MeshStandardMaterial({
@@ -2091,7 +2095,7 @@ function space() {
             const orbRepeat = new THREE.Mesh(new THREE.SphereGeometry(orbRepeatSize, 64, 64), orbRepeatMaterial);
             orbRepeat.name = 'orbRepeat';
             orbRepeat.layers.enable(BLOOM_SCENE);
-            orbRepeat.position.set(-10, 10, -10);            
+            orbRepeat.position.set(-10, 10, -10);
             scene.add(orbRepeat);
 
             const orbScientistMaterial = coreMaterial.clone();
@@ -2101,7 +2105,7 @@ function space() {
             const orbScientist = new THREE.Mesh(new THREE.SphereGeometry(orbScientistSize, 64, 64), orbScientistMaterial);
             orbScientist.name = 'orbScientist';
             orbScientist.layers.enable(BLOOM_SCENE);
-            orbScientist.position.set(10, 30, 15);            
+            orbScientist.position.set(10, 30, 15);
             scene.add(orbScientist);
 
             const thesisLabelRenderer = new CSS2DRenderer();
@@ -2179,7 +2183,7 @@ function space() {
                 gapSize: 0.025,
                 transparent: true,
                 opacity: 0.5
-            });            
+            });
             const attachOrbLabel = (target, text, offset = [2, 1.2, 0], anchor = [0, 0.5]) => {
                 const targetName = target?.name || 'target';
                 const div = Object.assign(document.createElement('div'), {
@@ -2210,9 +2214,16 @@ function space() {
                 return entry;
             };
 
-            const coreLabelEntry = attachOrbLabel(core, 'Topflight Founder', [-1 * (coreSize - 0.5), -1 * (coreSize + 0.05), 0], [1, 1]);            
-            const repeatLabelEntry = attachOrbLabel(orbRepeat, 'Repeat Founder', [-1 * (orbRepeatSize - 0.25), -1 * (orbRepeatSize + 0.5), 0], [1, 1]);
-            const scientistLabelEntry = attachOrbLabel(orbScientist, 'Entrepreneurial Scientist', [-1 * (orbScientistSize + 0.15), -1 * (orbScientistSize + 0.75), 0], [1, 1]);
+            let coreLabelEntry, repeatLabelEntry, scientistLabelEntry;
+            if (phonePortrait) {
+                coreLabelEntry = attachOrbLabel(core, 'Topflight Founder', [1 * (coreSize + 0.25), -1 * (coreSize + 0.25), 0], [0, 1]);
+                repeatLabelEntry = attachOrbLabel(orbRepeat, 'Repeat Founder', [1 * (orbRepeatSize + 0.45), -1 * (orbRepeatSize + 0.45), 0], [0, 1]);
+                scientistLabelEntry = attachOrbLabel(orbScientist, 'Entrepreneurial Scientist', [1 * (orbScientistSize + 0.35), -1 * (orbScientistSize + 0.35), 0], [0, 1]);
+            } else {
+                coreLabelEntry = attachOrbLabel(core, 'Topflight Founder', [-1 * (coreSize - 0.5), -1 * (coreSize + 0.05), 0], [1, 1]);
+                repeatLabelEntry = attachOrbLabel(orbRepeat, 'Repeat Founder', [-1 * (orbRepeatSize - 0.25), -1 * (orbRepeatSize + 0.5), 0], [1, 1]);
+                scientistLabelEntry = attachOrbLabel(orbScientist, 'Entrepreneurial Scientist', [-1 * (orbScientistSize + 0.15), -1 * (orbScientistSize + 0.75), 0], [1, 1]);
+            }
 
             const coreContent = coreLabelEntry.element.querySelector('.content');
             const repeatContent = repeatLabelEntry.element.querySelector('.content');
@@ -2237,7 +2248,7 @@ function space() {
             scene.add(leftShell);
             const rightShell = new THREE.Mesh(shellGeometry.clone(), shellMaterial.clone());
             rightShell.position.set(30, 0, -4);
-            scene.add(rightShell);           
+            scene.add(rightShell);
 
             const renderScene = new RenderPass(scene, camera);
 
@@ -2510,7 +2521,7 @@ function space() {
             }
         });
         const [coreLine, repeatLine, scientistLine] = connectors;
-        gsap.set(coreLine.material, { opacity: 0});
+        gsap.set(coreLine.material, { opacity: 0 });
         gsap.set(repeatLine.material, { opacity: 0 });
         gsap.set(scientistLine.material, { opacity: 0 });
 
@@ -2660,7 +2671,7 @@ function space() {
         const labelCoreEl = document.getElementById('label-core');
         const labelRepeatEl = document.getElementById('label-orbRepeat');
         const labelScientistEl = document.getElementById('label-orbScientist');
-        
+
 
         tl.add(() => { // DNA Title timeline       
 
@@ -2810,22 +2821,22 @@ function space() {
         });
 
         tl.add(() => { // Who > What timeline            
-                const segmentTl = gsap.timeline({
-                    scrollTrigger: {
-                        trigger: '#segment-3',
-                        scroller,
-                        start: 'top bottom',
-                        end: 'bottom bottom',
-                        scrub: true,
-                        invalidateOnRefresh: true,
-                        snap: {
-                            snapTo: 1,
-                            delay: 0.1,
-                            duration: { min: 0.2, max: 0.6 },
-                            ease: 'power1.inOut'
-                        }
+            const segmentTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#segment-3',
+                    scroller,
+                    start: 'top bottom',
+                    end: 'bottom bottom',
+                    scrub: true,
+                    invalidateOnRefresh: true,
+                    snap: {
+                        snapTo: 1,
+                        delay: 0.1,
+                        duration: { min: 0.2, max: 0.6 },
+                        ease: 'power1.inOut'
                     }
-                });
+                }
+            });
             segmentTl.to('#thesis-title', {
                 translateY: '-2em', autoAlpha: 0
             }, 0);
@@ -2843,21 +2854,23 @@ function space() {
             segmentTl.to('#who-what-content', {
                 autoAlpha: 1, duration: 0.2
             }, '>');
-            const scaleFactor = phonePortrait? 1 : window.innerWidth / window.innerHeight;
+            const scaleFactor = phonePortrait ? 1 : window.innerWidth / window.innerHeight;
             if (labelCoreEl) segmentTl.to(labelCoreEl, { opacity: 1, duration: 0.2 }, '>');
-            segmentTl.fromTo(coreLine.material, { opacity: 0}, { opacity: 0.5, duration: 0.2, ease: 'power1.out' }, '<');
+            segmentTl.fromTo(coreLine.material, { opacity: 0 }, { opacity: 0.5, duration: 0.2, ease: 'power1.out' }, '<');
             if (labelRepeatEl) segmentTl.to(labelRepeatEl, { opacity: 1, duration: 0.2 }, '<+0.1');
             segmentTl.fromTo(repeatLine.material, { opacity: 0 }, { opacity: 0.5, duration: 0.2, ease: 'power1.out' }, '<');
             if (labelScientistEl) segmentTl.to(labelScientistEl, { opacity: 1, duration: 0.2 }, '<+0.1');
             segmentTl.fromTo(scientistLine.material, { opacity: 0 }, { opacity: 0.5, duration: 0.2, ease: 'power1.out' }, '<');
             if (cam && leftShell && rightShell) {
                 segmentTl.to(cam.rotation, {
-                    z: THREE.MathUtils.degToRad(135),
+                    z: phonePortrait ? THREE.MathUtils.degToRad(270) : THREE.MathUtils.degToRad(135),
                     ease: 'power2.out',
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, 0);
                 segmentTl.to(cam.position, {
-                    x: -1.625 * scaleFactor, y: 0.15 * scaleFactor, z: 30,
+                    x: phonePortrait ? 0 : -1.625 * scaleFactor,
+                    y: phonePortrait ? -2.5 * scaleFactor : 0.15 * scaleFactor,
+                    z: phonePortrait ? 50 : 30,
                     ease: 'power2.out',
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, '<');
@@ -2868,17 +2881,23 @@ function space() {
                 segmentTl.to(rightShell.position, {
                     x: 0, z: -100,
                     ease: 'power2.out'
-                }, '<');                
+                }, '<');
                 segmentTl.to(orbRepeat.position, {
-                    x: -1.825 * scaleFactor, y: 1.1 * scaleFactor,  z: 0,
+                    x: phonePortrait ? -1.75 * scaleFactor : -1.825 * scaleFactor,
+                    y: phonePortrait ? -0.5 * scaleFactor : 1.1 * scaleFactor,
+                    z: 0,
                     ease: 'power2.out'
                 }, '<');
                 segmentTl.to(orbScientist.position, {
-                    x: -3 * scaleFactor, y: 1.85 * scaleFactor, z: 0,
+                    x: phonePortrait ? -3.25 * scaleFactor : -3 * scaleFactor,
+                    y: phonePortrait ? -1 * scaleFactor : 1.85 * scaleFactor,
+                    z: 0,
                     ease: 'power2.out'
                 }, '<');
                 segmentTl.to(orangeLight.position, {
-                    x: -20, y: -20, z: -50,
+                    x: -20,
+                    y: -20,
+                    z: -50,
                     ease: 'power2.out'
                 }, '<');
                 segmentTl.to(orangeLight, {
@@ -2904,7 +2923,7 @@ function space() {
                     }
                 }
             });
-            segmentTl.to([labelCoreEl, labelRepeatEl, labelScientistEl], {opacity: 0, duration: 0.1}, 0);
+            segmentTl.to([labelCoreEl, labelRepeatEl, labelScientistEl], { opacity: 0, duration: 0.1 }, 0);
             segmentTl.to(coreLine.material, { opacity: 0, duration: 0.1 }, 0);
             segmentTl.to(repeatLine.material, { opacity: 0, duration: 0.1 }, 0);
             segmentTl.to(scientistLine.material, { opacity: 0, duration: 0.1 }, 0);
@@ -2929,7 +2948,7 @@ function space() {
             }, '<+0.2');
             if (cam && leftShell && rightShell) {
                 segmentTl.to(cam.rotation, {
-                    z: THREE.MathUtils.degToRad(415),
+                    z: phonePortrait ? THREE.MathUtils.degToRad(450) : THREE.MathUtils.degToRad(415),
                     ease: 'power2.out',
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, 0);
@@ -2943,7 +2962,7 @@ function space() {
                     ease: 'power2.out'
                 }, '<');
                 segmentTl.to(orbScientist.position, {
-                    x: 0, y: 0 , z: 30,
+                    x: 0, y: 0, z: 30,
                     ease: 'power2.out'
                 }, '<');
                 segmentTl.to(leftShell.position, {
@@ -2958,7 +2977,7 @@ function space() {
                     intensity: 0,
                     ease: 'power2.out'
                 }, '<');
-                segmentTl.to(orbScientist.material, {opacity: 0, duration: 0.1}, '>');
+                segmentTl.to(orbScientist.material, { opacity: 0, duration: 0.1 }, '>');
                 segmentTl.to(orbRepeat.material, { opacity: 0, duration: 0.1 }, '<');
             }
         });
@@ -3615,7 +3634,7 @@ function space() {
                     const baseModelHeight = Math.max(
                         0.001,
                         modelHeights[entry.index]
-                            ?? (templateSizes[entry.index]?.y ?? templateSizeFallback.y) * cfgScale
+                        ?? (templateSizes[entry.index]?.y ?? templateSizeFallback.y) * cfgScale
                     );
                     const isActive = entry.element?.classList.contains('active') || entry.element?.id === activeSectionId;
                     const desiredHeight = safeWorldHeight > 0
@@ -3807,7 +3826,7 @@ function space() {
 
         const what3D = createWhatScene();
         window.what3D = what3D;
-        const whatLookAt = new THREE.Vector3(0, 0, 0); 
+        const whatLookAt = new THREE.Vector3(0, 0, 0);
 
         // ============================== TIMELINE
 
@@ -3850,35 +3869,35 @@ function space() {
         const whatGroups = what3D?.groups ?? [];
 
         tl.add(() => { // Three-section timeline
-            
-                const segmentTl = gsap.timeline({
-                    scrollTrigger: {
-                        trigger: '#segment-2',
-                        scroller,
-                        start: 'top bottom',
-                        end: 'bottom bottom',
-                        scrub: true,
-                        invalidateOnRefresh: true,
-                        onEnter: () => setScrollerInteractive(),
-                        onEnterBack: () => setScrollerInteractive(),
-                        onLeave: () => setScrollerInteractive(),
-                        onLeaveBack: () => setScrollerInteractive()
-                    }
-                });
-                segmentTl.to('#what-title', {
-                    translateY: '-1em', autoAlpha: 0, duration: 0.2
-                }, 0);
-                segmentTl.to('#what-canvas', {
-                    autoAlpha: 1, duration: 1
-                }, 0)
-                segmentTl.to('.section-container', {
-                    autoAlpha: 1, duration: 0.5
-                }, 0);
-                segmentTl.to('#page-what>.section-container i', {
-                    scaleY: 1,
-                    duration: 0.5,
-                    stagger: 0.2
-                }, '<');
+
+            const segmentTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '#segment-2',
+                    scroller,
+                    start: 'top bottom',
+                    end: 'bottom bottom',
+                    scrub: true,
+                    invalidateOnRefresh: true,
+                    onEnter: () => setScrollerInteractive(),
+                    onEnterBack: () => setScrollerInteractive(),
+                    onLeave: () => setScrollerInteractive(),
+                    onLeaveBack: () => setScrollerInteractive()
+                }
+            });
+            segmentTl.to('#what-title', {
+                translateY: '-1em', autoAlpha: 0, duration: 0.2
+            }, 0);
+            segmentTl.to('#what-canvas', {
+                autoAlpha: 1, duration: 1
+            }, 0)
+            segmentTl.to('.section-container', {
+                autoAlpha: 1, duration: 0.5
+            }, 0);
+            segmentTl.to('#page-what>.section-container i', {
+                scaleY: 1,
+                duration: 0.5,
+                stagger: 0.2
+            }, '<');
         });
         tl.add(() => { // We Are Liminal timeline
             const sectionContentSel = '#page-what>.section-container .section > div';
@@ -3917,7 +3936,7 @@ function space() {
             }
 
             const segmentTl = gsap.timeline({ scrollTrigger: stConfig });
-            
+
             segmentTl.to('#what-title', {
                 autoAlpha: 0, duration: 0.5
             });
@@ -4872,7 +4891,7 @@ function space() {
             y: 0,
             z: 0,
             onUpdate: () => camera.updateProjectionMatrix()
-        });        
+        });
         camera.fov = defaultFov;
         camera.updateProjectionMatrix();
         const allCubes = [cubeThesis, cubeWhat, cubeUs, cubePortfolio];
@@ -4901,7 +4920,7 @@ function space() {
                     page.hidden = true;
                 }
                 gsap.to('#logout-btn', { autoAlpha: 0.5, zIndex: 2, duration: 1 }, 0);
-                gsap.set('.scroll-hint', { autoAlpha: 0 }, 0);              
+                gsap.set('.scroll-hint', { autoAlpha: 0 }, 0);
 
                 scroller?.remove();
                 window.scrollTo(0, 0);
@@ -5021,7 +5040,7 @@ function experiencePage() {
     if (!location.pathname.endsWith('/experience')) return;
 
     const container = document.querySelector('.experience-container');
-    
+
     if (container) {
         const fontSize = 16;
         const minCell = Math.max(24, 0.5 * fontSize);
@@ -5263,8 +5282,8 @@ const Page = {
             tl.from('.experience-container', {
                 scale: 1.2, autoAlpha: 0, duration: 0.5
             });
-            tl.from('.experience-container a', { 
-                autoAlpha: 0, duration: 0.5 
+            tl.from('.experience-container a', {
+                autoAlpha: 0, duration: 0.5
             }, '>');
             return tl;
         },

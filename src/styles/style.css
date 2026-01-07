@@ -251,6 +251,7 @@ div:has(#unlock-module) {
     height: 100%;
     pointer-events: none;
     object-fit: cover;
+    transition: opacity 0.5s;
 }
 
 #unlock-module {
@@ -1873,6 +1874,8 @@ main[data-barba-namespace="portfolio"] {
 .portfolio-item {
     padding: 1rem 1.25rem;
     font-size: 2rem;
+    text-align: center;
+    line-height: 1.5em;
 }
 
 .portfolio-list a {
