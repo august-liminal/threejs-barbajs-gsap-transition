@@ -2015,7 +2015,7 @@ function space() {
             };
 
             const scene = new THREE.Scene();
-            scene.add(new THREE.AxesHelper(10));
+            // scene.add(new THREE.AxesHelper(10));
             const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
             const camera = new THREE.PerspectiveCamera(
                 30,
