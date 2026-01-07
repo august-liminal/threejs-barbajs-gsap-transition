@@ -148,7 +148,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             body { height: 100dvh; box-sizing: border-box; }
 
             .scroller { z-index: 1; scroll-snap-type: y mandatory;}
-            .scroller .segment {height: 100dvh !important; scroll-snap-align: end !important; scroll-snap-stop: always !important; }
+            .thesis-scroller .segment {height: 100dvh !important; scroll-snap-align: end !important; scroll-snap-stop: always !important; }
             
 
             .text-line { font-size: 1rem; text-align: center; inset: -1.5rem 0px auto; }
