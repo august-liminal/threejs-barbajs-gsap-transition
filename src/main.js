@@ -2142,12 +2142,13 @@ function space() {
             const cone = new THREE.Mesh(coneGeometry, coneMaterial);
             cone.castShadow = true;
             cone.receiveShadow = true;
-            cone.position.set(0, 8, 10);
+            cone.position.set(0, phonePortrait ? 4 : 8, 10);
             cone.rotation.set(
                 THREE.MathUtils.degToRad(0),
                 THREE.MathUtils.degToRad(90),
                 THREE.MathUtils.degToRad(90)
             );
+            if (phonePortrait) cone.scale.setScalar(0.5);
 
             const cylinderGeometry = new THREE.CylinderGeometry(1.4, 1.4, 3, 64);
             const cylinderMaterial = coneMaterial.clone();
@@ -2155,26 +2156,29 @@ function space() {
             const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
             cylinder.castShadow = true;
             cylinder.receiveShadow = true;
-            cylinder.position.set(0, 16, 10);
+            cylinder.position.set(0, phonePortrait ? 8 : 16, 10);
             cylinder.rotation.set(
                 THREE.MathUtils.degToRad(5),
                 THREE.MathUtils.degToRad(90),
                 THREE.MathUtils.degToRad(90)
             );
+            if (phonePortrait) cylinder.scale.setScalar(0.5);
             scene.add(cone, cylinder);
 
             const coneOverlay = core.clone();
             coneOverlay.material = core.material.clone();
             coneOverlay.material.transparent = true;
             coneOverlay.material.opacity = 0;
-            coneOverlay.position.set(0, 8, 0);
+            coneOverlay.position.copy(cone.position);
+            coneOverlay.position.add(new THREE.Vector3(0, 0, -10));
             scene.add(coneOverlay);
 
             const cylinderOverlay = core.clone();
             cylinderOverlay.material = cylinderOverlay.material.clone();
             cylinderOverlay.material.transparent = true;
             cylinderOverlay.material.opacity = 0;
-            cylinderOverlay.position.set(0, 16, 0);
+            cylinderOverlay.position.copy(cylinder.position);
+            cylinderOverlay.position.add(new THREE.Vector3(0, 0, -10));
             scene.add(cylinderOverlay);
 
             const orbLabels = [];
@@ -3045,7 +3049,7 @@ function space() {
                 onUpdate: () => cam.updateProjectionMatrix()
             }, 0);
             segmentTl.to(cam.position, {
-                x: () => computeCamXForWhitespace(), y: 8, z: 110,
+                x: () => computeCamXForWhitespace(), y: phonePortrait? 4 : 8, z: 110,
                 ease: 'power4.out',
                 onUpdate: () => cam.updateProjectionMatrix()
             }, '<');
@@ -3066,13 +3070,15 @@ function space() {
                 y: THREE.MathUtils.degToRad(270), ease: 'power4.inOut', duration: 1.2
             }, '>');
             nestedTl.to(cone.position, {
-                x: 0, y: 8, z: -1, ease: 'power4.inOut', duration: 1.2
+                z: -2, 
+                ease: 'power4.inOut', duration: 1.2
             }, '<');
             nestedTl.to(cylinder.rotation, {
                 y: THREE.MathUtils.degToRad(270), ease: 'power4.inOut', duration: 1.2
             }, '<+0.1');
             nestedTl.to(cylinder.position, {
-                x: 0, y: 16, z: -1.5, ease: 'power4.inOut', duration: 1.2
+                x: 0,
+                z: -2, ease: 'power4.inOut', duration: 1.2
             }, '<');
             nestedTl.to(coneOverlay.material, {
                 opacity: 1, duration: 0.5
@@ -3088,12 +3094,12 @@ function space() {
             }, '<');
 
             const objectsTlForward = gsap.timeline({ paused: true });
-            objectsTlForward.to(cone.position, { x: -0.2, y: 8, z: 10, duration: 0.1 }, 0);
+            objectsTlForward.to(cone.position, { z: -2, duration: 0.1 }, 0);
             objectsTlForward.to(cone.material, { opacity: 1, duration: 0.1 }, '<');
             objectsTlForward.fromTo(cone.rotation, { y: THREE.MathUtils.degToRad(-60) }, {
                 y: THREE.MathUtils.degToRad(0), ease: 'power4.inOut', duration: 0.1
             }, '<');
-            objectsTlForward.to(cylinder.position, { x: -0.2, y: 16, z: 10, duration: 0.1 }, 0.05);
+            objectsTlForward.to(cylinder.position, { z: -2, duration: 0.1 }, 0.05);
             objectsTlForward.to(cylinder.material, { opacity: 1, duration: 0.1 }, '<');
             objectsTlForward.fromTo(cylinder.rotation, { y: THREE.MathUtils.degToRad(-60) }, {
                 y: THREE.MathUtils.degToRad(0), ease: 'power4.inOut', duration: 0.1
