@@ -186,7 +186,8 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             .liminal-svg { width: 40vw; }
             #we-are-liminal-content { margin-top: 2rem; }
             #what-section-4 .backBtn { bottom: 4.25rem; }
-            #page-what .scroll-hint { bottom: 4rem; }
+            .what-scroller #segment-5 { height: 100dvh }
+            .what-scroller #segment-5, .what-scroller #segment-6 { scroll-snap-align: end; scroll-snap-stop: always; }
 
             .page#page-profile { grid-template-columns: 1.25rem minmax(0, 1fr) minmax(0, 7fr) 1.25rem; 
                 grid-template-rows: 4rem minmax(0, 5fr) minmax(0, 1fr) minmax(0, 6fr) 4rem; }
@@ -3871,7 +3872,7 @@ function space() {
         tl.to('#what-title', {
             yPercent: 0, autoAlpha: 1, duration: 0.2
         }, 0)
-        tl.to('#page-what .scroll-hint', {
+        tl.to('.scroll-hint', {
             autoAlpha: 1, duration: 0.5
         }, '>0.5');
 
@@ -4054,6 +4055,9 @@ function space() {
             segmentTl.fromTo('#what-section-4', { autoAlpha: 0, scale: 0 }, {
                 autoAlpha: 1, scale: 1, duration: 0
             }, '>-0.2');
+            segmentTl.to('.scroll-hint', {
+                autoAlpha: 0, duration: 0.5
+            }, '<');
             segmentTl.fromTo('.liminal-svg', { scale: 0 }, { scale: 1, duration: 1.5, ease: 'power4.out' }, '<');
             segmentTl.fromTo('.liminal-svg>div', { autoAlpha: 0.8 }, { autoAlpha: 1, duration: 1.5 }, '<');
             segmentTl.fromTo('.liminal-svg>svg', { autoAlpha: 0.8 }, { autoAlpha: 1, duration: 2.5, ease: 'power4.out' }, '<+0.1');
