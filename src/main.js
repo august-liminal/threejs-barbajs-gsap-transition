@@ -211,7 +211,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             #profile-desc::before { inset: -0.725rem -0.725rem auto auto; }
             #profile-desc::after { inset: auto -0.725rem -0.725rem auto; }
             #profile-name::before { display: none } 
-            #profile-portrait-container::after {}
+            #profile-desc>div { padding: 1.25rem; }
 
             #profile-desc>span, #profile-name>span, #profile-title>span { padding: 1.25rem }
 
@@ -224,13 +224,13 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             #portfolio-back-btn { grid-area: 2 / 2 / 2 / 2; }
             #portfolio-back-btn .backBtn { width: 100%; inset: 0; padding: 0.75rem; aspect-ratio: 1; border-bottom: 1px solid #fff4; overflow: hidden; }
             #portfolio-back-btn .backBtn::before { display: block; }
-            #portfolio-desc { grid-area: 3 / 3 / 3 / 3; padding: 1.25rem; }
             #portfolio-toggle { border-width: 0 1px 0 0; padding-top: calc(100% + 1em); }
             #portfolio-toggle a { padding: 0.5rem}
             #portfolio-toggle a span { display: none; }
             #portfolio-toggle a::before { display: block; }
             #portfolio-toggle a[current]::before { opacity: 1; filter: drop-shadow(0 0 1px #fff4); }
             #portfolio-toggle>a::after { width: 1px; }
+            #portfolio-desc>div { padding: 1.25rem }
 
 
             

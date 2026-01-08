@@ -1376,6 +1376,7 @@ canvas#space {
     width: 100%;
     white-space: pre-wrap;
     word-break: break-word;
+    overflow-y: auto;
 }
 
 #profile-toggle {
@@ -1566,15 +1567,18 @@ canvas#space {
 
 #portfolio-desc {
     grid-area: 3 / 3 / 3 / 3;
-    padding: 2rem;
     position: relative;
 }
 
 #portfolio-desc>div {
+    align-content: flex-start;
+    padding: 2rem;
     display: block;
     width: 100%;
     white-space: pre-wrap;
     word-break: break-word;
+    overflow-y: auto;
+    max-height: 100%;
 }
 
 #portfolio-toggle {
