@@ -207,7 +207,7 @@ body.is-transitioning {
     position: absolute;
     text-align: right;
     padding: 0 0.25em;
-    z-index: 999;
+    z-index: 9999;
     text-shadow: 0 0 calc(0.6em * var(--e)) #ffffff, 0 0 calc(0.05em * var(--e)) #ffffff;
 }
 

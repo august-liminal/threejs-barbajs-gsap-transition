@@ -359,7 +359,21 @@ async function landing() {
 
     await fontReady;
     landingLayout();
-    (document.querySelector('#entrance') || document.querySelector('.grid-container')?.appendChild(Object.assign(document.createElement('a'), { id: 'entrance' })))?.style.setProperty('--entrance-w', 4), document.querySelector('#entrance')?.style.setProperty('--entrance-h', 4);
+    const entranceEl = document.querySelector('#entrance') || document.querySelector('.grid-container')?.appendChild(Object.assign(document.createElement('a'), { id: 'entrance' }));
+    entranceEl?.style.setProperty('--entrance-w', 4);
+    entranceEl?.style.setProperty('--entrance-h', 4);
+    if (phonePortrait) {
+        const maxEntranceW = gridSize;
+        const maxEntranceH = Math.max(2, Math.floor(gridSize - 2 * (y / cellSize) - 2));
+        entranceEl?.style.setProperty('--entrance-w', maxEntranceW);
+        entranceEl?.style.setProperty('--entrance-h', maxEntranceH);
+        const windowBox = document.querySelector('.window');
+        if (windowBox) {
+            windowBox.style.inset = (window.innerHeight < gridDimension ? deltaH / 2 + 'px' : '0') + ' ' + (window.innerWidth < gridDimension ? deltaW / 2 + 'px' : '0');
+            windowBox.style.setProperty('--w', maxEntranceW);
+            windowBox.style.setProperty('--h', maxEntranceH);
+        }
+    }
 
 
 
@@ -371,6 +385,11 @@ async function landing() {
     // Scene
     const scene = new THREE.Scene()
     let object;
+    const cubeGeometry = new THREE.BoxGeometry(10, 10, 10);
+    const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const originCube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+
+    // scene.add(new THREE.AxesHelper(10));
 
     //Keep track of the mouse position to animate the scene
     let mouseX = window.innerWidth / 2;
@@ -383,7 +402,8 @@ async function landing() {
     }
 
     // Camera
-    const camera = new THREE.PerspectiveCamera(75, size.width / size.height, 0.1, 1000);
+    const startFov = 75;
+    const camera = new THREE.PerspectiveCamera(startFov, size.width / size.height, 0.1, 2000);
     camera.position.set(0, 0, 0);
     scene.add(camera);
 
@@ -411,6 +431,8 @@ async function landing() {
         boundingBox.getCenter(center);
         object.position.sub(center);
         object.position.z = 1;
+        originCube.position.set(phonePortrait ? -180 : -160, phonePortrait ? 180 : 160, -1000);
+        object.add(originCube);
         scene.add(object);
     }
 
@@ -423,6 +445,14 @@ async function landing() {
     renderer.setSize(size.width, size.height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
+    const targetFov = 5;
+    const fovSpeed = 0.0001;
+    const startCubeScale = 0;
+    const targetCubeScale = 2;
+    const cubeScaleSpeed = 0.15;
+    const clock = new THREE.Clock();
+    originCube.scale.setScalar(startCubeScale);
+
     //Render the scene
     function animate() {
         requestAnimationFrame(animate);
@@ -431,6 +461,17 @@ async function landing() {
         if (object) {
             object.rotation.y = ((mouseX / window.innerWidth) * 20 - 20) * Math.PI / 180;
             object.rotation.x = ((mouseY / window.innerHeight) * 20 - 20) * Math.PI / 180;
+            originCube.rotation.y += 0.01;
+        }
+        const cubeScaleDelta = targetCubeScale - originCube.scale.x;
+        if (Math.abs(cubeScaleDelta) > 0.000001) {
+            const dt = clock.getDelta();
+            const step = 1 - Math.exp(-cubeScaleSpeed * dt);
+            originCube.scale.setScalar(originCube.scale.x + cubeScaleDelta * step);
+        }
+        if (Math.abs(camera.fov - targetFov) > 0.01) {
+            camera.fov += (targetFov - camera.fov) * fovSpeed;
+            camera.updateProjectionMatrix();
         }
         renderer.render(scene, camera);
     }
