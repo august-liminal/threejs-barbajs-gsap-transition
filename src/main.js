@@ -151,7 +151,9 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             .thesis-scroller .segment {height: 100dvh !important; scroll-snap-align: end !important; scroll-snap-stop: always !important; }
             
 
-            .text-line { font-size: 1rem; text-align: center; inset: -1.5rem 0px auto; }
+            .text-line { font-size: 1rem; text-align: left; left: 1.5rem; }
+            .text-portfolio { top: 2rem; }
+            .text-thesis { top: 4rem; }
             .welcome { top: 50%;}
             #submit-btn {font-size: 1rem; }
 

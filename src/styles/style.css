@@ -1781,8 +1781,7 @@ main[data-barba-namespace="thesis"] a {
     width: clamp(24rem, 50vw, 40rem);
     height: 100%;
     overflow-y: scroll;
-    padding-top: 6rem;
-    padding-bottom: calc(var(--parent-h) * 0.5 - 2rem);
+    padding: 6rem 2rem calc(var(--parent-h) * 0.5 - 2rem) 2rem;
     margin: 0 auto;
     scrollbar-width: none;
 }
