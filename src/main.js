@@ -388,6 +388,12 @@ async function landing() {
     const cubeGeometry = new THREE.BoxGeometry(10, 10, 10);
     const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const originCube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+    const cubeEdges = new THREE.EdgesGeometry(cubeGeometry);
+    const cubeEdgeLines = new THREE.LineSegments(
+        cubeEdges,
+        new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 })
+    );
+    originCube.add(cubeEdgeLines);
 
     // scene.add(new THREE.AxesHelper(10));
 
@@ -445,9 +451,9 @@ async function landing() {
     renderer.setSize(size.width, size.height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-    const targetFov = 5;
+    const targetFov = 25;
     const fovSpeed = 0.0001;
-    const startCubeScale = 0;
+    const startCubeScale = 1;
     const targetCubeScale = 2;
     const cubeScaleSpeed = 0.15;
     const clock = new THREE.Clock();
@@ -5109,7 +5115,7 @@ function experiencePage() {
         const padY = (vh - innerH * cell) / 2;
         const padX = (vw - innerW * cell) / 2;
         container.style.inset = `${padY}px ${padX}px`;
-        container.style.height = `calc(100dvh - ${padY * 2}px`
+        container.style.height = `calc(100dvh - ${padY * 2}px)`;
     }
 
     const videoIds = ['vid-1', 'vid-2', 'vid-2', 'vid-4'];
@@ -5122,6 +5128,67 @@ function experiencePage() {
 
     document.documentElement.style.visibility = 'visible';
 }
+
+
+// -----------------------------------------------------
+// THESIS PAGE
+// -----------------------------------------------------
+function thesisPage() {
+    if (!location.pathname.endsWith('/thesis')) return;
+
+    const container = document.querySelector('.thesis-container');
+    const content = document.querySelector('.thesis-content');
+    const contentParagraphs = document.querySelectorAll('.thesis-content-inner p');
+    const thesisOverlay = document.querySelector('.thesis');
+
+    if (container) {
+        const fontSize = 16;
+        const minCell = Math.max(24, 0.5 * fontSize);
+        const vh = window.visualViewport?.height || window.innerHeight;
+        const vw = window.innerWidth;
+        const dimH = Math.max(12, Math.floor(vh / minCell / 2) * 2);
+        const dimW = Math.max(12, Math.floor(vw / minCell / 2) * 2);
+        const cell = vh / dimH;
+        const innerH = dimH - (phonePortrait ? 4 : 8);
+        const innerW = dimW - (phonePortrait ? 2 : 4);
+        const padY = (vh - innerH * cell) / 2;
+        const padX = (vw - innerW * cell) / 2;
+        container.style.inset = `${padY}px ${padX}px`;
+        container.style.height = `calc(100dvh - ${padY * 2}px`
+    }
+
+    if (container && content && contentParagraphs.length) {
+        const scrollEl = content;
+        const setOpacity = () => {
+            const maxScroll = scrollEl.scrollHeight - scrollEl.clientHeight;
+            const progress = maxScroll > 0 ? Math.min(1, Math.max(0, scrollEl.scrollTop / maxScroll)) : 0;
+            const fadeProgress = progress <= 0 ? 0 : Math.min(progress / 0.25, 1);
+            const easedFade = Math.pow(fadeProgress, 4);
+            const opacity = 1 - easedFade;
+            contentParagraphs.forEach((p) => {
+                p.style.opacity = opacity.toFixed(3);
+            });
+            if (thesisOverlay) {
+                const overlayProgress = progress <= 0.2 ? 0 : (progress - 0.2) / 0.1;
+                thesisOverlay.style.opacity = Math.min(1, Math.max(0, overlayProgress)).toFixed(3);
+            }
+        };
+        const setPadding = () => {
+            if (!container) return;
+            container.style.setProperty('--parent-h', `${container.clientHeight}px`);
+        };
+        setOpacity();
+        setPadding();
+        scrollEl.addEventListener('scroll', setOpacity, { passive: true });
+        window.addEventListener('resize', () => {
+            setPadding();
+            setOpacity();
+        }, { passive: true });
+    }
+
+    document.documentElement.style.visibility = 'visible';
+}
+
 
 // -----------------------------------------------------
 // PAGE TRANSITION ANIMATION TIMELINE
@@ -5340,6 +5407,39 @@ const Page = {
             tl.from('.experience-container a', {
                 autoAlpha: 0, duration: 0.5
             }, '>');
+            return tl;
+        },
+        leave: ({ current }) => {
+            const tl = gsap.timeline();
+            tl.to(current.container, { autoAlpha: 0, duration: 0.3 });
+            return tl;
+        }
+    },
+
+    thesis: { // THESIS PAGE
+        build: () => { thesisPage(); },
+        enter: ({ next }) => {
+            const tl = gsap.timeline();
+            tl.fromTo('.thesis-container', {
+                scaleX: 0, scaleY: 0
+            }, {
+                scaleX: 1, scaleY: 0.01, duration: 0.25, ease: 'power2.Out'
+            });
+            tl.to('.thesis-container', {
+                scaleY: 1, duration: 0.25, ease: 'power2.Out'
+            }, '>');
+            tl.from('.thesis-container i', {
+                autoAlpha: 0, duration: 0.15, ease: 'power2.Out'
+            }, '>');
+            tl.from('.thesis-content-header', {
+                autoAlpha: 0, duration: 0.25, ease: 'power2.Out'
+            }, '>');
+            tl.from('.thesis-content-inner p', {
+                autoAlpha: 0, duration: 0.25, stagger: 0.1, ease: 'power2.Out'
+            }, '>');
+            tl.from('a', {
+                autoAlpha: 0, duration: 0.25, ease: 'power2.Out'
+            }, '<+0.5');
             return tl;
         },
         leave: ({ current }) => {
