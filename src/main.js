@@ -1246,7 +1246,7 @@ function space() {
     const loader = new GLTFLoader();
     const preloadAssets = () => {
         const urls = new Set();
-        ['./element05.glb', './element07.glb', './element08.glb'].forEach(p => {
+        ['./element13.glb', './element16.glb', './element17.glb'].forEach(p => {
             urls.add(new URL(p, import.meta.url).href);
         });
         ['./textures/sphereNormal.jpg', './textures/sphereRoughness.jpg', './textures/sphereColor.png'].forEach(p => {
@@ -3508,6 +3508,11 @@ function space() {
             const modelHeights = [];
             const geometries = new Set();
             const materials = new Set();
+            const mixers = Array.from({ length: groupCount }, () => null);
+            const perElementAnimators = Array.from({ length: groupCount }, () => () => {});
+            perElementAnimators[0] = ({ model, delta }) => {
+                if (model) model.rotation.y += 0.6 * delta;
+            };
             const sectionIds = ['what-section-1', 'what-section-2', 'what-section-3'];
             const sectionMap = new Map(sectionIds.map((id, index) => [id, { group: groups[index], element: document.getElementById(id), index }]));
             let activeSectionId = null;
@@ -3526,9 +3531,9 @@ function space() {
             loader.setDRACOLoader?.(dracoLoader);
             // Model paths (override by setting window.whatModelPaths before this runs)
             const defaultModelPaths = [
-                './element05.glb',
-                './element07.glb',
-                './element08.glb'
+                './element17.glb',
+                './element16.glb',
+                './element13.glb'
             ];
             const modelPathStrings = Array.isArray(window.whatModelPaths) ? window.whatModelPaths : defaultModelPaths;
             const modelPaths = modelPathStrings.map(p => p ? new URL(p, import.meta.url) : null);
@@ -3538,14 +3543,14 @@ function space() {
             // const scaleFactor = Math.max(window.innerHeight / window.innerWidth, window.innerWidth / window.innerHeight)
             const perGroupOffsets = phonePortrait
                 ? [
-                    { pos: [0, 0.1, 0], rot: [10, 0, 0], scale: 0.42 },
-                    { pos: [0, 0, 0], rot: [0, 0, 0], scale: 0.5 },
-                    { pos: [0, 0, 0], rot: [80, 0, 20], scale: 0.45 }
+                    { pos: [0, 0.1, 0], rot: [0, 0, 0], scale: 0.42 },
+                    { pos: [0, 1, -1], rot: [0, 0, 2], scale: 0.35 },
+                    { pos: [0, 0, 0], rot: [0, 0.3, 0], scale: 0.45 }
                 ]
                 : [
-                    { pos: [0, 0.1, 0], rot: [10, 0, 0], scale: 5 },
-                    { pos: [0, 0.1, 0], rot: [0, 0, 0], scale: 3 },
-                    { pos: [0, 0.1, 0], rot: [80, 0, 20], scale: 2.2 }
+                    { pos: [1, 0, 0], rot: [0, 0, 0], scale: 5 },
+                    { pos: [0.5, 2, -5], rot: [0, 0, 2], scale: 1 },
+                    { pos: [0, 0.1, 0], rot: [0, 0.3, 0], scale: 2.2 }
                 ];
 
             modelPaths.forEach((url, index) => {
@@ -3595,6 +3600,13 @@ function space() {
                     const group = groups[index];
                     if (!group) return;
                     const clone = template.clone(true);
+                    if (gltf.animations?.length) {
+                        const mixer = new THREE.AnimationMixer(clone);
+                        gltf.animations.forEach((clip) => {
+                            mixer.clipAction(clip).play();
+                        });
+                        mixers[index] = mixer;
+                    }
                     const cfg = perGroupOffsets[index] ?? {};
                     const [rx = 0, ry = 0, rz = 0] = cfg.rot ?? [];
                     clone.rotation.set(rx, ry, rz);
@@ -3631,7 +3643,6 @@ function space() {
                 });
             });
 
-            const rotationSpeed = 0.2;
             const clock = new THREE.Clock();
             let running = false;
             const targetZ = 0;
@@ -3771,11 +3782,21 @@ function space() {
             window.addEventListener('resize', resize);
             syncGroupsToSections({ immediate: true });
 
+            function isIndexActive(idx) {
+                if (isPhonePortrait) return idx === activePhoneIndex;
+                const entry = sectionMap.get(sectionIds[idx]);
+                return entry?.element?.classList.contains('active') || entry?.element?.id === activeSectionId;
+            }
+
             function renderFrame() {
                 if (!running) return;
                 const delta = clock.getDelta();
-                groups.forEach((group) => {
-                    group.rotation.y += rotationSpeed * delta;
+                mixers.forEach((mixer, idx) => {
+                    if (mixer && isIndexActive(idx)) mixer.update(delta);
+                });
+                perElementAnimators.forEach((animateElement, idx) => {
+                    if (!isIndexActive(idx)) return;
+                    animateElement?.({ group: groups[idx], model: models[idx], delta, index: idx });
                 });
                 camera.lookAt(lookAtTarget);
                 renderer.render(scene, camera);

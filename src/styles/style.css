@@ -525,6 +525,8 @@ main#liminalspace {
     z-index: 10;
     bottom: 4rem;
     left: 4rem;
+    opacity: 1;
+    transition: opacity 0.5s ease;
 }
 
 div:has(>#user_message) {
@@ -1206,6 +1208,15 @@ canvas#space {
 #vs-content,
 #acc-content {
     margin-bottom: 4rem;
+}
+
+.section#what-section-2>div.scroll-hint, .section#what-section-3>div.scroll-hint {
+    position: absolute;
+}
+
+main:has(#what-section-2.active) .scroll-hint,
+main:has(#what-section-3.active) .scroll-hint {
+    opacity: 0 !important;
 }
 
 #what-section-4 {
