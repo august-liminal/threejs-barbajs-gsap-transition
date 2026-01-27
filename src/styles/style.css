@@ -1788,6 +1788,12 @@ main[data-barba-namespace="thesis"] a {
     z-index: 1;
 }
 
+.thesis-content-header span {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
 .thesis-content {
     width: clamp(24rem, 50vw, 40rem);
     height: 100%;

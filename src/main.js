@@ -366,7 +366,7 @@ async function landing() {
     entranceEl?.style.setProperty('--entrance-h', 4);
     if (phonePortrait) {
         const maxEntranceW = gridSize;
-        const maxEntranceH = Math.max(2, Math.floor(gridSize - 2 * (y / cellSize) - 2));
+        const maxEntranceH = Math.max(2, Math.floor(gridSize - 2 * (y / cellSize)));
         entranceEl?.style.setProperty('--entrance-w', maxEntranceW);
         entranceEl?.style.setProperty('--entrance-h', maxEntranceH);
         const windowBox = document.querySelector('.window');
@@ -565,7 +565,7 @@ function updateLanding(e) {
     const rawW = Math.round(Math.abs(pos.x) / cellSize) * 2;
     const rawH = Math.round(Math.abs(pos.y) / cellSize) * 2;
     windowW = clamp(Math.max(2, rawW), 2, gridSize - 2) + 2;
-    windowH = clamp(Math.max(2, rawH), 2, gridSize - 2 * (y / cellSize) - 4) + 2;
+    windowH = clamp(Math.max(2, rawH), 2, gridSize - 2 * (y / cellSize) - 2) + 2;
 
     if (!Number.isFinite(windowW)) windowW = Math.floor(Math.min(window.innerHeight, window.innerWidth) / cellSize / 2) * 2;
     if (!Number.isFinite(windowH)) windowH = Math.floor(Math.min(window.innerHeight, window.innerWidth) / cellSize / 2) * 2;
@@ -5162,6 +5162,10 @@ function thesisPage() {
     const container = document.querySelector('.thesis-container');
     const content = document.querySelector('.thesis-content');
     const contentParagraphs = document.querySelectorAll('.thesis-content-inner p');
+    const header = document.querySelector('.thesis-content-header');
+    const headerSpans = header?.querySelectorAll('span') || [];
+    const headerPrimary = headerSpans[0];
+    const headerSecondary = headerSpans[1];
     const thesisOverlay = document.querySelector('.thesis');
 
     if (container) {
@@ -5191,6 +5195,17 @@ function thesisPage() {
             contentParagraphs.forEach((p) => {
                 p.style.opacity = opacity.toFixed(3);
             });
+            if (headerPrimary || headerSecondary) {
+                const headerFade = Math.min(1, Math.max(0, easedFade));
+                if (headerPrimary) {
+                    headerPrimary.style.opacity = (1 - headerFade).toFixed(3);
+                    headerPrimary.style.visibility = headerFade > 0.95 ? 'hidden' : 'visible';
+                }
+                if (headerSecondary) {
+                    headerSecondary.style.opacity = headerFade.toFixed(3);
+                    headerSecondary.style.visibility = headerFade > 0.05 ? 'visible' : 'hidden';
+                }
+            }
             if (thesisOverlay) {
                 const overlayProgress = progress <= 0.2 ? 0 : (progress - 0.2) / 0.1;
                 thesisOverlay.style.opacity = Math.min(1, Math.max(0, overlayProgress)).toFixed(3);
