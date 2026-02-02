@@ -378,13 +378,14 @@ div:has(#unlock-module) {
     text-shadow: 0 0 0.5em #fff;
 }
 
-.text-1 {
+.text-portfolio {
     left: 0.25em;
     top: -1.25em;
     font-size: 1.5rem;
     color: #fff;
     text-decoration: none;
     transition: text-shadow 0.2s;
+    display: none;
 }
 
 .text-experience {
@@ -396,6 +397,7 @@ div:has(#unlock-module) {
 .text-thesis {
     right: 0.5em;
     bottom: -1.5em;
+    display: none;
 }
 
 
