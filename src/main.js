@@ -3549,7 +3549,7 @@ function space() {
                 ]
                 : [
                     { pos: [1, 0, 0], rot: [0, 0, 0], scale: 5 },
-                    { pos: [0.5, 2, -5], rot: [0, 0, 2], scale: 1 },
+                    { pos: [0.5, 2, -5], rot: [0, 0, 2], scale: 2 },
                     { pos: [0, 0.1, 0], rot: [0, 0.3, 0], scale: 2.2 }
                 ];
 
@@ -3602,9 +3602,15 @@ function space() {
                     const clone = template.clone(true);
                     if (gltf.animations?.length) {
                         const mixer = new THREE.AnimationMixer(clone);
+                        const isElement16 = url.pathname?.endsWith('/element16.glb') || url.href.includes('element16.glb');
                         gltf.animations.forEach((clip) => {
-                            mixer.clipAction(clip).play();
+                            const action = mixer.clipAction(clip);
+                            if (isElement16) {
+                                action.time = clip.duration * 0.5;
+                            }
+                            action.play();
                         });
+                        if (isElement16) mixer.update(0);
                         mixers[index] = mixer;
                     }
                     const cfg = perGroupOffsets[index] ?? {};
