@@ -9,8 +9,8 @@
 * {
     -webkit-tap-highlight-color: transparent;
     --font-size-2xl: clamp(2rem, 4.8vmax, 6.4vmin);
-    --font-size-lg: clamp(1.25rem, 2.4vmax, 3.2vmin);
-    --font-size-md: clamp(1rem, 2vmax, 2.4vmin);
+    --font-size-lg: clamp(1.25rem, 2.4vmax, 2.4vmin);
+    --font-size-md: clamp(1rem, 2vmax, 2vmin);
 }
 
 body {
@@ -77,15 +77,15 @@ div:has(.bound) {
     height: 100vh;
     inset: 0;
     padding: 4rem;
+        
 }
 
 .bound {
     width: 100%;
     height: 100%;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: space-between;    
 }
 
 .centerpiece {
@@ -100,7 +100,7 @@ div:has(.bound) {
     width: 105%;
     height: 105%;
     inset: 0;
-    --grid-color: #333333;
+    --grid-color: #fff2;
     --grid-size: 3rem;
     --grid-thickness: 1px;
 
@@ -109,6 +109,28 @@ div:has(.bound) {
         linear-gradient(90deg, var(--grid-color) var(--grid-thickness), transparent var(--grid-thickness));
     background-size: var(--grid-size) var(--grid-size);
     background-position: -1px -1px;
+}
+
+.grid-glow {
+    position: absolute;
+    inset: 0;
+    width: 105%;
+    height: 105%;
+    z-index: -2;
+    pointer-events: none;
+    --glow-x: 50%;
+    --glow-y: 50%;
+    background:
+        radial-gradient(circle 36rem at var(--glow-x) var(--glow-y),
+            rgb(255 255 255 / 9%) 0%,
+            rgb(255 255 255 / 0%) 62%),
+        radial-gradient(circle 42rem at var(--glow-x) var(--glow-y),
+            rgb(255 255 255 / 4%) 0%,
+            rgb(255 255 255 / 0%) 75%);
+    filter: blur(1px),
+    radial-gradient(120% 90% at 15% 12%, rgb(255 255 255 / 8%) 0%, rgb(255 255 255 / 0%) 58%),
+        radial-gradient(140% 110% at 85% 88%, rgb(255 255 255 / 4%) 0%, rgb(255 255 255 / 0%) 65%),
+        linear-gradient(160deg, #ffffff00 0%, #ffffff00 42%, #ffffff04 100%);
 }
 
 #landing-new-canvas {
@@ -128,7 +150,7 @@ div:has(.bound) {
     top: var(--rounded-top-inset, 50%);
     transform: translateY(-150%);
     background: repeating-linear-gradient(to right,
-            currentColor 0 8px,
+            #fff5 0 8px,
             transparent 8px 16px), #000;
 }
 
@@ -140,7 +162,7 @@ div:has(.bound) {
     left: var(--rounded-left-inset, 50%);
     transform: translateX(-150%);
     background: repeating-linear-gradient(to bottom,
-            currentColor 0 8px,
+            #fff5 0 8px,
             transparent 8px 16px), #000;
 }
 
@@ -159,8 +181,8 @@ div:has(.bound) {
 .explainer {
     font-size: var(--font-size-lg);
     width: 32ch;
-    margin-top: 0.75em;
-    line-height: 1.5;
+    margin-top: 0.5em;
+    line-height: 1.3;
 }
 
 .top-link,

@@ -259,7 +259,11 @@ function landingNew() {
         return;
     }
     const bound = gridBackground.closest('.bound');
-    
+    let gridGlow = bound?.querySelector('.grid-glow');
+    if (bound && !gridGlow) {
+        gridGlow = Object.assign(document.createElement('div'), { className: 'grid-glow' });
+        bound.insertBefore(gridGlow, gridBackground);
+    }
 
     //=============== THREEJS
     const renderHost = bound?.querySelector('.centerpiece') || bound || document.body;
@@ -272,11 +276,13 @@ function landingNew() {
     const camera = new THREE.PerspectiveCamera(phonePortrait ? 34 : 30, 1, 0.1, 4000);
     scene.add(camera);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    const keyLight = new THREE.DirectionalLight(0xffffff, 0.95);
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    keyLight.position.set(2.5, 3.5, 4);
-    rimLight.position.set(-3, -1.5, -3);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.16);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 5);
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.22);
+    // Front-right key: +x (right) and +z (toward viewer/camera)
+    keyLight.position.set(-4.5, 1.2, -2.5);
+    // Minimal opposite fill to keep shadow detail without flattening contrast
+    rimLight.position.set(-2.2, -0.8, -2.6);
     scene.add(ambientLight, keyLight, rimLight);
 
     const renderer = new THREE.WebGLRenderer({
@@ -327,6 +333,8 @@ function landingNew() {
 
     const loader = new GLTFLoader();
     loader.setDRACOLoader(dracoLoader);
+    const diffuseTexture = new THREE.TextureLoader().load(new URL('./textures/diffuse-1.png', import.meta.url).href);
+    diffuseTexture.colorSpace = THREE.SRGBColorSpace;
     loader.load(
         new URL('./rock.glb', import.meta.url).href,
         (gltf) => {
@@ -335,8 +343,11 @@ function landingNew() {
             rock.traverse((child) => {
                 if (!child.isMesh) return;
                 child.material = new THREE.MeshStandardMaterial({
-                    color: 0xd9d9d9,
-                    roughness: 0.35,
+                    map: diffuseTexture,
+                    roughnessMap: diffuseTexture,
+                    //normalMap: diffuseTexture,
+                    normalScale: new THREE.Vector2(0.4, 0.4),
+                    roughness: 1,
                     metalness: 0
                 });
                 child.castShadow = false;
@@ -415,15 +426,9 @@ function landingNew() {
             ease: 'power2.out',
             overwrite: true
         });
-        if (gridGradient) {
-            const centeredX = progressX * 2 - 1;
-            const centeredY = progressY * 2 - 1;
-            const energy = 0.08 + Math.min(0.22, (Math.abs(centeredX) + Math.abs(centeredY)) * 0.08);
-            gridGradient.style.setProperty('--gradient-x', `${(progressX * 100).toFixed(2)}%`);
-            gridGradient.style.setProperty('--gradient-y', `${(progressY * 100).toFixed(2)}%`);
-            gridGradient.style.setProperty('--holo-tilt-x', `${(-centeredX * 2.5).toFixed(2)}deg`);
-            gridGradient.style.setProperty('--holo-tilt-y', `${(centeredY * 2.5).toFixed(2)}deg`);
-            gridGradient.style.setProperty('--holo-energy', energy.toFixed(3));
+        if (gridGlow) {
+            gridGlow.style.setProperty('--glow-x', `${(progressX * 100).toFixed(2)}%`);
+            gridGlow.style.setProperty('--glow-y', `${(progressY * 100).toFixed(2)}%`);
         }
     };
 
@@ -437,12 +442,9 @@ function landingNew() {
             ease: 'power2.out',
             overwrite: true
         });
-        if (gridGradient) {
-            gridGradient.style.setProperty('--gradient-x', '50%');
-            gridGradient.style.setProperty('--gradient-y', '50%');
-            gridGradient.style.setProperty('--holo-tilt-x', '0deg');
-            gridGradient.style.setProperty('--holo-tilt-y', '0deg');
-            gridGradient.style.setProperty('--holo-energy', '0.08');
+        if (gridGlow) {
+            gridGlow.style.setProperty('--glow-x', '50%');
+            gridGlow.style.setProperty('--glow-y', '50%');
         }
     };
 
