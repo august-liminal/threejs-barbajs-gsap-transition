@@ -243,6 +243,239 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
     
 }
 
+
+// ====================================================================
+// ====================== NEW LANDING PAGE LAYOUT =====================
+// ====================================================================
+
+function landingNew() {
+    if (!location.pathname.endsWith('/new-l1')) return;
+
+    landingNewParallaxCleanup?.();
+
+    const gridBackground = document.querySelector('.grid-background');
+    if (!gridBackground) {
+        document.documentElement.style.visibility = 'visible';
+        return;
+    }
+    const bound = gridBackground.closest('.bound');
+    
+
+    //=============== THREEJS
+    const renderHost = bound?.querySelector('.centerpiece') || bound || document.body;
+    const threeCanvas = renderHost.querySelector('#landing-new-canvas') || Object.assign(document.createElement('canvas'), {
+        id: 'landing-new-canvas'
+    });
+    if (!threeCanvas.parentElement) renderHost.appendChild(threeCanvas);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(phonePortrait ? 34 : 30, 1, 0.1, 4000);
+    scene.add(camera);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 0.95);
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    keyLight.position.set(2.5, 3.5, 4);
+    rimLight.position.set(-3, -1.5, -3);
+    scene.add(ambientLight, keyLight, rimLight);
+
+    const renderer = new THREE.WebGLRenderer({
+        canvas: threeCanvas,
+        alpha: true,
+        antialias: true,
+        powerPreference: 'high-performance'
+    });
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    const modelRoot = new THREE.Group();
+    scene.add(modelRoot);
+
+    let rock = null;
+    let rafId = null;
+    let disposed = false;
+    let hoverProgressX = 0;
+    let hoverProgressY = 0.5;
+
+    const fitModel = () => {
+        const width = window.innerWidth || 1;
+        const height = window.innerHeight || 1;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height, false);
+
+        if (!rock) return;
+
+        const bbox = new THREE.Box3().setFromObject(rock);
+        const size = bbox.getSize(new THREE.Vector3());
+        const center = bbox.getCenter(new THREE.Vector3());
+        rock.position.sub(center);
+
+        const sourceHeight = Math.max(0.0001, size.y);
+        const sourceWidth = Math.max(0.0001, size.x);
+        const targetSize = phonePortrait ? width * 0.75 : height * 0.4;
+        const scale = phonePortrait ? (targetSize / sourceWidth) : (targetSize / sourceHeight);
+        rock.scale.setScalar(scale);
+
+        const scaledBox = new THREE.Box3().setFromObject(rock);
+        const scaledSize = scaledBox.getSize(new THREE.Vector3());
+        const halfFov = THREE.MathUtils.degToRad(camera.fov * 0.5);
+        const distance = (scaledSize.y * 0.5) / Math.tan(halfFov);
+        camera.position.set(scaledSize.x * 0.12, scaledSize.y * 0.08, distance * 1.25 + scaledSize.z * 0.5);
+        camera.lookAt(0, 0, 0);
+    };
+
+    const loader = new GLTFLoader();
+    loader.setDRACOLoader(dracoLoader);
+    loader.load(
+        new URL('./rock.glb', import.meta.url).href,
+        (gltf) => {
+            if (disposed) return;
+            rock = gltf.scene;
+            rock.traverse((child) => {
+                if (!child.isMesh) return;
+                child.material = new THREE.MeshStandardMaterial({
+                    color: 0xd9d9d9,
+                    roughness: 0.35,
+                    metalness: 0
+                });
+                child.castShadow = false;
+                child.receiveShadow = false;
+            });
+            modelRoot.add(rock);
+            fitModel();
+        },
+        undefined,
+        (err) => {
+            console.error('Failed to load rock.glb', err);
+        }
+    );
+
+    const tick = () => {
+        if (disposed) return;
+        if (rock) {
+            rock.rotation.y = THREE.MathUtils.degToRad(hoverProgressX * 180);
+            rock.rotation.x = THREE.MathUtils.degToRad(10 - hoverProgressY * 20);
+        }
+        renderer.render(scene, camera);
+        rafId = requestAnimationFrame(tick);
+    };
+    fitModel();
+    tick();
+
+    const onThreeResize = () => {
+        fitModel();
+    };
+    window.addEventListener('resize', onThreeResize, { passive: true });
+
+    const readGridStepPx = () => {
+        const raw = getComputedStyle(gridBackground).getPropertyValue('--grid-size').trim();
+        const rootFont = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+        if (raw.endsWith('rem')) return (parseFloat(raw) || 3) * rootFont;
+        if (raw.endsWith('px')) return parseFloat(raw) || 3 * rootFont;
+        const asNumber = parseFloat(raw);
+        return Number.isFinite(asNumber) ? asNumber : 3 * rootFont;
+    };
+
+    const setRoundedInsets = () => {
+        const viewportW = window.innerWidth || 1;
+        const viewportH = window.innerHeight || 1;
+        const elementW = gridBackground.offsetWidth || viewportW;
+        const elementH = gridBackground.offsetHeight || viewportH;
+        const step = Math.max(1, readGridStepPx());
+        const centerLeft = elementW * 0.5;
+        const centerTop = elementH * 0.5;
+        const snappedLeft = Math.round(centerLeft / step) * step;
+        const snappedTop = Math.round(centerTop / step) * step;
+        const clampedLeft = gsap.utils.clamp(0, elementW, snappedLeft);
+        const clampedTop = gsap.utils.clamp(0, elementH, snappedTop);
+        gridBackground.style.setProperty('--rounded-left-inset', `${clampedLeft}px`);
+        gridBackground.style.setProperty('--rounded-top-inset', `${clampedTop}px`);
+    };
+
+    const onPointerMove = (event) => {
+        const viewportW = window.innerWidth || 1;
+        const viewportH = window.innerHeight || 1;
+        const progressX = gsap.utils.clamp(0, 1, event.clientX / viewportW);
+        const progressY = gsap.utils.clamp(0, 1, event.clientY / viewportH);
+        hoverProgressX = progressX;
+        hoverProgressY = progressY;
+        const elementW = gridBackground.offsetWidth || viewportW;
+        const elementH = gridBackground.offsetHeight || viewportH;
+
+        const startX = viewportW - elementW;
+        const startY = viewportH - elementH;
+        const x = 0 + (startX - 0) * progressX;
+        const y = 0 + (startY - 0) * progressY;
+
+        gsap.to(gridBackground, {
+            x,
+            y,
+            duration: 0.35,
+            ease: 'power2.out',
+            overwrite: true
+        });
+        if (gridGradient) {
+            const centeredX = progressX * 2 - 1;
+            const centeredY = progressY * 2 - 1;
+            const energy = 0.08 + Math.min(0.22, (Math.abs(centeredX) + Math.abs(centeredY)) * 0.08);
+            gridGradient.style.setProperty('--gradient-x', `${(progressX * 100).toFixed(2)}%`);
+            gridGradient.style.setProperty('--gradient-y', `${(progressY * 100).toFixed(2)}%`);
+            gridGradient.style.setProperty('--holo-tilt-x', `${(-centeredX * 2.5).toFixed(2)}deg`);
+            gridGradient.style.setProperty('--holo-tilt-y', `${(centeredY * 2.5).toFixed(2)}deg`);
+            gridGradient.style.setProperty('--holo-energy', energy.toFixed(3));
+        }
+    };
+
+    const resetParallax = () => {
+        hoverProgressX = 0;
+        hoverProgressY = 0.5;
+        gsap.to(gridBackground, {
+            x: 0,
+            y: 0,
+            duration: 0.45,
+            ease: 'power2.out',
+            overwrite: true
+        });
+        if (gridGradient) {
+            gridGradient.style.setProperty('--gradient-x', '50%');
+            gridGradient.style.setProperty('--gradient-y', '50%');
+            gridGradient.style.setProperty('--holo-tilt-x', '0deg');
+            gridGradient.style.setProperty('--holo-tilt-y', '0deg');
+            gridGradient.style.setProperty('--holo-energy', '0.08');
+        }
+    };
+
+    const onPointerOutWindow = (event) => {
+        if (!event.relatedTarget) resetParallax();
+    };
+
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerout', onPointerOutWindow, { passive: true });
+    window.addEventListener('blur', resetParallax, { passive: true });
+
+    landingNewParallaxCleanup = () => {
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerout', onPointerOutWindow);
+        window.removeEventListener('blur', resetParallax);
+        window.removeEventListener('resize', onThreeResize);
+        disposed = true;
+        if (rafId) cancelAnimationFrame(rafId);
+        renderer.dispose();
+        modelRoot.clear();
+        if (threeCanvas.parentElement) threeCanvas.remove();
+        gsap.set(gridBackground, { x: 0, y: 0 });
+    };
+
+    setRoundedInsets();
+
+    document.documentElement.style.visibility = 'visible';
+}
+
+
+
+
+
 // ================================================================
 // ====================== LANDING PAGE LAYOUT =====================
 // ================================================================
@@ -725,212 +958,6 @@ function unlock() {
     }
     unlockGrid()
 
-
-    /*function initMatrixBuffers() {
-        centersX = new Float32Array(total);
-        centersY = new Float32Array(total);
-        jitter = new Float32Array(total);
-        lastChar = new Int16Array(total);
-        lastChar.fill(-1);
-
-        for (let j = 0; j < innerH; j++) {
-            for (let i = 0; i < innerW; i++) {
-                const idx = j * innerW + i;
-                centersX[idx] = (i + 0.5) * cellSize;
-                centersY[idx] = (j + 0.5) * cellSize;
-                const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
-                jitter[idx] = h * 0.03;
-            }
-        }
-    }*/
-
-
-    // =============== TEXT MATRIX ===============
-
-    /*
-    const RAMP = Array.from(" .:-=+*#%@");
-    const MIN_SCALE = 0.1, MAX_SCALE = 3;
-    const RIPPLE_DECAY = 0.01;
-    const POINTER_SIGMA_FACTOR = 0.25;
-    const NOISE_SCALE = 3.0;
-    let wrongTimer = null;
-    let matrixBlocked = false;
-
-    // centers & jitter
-    // module rect / pointer
-    let modRect = unlockModule.getBoundingClientRect();
-    const ro = new ResizeObserver(() => { modRect = unlockModule.getBoundingClientRect(); });
-    ro.observe(unlockModule);
-    addEventListener('scroll', () => { modRect = unlockModule.getBoundingClientRect(); }, { passive: true });
-
-    let mx = modRect.width / 2, my = modRect.height / 2;
-    let vx = 0, vy = 0, lastX = mx, lastY = my;
-
-    function onPointer(e) {
-        const p = e.touches ? e.touches[0] : e;
-        const x = p.clientX - modRect.left;
-        const y = p.clientY - modRect.top;
-        vx = 0.7 * vx + 0.3 * (x - lastX);
-        vy = 0.7 * vy + 0.3 * (y - lastY);
-        mx = x; my = y; lastX = x; lastY = y;
-    }
-    unlockModule.addEventListener('pointermove', onPointer, { passive: true });
-    unlockModule.addEventListener('touchmove', onPointer, { passive: true });
-
-    // helpers
-    const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
-    const mix = (a, b, t) => a + (b - a) * t;
-    function noise2(x, y, t) {
-        return (Math.sin(1.7 * x + 1.3 * y + 0.9 * t) * 0.6 +
-            Math.sin(2.1 * x - 0.8 * y + 1.7 * t) * 0.4) * 0.5 + 0.5;
-    }
-
-    function makeField(modW, modH) {
-        const invW = 1 / modW, invH = 1 / modH;
-        const minSide = Math.min(modW, modH);
-        const sigma = Math.max(80, minSide * POINTER_SIGMA_FACTOR);
-        const inv2Sig2 = 1 / (2 * sigma * sigma);
-
-        return function field(x, y, t) {
-            const xn = x * invW, yn = y * invH;
-            const dx = x - mx, dy = y - my;
-            const dist = Math.hypot(dx, dy);
-
-            const ang = Math.atan2(dy, dx);
-            const swirl = Math.sin(ang * 3.0 + t * 1.5) * Math.exp(-dist * 0.008) * 0.5 + 0.5;
-            const Noise = noise2(xn * NOISE_SCALE, yn * NOISE_SCALE, t * 0.5);
-            const Cursor = Math.exp(-(dx * dx + dy * dy) * inv2Sig2);
-
-            return clamp01(swirl * 0.5 + Noise * 0.3 + Cursor * 0.2);
-        };
-    }
-
-    let matrixStart = performance.now();
-    let running = true;
-    let matrixRAF = null;
-    let matrixActive = false;
-
-    const io = new IntersectionObserver((entries) => {
-        running = entries.some(e => e.isIntersecting);
-    }, { root: null, threshold: 0.01 });
-    io.observe(unlockModule);
-
-    function renderFrame(tSec, staticOnce) {
-        if (matrixBlocked) return;
-
-        const modW = modRect.width || (innerW * cellSize);
-        const modH = modRect.height || (innerH * cellSize);
-        const field = makeField(modW, modH);
-
-        for (let idx = 0; idx < total; idx++) {
-            let F = field(centersX[idx], centersY[idx], tSec) + jitter[idx];
-            F = clamp01(F);
-
-            const ci = (F * (RAMP.length - 1)) | 0;
-            if (ci !== lastChar[idx]) {
-                cells[idx].textContent = RAMP[ci];
-                lastChar[idx] = ci;
-            }
-
-            const s = mix(MIN_SCALE, MAX_SCALE, F);
-            cells[idx].style.transform = `scale(${s})`;
-        }
-        if (staticOnce) return;
-    }
-
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-    function tick() {
-        if (!matrixActive) { matrixRAF = null; return; }
-        if (reduce?.matches) {
-            renderFrame(0, true);
-            matrixRAF = null;
-            return;
-        }
-        if (!running) {
-            matrixRAF = requestAnimationFrame(tick);
-            return;
-        }
-        const t = (performance.now() - matrixStart) / 1000;
-        renderFrame(t, false);
-        matrixRAF = requestAnimationFrame(tick);
-    }
-
-    function startMatrix() {
-        if (matrixActive) return;
-        matrixActive = true;
-        matrixStart = performance.now();
-        matrixRAF = requestAnimationFrame(tick);
-    }
-
-    function stopMatrix() {
-        if (!matrixActive) return;
-        matrixActive = false;
-        if (matrixRAF) {
-            cancelAnimationFrame(matrixRAF);
-            matrixRAF = null;
-        }
-    }
-
-    function updateMatrix() {
-        modRect = unlockModule.getBoundingClientRect();
-        mx = modRect.width / 2;
-        my = modRect.height / 2;
-        lastX = mx;
-        lastY = my;
-        if (!matrixActive || reduce?.matches) {
-            renderFrame(0, true);
-        }
-    }
-
-    renderFrame(0, true);
-    textMatrixControl = {
-        start: startMatrix,
-        stop: stopMatrix,
-        update: updateMatrix,
-        dissolve: dissolveTextMatrix
-    };
-    updateMatrix();
-
-
-    // ---- DISSOLVE 
-    function dissolveTextMatrix({ from = 'center', duration = 700, spread = 400, easing = 'cubic-bezier(0.16,1,0.3,1)' } = {}) {
-        const rect = unlockModule.getBoundingClientRect();
-        let ox, oy;
-        if (Array.isArray(from)) [ox, oy] = from; else { ox = rect.width / 2; oy = rect.height / 2; }
-
-        unlockModule.classList.add('is-dissolving');
-        unlockModule.style.pointerEvents = 'none';
-
-        const diag = Math.hypot(rect.width, rect.height) || 1;
-        let done = 0;
-
-        return new Promise((resolve) => {
-            // schedule in chunks to reduce main-thread spike
-            const CHUNK = 500;
-            const startAnim = (startIdx) => {
-                const end = Math.min(startIdx + CHUNK, total);
-                for (let idx = startIdx; idx < end; idx++) {
-                    const j = (idx / innerW) | 0, i = idx % innerW;
-                    const cx = (i + 0.5) * cellSize;
-                    const cy = (j + 0.5) * cellSize;
-                    const dx = cx - ox, dy = cy - oy;
-                    const dist = Math.hypot(dx, dy);
-                    const h = (((i * 374761393 + j * 668265263) >>> 0) * 2.3283064365386963e-10) - 0.5;
-
-                    const delay = Math.max(0, (dist / diag) * spread + h * 90);
-
-                    const anim = cells[idx].animate(
-                        [{ opacity: 1 }, { opacity: 0 }],
-                        { duration, delay, easing, fill: 'forwards' }
-                    );
-                    anim.onfinish = () => { if (++done === total) resolve(); };
-                }
-                if (end < total) requestAnimationFrame(() => startAnim(end));
-            };
-            startAnim(0);
-        });
-    }
-        */
 
     // ===================== BACKGROUND VIDEOS ========================
 
@@ -5086,6 +5113,7 @@ function space() {
 // ANIMATION HELPERS
 // -----------------------------------------------------
 let landingInit = false, unlockInit = false, spaceInit = false;
+let landingNewParallaxCleanup = null;
 let textMatrixControl = null;
 const nextFrame = () => new Promise(r => requestAnimationFrame(r));
 const pin = el => gsap.set(el, { position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'hidden' });
@@ -5505,6 +5533,16 @@ const Page = {
             const tl = gsap.timeline();
             tl.to(current.container, { autoAlpha: 0, duration: 0.3 });
             return tl;
+        }
+    },
+
+    home: { // NEW LANDING PAGE --------------------------------
+        build: () => { landingNew(); },
+        enter: ({ next }) => {
+        },
+        leave: ({ current }) => {
+            landingNewParallaxCleanup?.();
+            landingNewParallaxCleanup = null;
         }
     }
 };
