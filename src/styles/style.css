@@ -71,13 +71,43 @@ body.is-transitioning {
 }
 
 /*------------------ NEW LANDING ------------------*/
-div:has(.bound) {
+
+#page-landing {
     position: absolute;
     width: 100vw;
     height: 100vh;
     inset: 0;
     padding: 4rem;
-        
+
+}
+
+#page-landing>i {
+    position: absolute;
+    display: block;
+}
+
+#page-landing>i:nth-of-type(1),
+#page-landing>i:nth-of-type(2) {
+    width: 100%;
+    height: 0.5px;
+    left: 0;
+    background: repeating-linear-gradient(to right, #fff5 0 8px, transparent 8px 16px), #000;
+}
+
+#page-landing>i:nth-of-type(3),
+#page-landing>i:nth-of-type(4) {
+    height: 100%;
+    width: 0.5px;
+    top: 0;
+    background: repeating-linear-gradient(to bottom, #fff5 0 8px, transparent 8px 16px), #000;
+}
+
+#page-landing>i:nth-of-type(2) {
+    bottom: 4rem;
+}
+
+#page-landing>i:nth-of-type(4) {
+    right: 4rem;
 }
 
 .bound {
@@ -85,7 +115,9 @@ div:has(.bound) {
     height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;    
+    justify-content: space-between;
+    position: relative;
+    padding: 2rem;
 }
 
 .centerpiece {
@@ -128,7 +160,7 @@ div:has(.bound) {
             rgb(255 255 255 / 4%) 0%,
             rgb(255 255 255 / 0%) 75%);
     filter: blur(1px),
-    radial-gradient(120% 90% at 15% 12%, rgb(255 255 255 / 8%) 0%, rgb(255 255 255 / 0%) 58%),
+        radial-gradient(120% 90% at 15% 12%, rgb(255 255 255 / 8%) 0%, rgb(255 255 255 / 0%) 58%),
         radial-gradient(140% 110% at 85% 88%, rgb(255 255 255 / 4%) 0%, rgb(255 255 255 / 0%) 65%),
         linear-gradient(160deg, #ffffff00 0%, #ffffff00 42%, #ffffff04 100%);
 }
@@ -168,20 +200,24 @@ div:has(.bound) {
 
 .hero-text {
     position: absolute;
+    display: flex;
+    flex-direction: column;
     z-index: 0;
+    inset: 2rem;
 }
 
 .slogan {
     font-family: 'Space Grotesk';
     font-size: var(--font-size-2xl);
+    flex: 1 1 0;
+    max-width: 70%;
     line-height: 1.2;
     text-shadow: 0 0 0.5em #fffa, 0 0 0.1em #fff;
 }
 
 .explainer {
     font-size: var(--font-size-lg);
-    width: 32ch;
-    margin-top: 0.5em;
+    margin-top: 2em;
     line-height: 1.3;
 }
 
@@ -205,6 +241,36 @@ div:has(.bound) {
 .top-link a:hover,
 .bottom-link a:hover {
     text-shadow: 0 0 0.5em #fff;
+}
+
+/*------------------ NEW DNA ------------------*/
+
+#page-dna .section {
+    height: 100vh;
+}
+
+#page-dna #thesis-section-3 {
+    z-index: 2;
+}
+
+#page-dna #thesis-canvas {
+    z-index: 1;
+}
+
+#page-dna #thesis-title {
+    left: 4rem;
+}
+
+.dna-scroller>div {
+    --grid-color: #fff1;
+    --grid-size: 3rem;
+    --grid-thickness: 1px;
+
+    background-image:
+        linear-gradient(var(--grid-color) var(--grid-thickness), transparent var(--grid-thickness)),
+        linear-gradient(90deg, var(--grid-color) var(--grid-thickness), transparent var(--grid-thickness));
+    background-size: var(--grid-size) var(--grid-size);
+    background-position: -1px -1px;
 }
 
 /*------------------ LANDING ------------------*/

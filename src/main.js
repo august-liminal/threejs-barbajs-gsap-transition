@@ -240,7 +240,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
         `
     });
     document.head.append(style);
-    
+
 }
 
 
@@ -265,7 +265,7 @@ function landingNew() {
         bound.insertBefore(gridGlow, gridBackground);
     }
 
-    //=============== THREEJS
+    //============================ THREEJS ============================
     const renderHost = bound?.querySelector('.centerpiece') || bound || document.body;
     const threeCanvas = renderHost.querySelector('#landing-new-canvas') || Object.assign(document.createElement('canvas'), {
         id: 'landing-new-canvas'
@@ -327,8 +327,13 @@ function landingNew() {
         const scaledSize = scaledBox.getSize(new THREE.Vector3());
         const halfFov = THREE.MathUtils.degToRad(camera.fov * 0.5);
         const distance = (scaledSize.y * 0.5) / Math.tan(halfFov);
-        camera.position.set(scaledSize.x * 0.12, scaledSize.y * 0.08, distance * 1.25 + scaledSize.z * 0.5);
+        camera.position.set(0, scaledSize.y * 0.08, distance * 1.25 + scaledSize.z * 0.5);
         camera.lookAt(0, 0, 0);
+
+        // Place model at ~2/3 viewport width (one-third from right edge)
+        const targetNdcX = 1 / 3;
+        const visibleHalfWidthAtModelDepth = Math.tan(halfFov) * camera.position.z * camera.aspect;
+        rock.position.x += targetNdcX * visibleHalfWidthAtModelDepth;
     };
 
     const loader = new GLTFLoader();
@@ -379,6 +384,8 @@ function landingNew() {
     };
     window.addEventListener('resize', onThreeResize, { passive: true });
 
+    //============================ DASH LINES ============================
+
     const readGridStepPx = () => {
         const raw = getComputedStyle(gridBackground).getPropertyValue('--grid-size').trim();
         const rootFont = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
@@ -394,7 +401,7 @@ function landingNew() {
         const elementW = gridBackground.offsetWidth || viewportW;
         const elementH = gridBackground.offsetHeight || viewportH;
         const step = Math.max(1, readGridStepPx());
-        const centerLeft = elementW * 0.5;
+        const centerLeft = elementW * 0.65;
         const centerTop = elementH * 0.5;
         const snappedLeft = Math.round(centerLeft / step) * step;
         const snappedTop = Math.round(centerTop / step) * step;
@@ -476,6 +483,1258 @@ function landingNew() {
 
 
 
+// ===========================================================
+// ====================== NEW DNA LAYOUT =====================
+// ===========================================================
+
+function dna() {
+    if (!location.pathname.endsWith('/new-dna')) return;
+
+
+    // ============================= THREEJS ==============================
+
+    // Canvas
+    const mainEl = document.querySelector('main[data-barba-namespace="dna"]') || document.querySelector('main');
+    const pageDna = document.querySelector('#page-dna') || mainEl;
+    const canvas = document.querySelector('#thesis-canvas') || Object.assign(document.createElement('canvas'), { id: 'thesis-canvas' });
+    canvas.style.pointerEvents = 'none';
+    if (pageDna && !canvas.parentElement) pageDna.appendChild(canvas);
+
+    // Scene
+    const scene = new THREE.Scene()
+    let object;
+    const BLOOM_SCENE = 1;
+    const bloomLayer = new THREE.Layers();
+    bloomLayer.set(BLOOM_SCENE);
+
+    const FOG_DENSITY = 0.008;
+    scene.fog = new THREE.FogExp2(0x000000, FOG_DENSITY); // tweak color/density
+
+    // Size
+    const size = {
+        width: window.innerWidth,
+        height: window.innerHeight
+    }
+
+    // Camera
+    const camera = new THREE.PerspectiveCamera(60, size.width / size.height, 0.5, 1000);
+    camera.position.set(phonePortrait ? -200 : -250, 0, 0);
+    scene.add(camera);
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        alpha: true,
+        antialias: true,
+        depth: true,
+        stencil: false,
+        powerPreference: 'high-performance',
+        failIfMajorPerformanceCaveat: true
+    });
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ReinhardToneMapping;
+    renderer.setClearColor(0x000000, 0);
+
+
+    // THREE JS FUNCTION
+    function createThesisScene(canvas) {
+        const params = {
+            threshold: 0.0,
+            strength: 1.6,
+            radius: 1.0,
+            exposure: 1.0
+        };
+
+        const scene = new THREE.Scene();
+        // scene.add(new THREE.AxesHelper(10));
+        const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
+        const camera = new THREE.PerspectiveCamera(
+            30,
+            aspect,
+            0.1,
+            200
+        );
+        camera.position.set(-3, 0, 8);
+        camera.layers.enable(1);
+
+        const renderer = new THREE.WebGLRenderer({
+            canvas,
+            alpha: true,
+            antialias: true
+        });
+        renderer.physicallyCorrectLights = true;
+        renderer.toneMapping = THREE.NeutralToneMapping;
+        renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+        renderer.setClearColor(0x000000, 0);
+
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        const envRT = pmremGenerator.fromScene(new RoomEnvironment(), 0.04);
+        scene.environment = envRT.texture;
+
+        const BLOOM_SCENE = 1;
+        const bloomLayer = new THREE.Layers();
+        bloomLayer.set(BLOOM_SCENE);
+
+        const materials = {};
+        const darkMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+
+        function darkenNonBloomed(obj) {
+            if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
+                materials[obj.uuid] = obj.material;
+                obj.material = darkMaterial;
+            }
+        }
+
+        function restoreMaterial(obj) {
+            if (materials[obj.uuid]) {
+                obj.material = materials[obj.uuid];
+                delete materials[obj.uuid];
+            }
+        }
+        const scaleFactor = phonePortrait ? 0.8 : window.innerWidth / window.innerHeight;
+
+        const coreSize = 1 * scaleFactor;
+        const orbRepeatSize = phonePortrait ? 0.4 * scaleFactor : 0.5 * scaleFactor;
+        const orbScientistSize = phonePortrait ? 0.1 * scaleFactor : 0.25 * scaleFactor;
+
+        const coreGeometry = new THREE.SphereGeometry(coreSize, 64, 64);
+        const coreMaterial = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(0x000000),
+            metalness: 0.5,
+            roughness: 0.9,
+            emissive: new THREE.Color(0x222222),
+            emissiveIntensity: 1.2
+        });
+        const core = new THREE.Mesh(coreGeometry, coreMaterial);
+        core.name = 'core';
+        core.layers.enable(BLOOM_SCENE);
+        scene.add(core);
+
+        const orbLight = new THREE.PointLight(0xffffff, 50, 0, 2);
+        orbLight.position.set(0, 0, 0);
+        orbLight.castShadow = true;
+        orbLight.shadow.mapSize.set(1024, 1024);
+        orbLight.shadow.bias = -0.0005;
+        core.add(orbLight);
+
+        const orbRepeatMaterial = coreMaterial.clone();
+        orbRepeatMaterial.emissive = new THREE.Color(0x222222);
+        orbRepeatMaterial.emissiveIntensity = 1.6;
+        orbRepeatMaterial.transparent = true;
+        const orbRepeat = new THREE.Mesh(new THREE.SphereGeometry(orbRepeatSize, 64, 64), orbRepeatMaterial);
+        orbRepeat.name = 'orbRepeat';
+        orbRepeat.layers.enable(BLOOM_SCENE);
+        orbRepeat.position.set(-10, 10, -10);
+        scene.add(orbRepeat);
+
+        const orbScientistMaterial = coreMaterial.clone();
+        orbScientistMaterial.emissive = new THREE.Color(0x222222);
+        orbScientistMaterial.emissiveIntensity = 1.6;
+        orbScientistMaterial.transparent = true;
+        const orbScientist = new THREE.Mesh(new THREE.SphereGeometry(orbScientistSize, 64, 64), orbScientistMaterial);
+        orbScientist.name = 'orbScientist';
+        orbScientist.layers.enable(BLOOM_SCENE);
+        orbScientist.position.set(10, 30, 15);
+        scene.add(orbScientist);
+
+        const thesisLabelRenderer = new CSS2DRenderer();
+        thesisLabelRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        thesisLabelRenderer.domElement.id = 'thesis-label-container';
+        thesisLabelRenderer.domElement.style.position = 'absolute';
+        thesisLabelRenderer.domElement.style.inset = '0';
+        thesisLabelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(thesisLabelRenderer.domElement);
+
+        const pointLight = new THREE.PointLight(0xffffff, 100000, 0, 2)
+        pointLight.position.set(-5, -50, 40);
+        scene.add(pointLight);
+
+        const orangeLight = new THREE.PointLight(0xFF8B07, 300, 0, 3)
+        orangeLight.position.set(0, 0, -4);
+        scene.add(orangeLight);
+
+        const normalMap = new THREE.TextureLoader().load(new URL('./textures/sphereNormal.jpg', import.meta.url));
+        const roughnessMap = new THREE.TextureLoader().load(new URL('./textures/sphereRoughness.jpg', import.meta.url));
+
+        const coneGeometry = new THREE.ConeGeometry(1.4, 3, 64);
+        const coneMaterial = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(0x222222),
+            metalness: 0.85,
+            roughness: 0.55,
+            normalMap: normalMap,
+            roughnessMap: roughnessMap,
+            transparent: true,
+            opacity: 0
+        });
+        const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+        cone.castShadow = true;
+        cone.receiveShadow = true;
+        cone.position.set(0, phonePortrait ? 4 : 8, 10);
+        cone.rotation.set(
+            THREE.MathUtils.degToRad(0),
+            THREE.MathUtils.degToRad(90),
+            THREE.MathUtils.degToRad(90)
+        );
+        if (phonePortrait) cone.scale.setScalar(0.5);
+
+        const cylinderGeometry = new THREE.CylinderGeometry(1.4, 1.4, 3, 64);
+        const cylinderMaterial = coneMaterial.clone();
+        cylinderMaterial.color = new THREE.Color(0x222222);
+        const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+        cylinder.castShadow = true;
+        cylinder.receiveShadow = true;
+        cylinder.position.set(0, phonePortrait ? 8 : 16, 10);
+        cylinder.rotation.set(
+            THREE.MathUtils.degToRad(5),
+            THREE.MathUtils.degToRad(90),
+            THREE.MathUtils.degToRad(90)
+        );
+        if (phonePortrait) cylinder.scale.setScalar(0.5);
+        scene.add(cone, cylinder);
+
+        const coneOverlay = core.clone();
+        coneOverlay.material = core.material.clone();
+        coneOverlay.material.transparent = true;
+        coneOverlay.material.opacity = 0;
+        coneOverlay.position.copy(cone.position);
+        coneOverlay.position.add(new THREE.Vector3(0, 0, -10));
+        scene.add(coneOverlay);
+
+        const cylinderOverlay = core.clone();
+        cylinderOverlay.material = cylinderOverlay.material.clone();
+        cylinderOverlay.material.transparent = true;
+        cylinderOverlay.material.opacity = 0;
+        cylinderOverlay.position.copy(cylinder.position);
+        cylinderOverlay.position.add(new THREE.Vector3(0, 0, -10));
+        scene.add(cylinderOverlay);
+
+        const orbLabels = [];
+        const thesisConnectorMaterial = new THREE.LineDashedMaterial({
+            color: 0xffffff,
+            scale: 1,
+            dashSize: 0.05,
+            gapSize: 0.025,
+            transparent: true,
+            opacity: 0.5
+        });
+        const attachOrbLabel = (target, text, offset = [2, 1.2, 0], anchor = [0, 0.5]) => {
+            const targetName = target?.name || 'target';
+            const div = Object.assign(document.createElement('div'), {
+                className: `label label-thesis`,
+                id: `label-${targetName}`,
+                innerHTML: `<span>${text}</span><span class='content'></span>`
+            });
+            const label = new CSS2DObject(div);
+            label.center.set(...anchor);
+            scene.add(label);
+
+            const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+            const line = new THREE.Line(geometry, thesisConnectorMaterial);
+            line.name = `thesis-connector-${targetName}`;
+            line.userData.thesisConnector = true;
+            line.userData.excludeBloom = true;
+            target.add(line);
+
+            const entry = {
+                target,
+                label,
+                element: div,
+                line,
+                positions: geometry.attributes.position,
+                offset: new THREE.Vector3().fromArray(offset)
+            };
+            orbLabels.push(entry);
+            return entry;
+        };
+
+        let coreLabelEntry, repeatLabelEntry, scientistLabelEntry;
+        if (phonePortrait) {
+            coreLabelEntry = attachOrbLabel(core, 'Topflight Founder', [1 * (coreSize + 0.25), -1 * (coreSize + 0.25), 0], [0, 1]);
+            repeatLabelEntry = attachOrbLabel(orbRepeat, 'Repeat Founder', [1 * (orbRepeatSize + 0.45), -1 * (orbRepeatSize + 0.45), 0], [0, 1]);
+            scientistLabelEntry = attachOrbLabel(orbScientist, 'Entrepreneurial Scientist', [1 * (orbScientistSize + 0.35), -1 * (orbScientistSize + 0.35), 0], [0, 1]);
+        } else {
+            coreLabelEntry = attachOrbLabel(core, 'Topflight Founder', [-1 * (coreSize - 0.5), -1 * (coreSize + 0.05), 0], [1, 1]);
+            repeatLabelEntry = attachOrbLabel(orbRepeat, 'Repeat Founder', [-1 * (orbRepeatSize - 0.25), -1 * (orbRepeatSize + 0.5), 0], [1, 1]);
+            scientistLabelEntry = attachOrbLabel(orbScientist, 'Entrepreneurial Scientist', [-1 * (orbScientistSize + 0.15), -1 * (orbScientistSize + 0.75), 0], [1, 1]);
+        }
+
+        const coreContent = coreLabelEntry.element.querySelector('.content');
+        const repeatContent = repeatLabelEntry.element.querySelector('.content');
+        const scientistContent = scientistLabelEntry.element.querySelector('.content');
+        if (coreContent) coreContent.textContent = 'Founders with >$1B in exits';
+        if (repeatContent) repeatContent.textContent = 'Founders who have raised >$5M in previous startup(s)';
+        if (scientistContent) scientistContent.textContent = 'Founders working on breakthrough technologies';
+        thesisLabelRenderer.render(scene, camera); // ensure labels exist in DOM before timelines
+
+        const shellGeometry = new THREE.SphereGeometry(12, 80, 80);
+
+        shellGeometry.computeTangents?.();
+        const shellMaterial = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(0x111111),
+            roughness: 0.95,
+            metalness: 1,
+            normalMap: normalMap,
+            roughnessMap: roughnessMap,
+            transparent: true
+        });
+        const leftShell = new THREE.Mesh(shellGeometry.clone(), shellMaterial.clone());
+        leftShell.position.set(-30, 0, -4);
+        scene.add(leftShell);
+        const rightShell = new THREE.Mesh(shellGeometry.clone(), shellMaterial.clone());
+        rightShell.position.set(30, 0, -4);
+        scene.add(rightShell);
+
+        const renderScene = new RenderPass(scene, camera);
+        renderScene.clear = true;
+        renderScene.clearAlpha = 0;
+
+        const bloomRenderTarget = new THREE.WebGLRenderTarget(
+            canvas.clientWidth,
+            canvas.clientHeight,
+            { type: THREE.HalfFloatType }
+        );
+        const bloomComposer = new EffectComposer(renderer, bloomRenderTarget);
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(canvas.clientWidth, canvas.clientHeight),
+            params.strength,
+            params.radius,
+            params.threshold
+        );
+        bloomComposer.renderToScreen = false;
+        bloomComposer.addPass(renderScene);
+        bloomComposer.addPass(bloomPass);
+
+        const mixPass = new ShaderPass(
+            new THREE.ShaderMaterial({
+                uniforms: {
+                    baseTexture: { value: null },
+                    bloomTexture: { value: bloomComposer.renderTarget2.texture },
+                    bloomStrength: { value: params.strength }
+                },
+                vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+                fragmentShader: `
+          uniform sampler2D baseTexture;
+          uniform sampler2D bloomTexture;
+          uniform float bloomStrength;
+          varying vec2 vUv;
+          void main() {
+            vec4 base = texture2D(baseTexture, vUv);
+            vec4 bloom = texture2D(bloomTexture, vUv);
+            vec3 rgb = base.rgb + bloom.rgb;
+            float bloomMask = max(max(bloom.r, bloom.g), bloom.b);
+            float outAlpha = max(base.a, clamp(bloomMask * (0.65 + bloomStrength * 0.35), 0.0, 1.0));
+            gl_FragColor = vec4(rgb, outAlpha);
+          }
+        `
+            }),
+            'baseTexture'
+        );
+        mixPass.needsSwap = true;
+
+        const finalRenderTarget = new THREE.WebGLRenderTarget(
+            canvas.clientWidth,
+            canvas.clientHeight,
+            { type: THREE.HalfFloatType, samples: 4 }
+        );
+        const finalComposer = new EffectComposer(renderer, finalRenderTarget);
+        finalComposer.addPass(renderScene);
+        finalComposer.addPass(mixPass);
+        finalComposer.addPass(new OutputPass());
+
+        const clock = new THREE.Clock();
+        let running = false;
+        const tempWorld = new THREE.Vector3();
+        const tempEnd = new THREE.Vector3();
+        const tempDir = new THREE.Vector3();
+        const tempScale = new THREE.Vector3();
+        const tempBox = new THREE.Box3();
+        const tempSphere = new THREE.Sphere();
+        const tempLabel = new THREE.Vector3();
+
+        const getTargetRadius = (target) => {
+            let radius = target.geometry?.boundingSphere?.radius;
+            if (!radius && target.geometry?.computeBoundingSphere) {
+                target.geometry.computeBoundingSphere();
+                radius = target.geometry.boundingSphere?.radius;
+            }
+            if (!radius) {
+                tempBox.setFromObject(target);
+                tempBox.getBoundingSphere(tempSphere);
+                radius = tempSphere.radius || 1;
+            }
+            target.getWorldScale(tempScale);
+            const maxScale = Math.max(tempScale.x, tempScale.y, tempScale.z, 1);
+            return radius * maxScale;
+        };
+
+        function resize() {
+            const width = canvas.clientWidth;
+            const height = Math.max(1, canvas.clientHeight);
+            renderer.setSize(width, height, false);
+            const aspect = width / height;
+            camera.aspect = aspect;
+            camera.updateProjectionMatrix();
+            bloomComposer.setSize(width, height);
+            finalComposer.setSize(width, height);
+            thesisLabelRenderer.setSize(width, height);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        const getSurfaceOffset = (target, endWorld) => {
+            target.getWorldPosition(tempWorld);
+            tempDir.copy(endWorld).sub(tempWorld);
+            const len = tempDir.length() || 1;
+            let radius = target.geometry?.boundingSphere?.radius;
+            if (!radius && target.geometry?.computeBoundingSphere) {
+                target.geometry.computeBoundingSphere();
+                radius = target.geometry.boundingSphere?.radius;
+            }
+            if (!radius) {
+                tempBox.setFromObject(target);
+                tempBox.getBoundingSphere(tempSphere);
+                radius = tempSphere.radius || 1;
+            }
+            target.getWorldScale(tempScale);
+            const maxScale = Math.max(tempScale.x, tempScale.y, tempScale.z, 1);
+            const surface = (radius || 1) * maxScale;
+            tempDir.multiplyScalar(surface / len);
+            return tempWorld.clone().add(tempDir);
+        };
+
+        const tempHiddenLines = [];
+        function renderFrame() {
+            tempHiddenLines.length = 0;
+            scene.traverse(obj => {
+                if (obj.isLine && obj.userData?.excludeBloom) {
+                    obj.visible = false;
+                    tempHiddenLines.push(obj);
+                }
+            });
+            orbLabels.forEach(({ target, label, line, positions, offset }) => {
+                // position label relative to target
+                target.getWorldPosition(tempWorld);
+                tempEnd.copy(tempWorld).add(offset);
+                label.position.copy(tempEnd);
+
+                // start at label anchor
+                label.getWorldPosition(tempLabel);
+
+                // end on orb surface along line toward orb center
+                const radius = getSurfaceOffset(target, tempLabel).distanceTo(tempWorld);
+                tempDir.copy(tempLabel).sub(tempWorld);
+                const len = tempDir.length() || 1;
+                const surfacePoint = tempWorld.clone().add(tempDir.multiplyScalar(radius / len));
+
+                const startLocal = target.worldToLocal(tempLabel.clone());
+                const endLocal = target.worldToLocal(surfacePoint.clone());
+                positions.setXYZ(0, startLocal.x, startLocal.y, startLocal.z);
+                positions.setXYZ(1, endLocal.x, endLocal.y, endLocal.z);
+                positions.needsUpdate = true;
+                line.computeLineDistances();
+            });
+            scene.traverse(darkenNonBloomed);
+            bloomComposer.render();
+            scene.traverse(restoreMaterial);
+            tempHiddenLines.forEach(l => { l.visible = true; });
+            finalComposer.render();
+            thesisLabelRenderer.render(scene, camera);
+        }
+
+
+        function start() {
+            if (running) return;
+            running = true;
+            clock.start();
+            renderer.setAnimationLoop(renderLoop);
+        }
+
+        function stop() {
+            if (!running) return;
+            running = false;
+            renderer.setAnimationLoop(null);
+        }
+
+        function renderLoop() {
+            if (!running) return;
+            renderFrame();
+        }
+
+        return {
+            start,
+            stop,
+            camera,
+            scene,
+            renderer,
+            labelRenderer: thesisLabelRenderer,
+            labels: {
+                core: coreLabelEntry?.element,
+                orbRepeat: repeatLabelEntry?.element,
+                orbScientist: scientistLabelEntry?.element
+            },
+            objects: { core, orbRepeat, orbScientist, leftShell, rightShell, orangeLight, pointLight, cone, cylinder, coneOverlay, cylinderOverlay },
+            dispose() {
+                stop();
+                window.removeEventListener('resize', resize);
+                thesisLabelRenderer.domElement?.remove();
+                renderer.dispose();
+                bloomRenderTarget.dispose();
+                finalRenderTarget.dispose();
+                coreGeometry.dispose();
+                [leftShell, rightShell].forEach(mesh => mesh.geometry.dispose());
+                coreMaterial.dispose();
+                orbRepeatMaterial.dispose();
+                orbScientistMaterial.dispose();
+                shellMaterial.dispose();
+                coneGeometry.dispose();
+                coneMaterial.dispose();
+                cylinderGeometry.dispose();
+                cylinderMaterial.dispose();
+                orbLabels.forEach(({ line }) => {
+                    line.geometry?.dispose?.();
+                });
+                thesisConnectorMaterial.dispose();
+                mixPass.material.dispose();
+                bloomPass.dispose?.();
+                scene.environment = null;
+                envRT.dispose();
+                pmremGenerator.dispose();
+            }
+        };
+
+    }
+
+    // PAGE
+    const page = pageDna || mainEl || document.querySelector('main');
+
+    // SVGs
+    const guidesContainer = Object.assign(document.createElement('div'), {
+        className: 'guides-container'
+    });
+
+    guidesContainer.innerHTML = `
+            <svg class="guide" id="circle-1" width="100%" height="100%" viewBox="0 0 ${window.innerWidth} ${window.innerHeight}" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="150" cy="150" r="0" stroke="white" stroke-dasharray="12 12" vector-effect="non-scaling-stroke"/>
+            </svg>
+            <svg class="guide" id="circle-2" width="100%" height="100%" viewBox="0 0 ${window.innerWidth} ${window.innerHeight}" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="150" cy="150" r="0" stroke="white" stroke-dasharray="12 12" vector-effect="non-scaling-stroke"/>
+            </svg>
+            <i class="guide" id="line"></i>
+        `;
+    const circle1 = guidesContainer.querySelector('#circle-1 circle');
+    const circle2 = guidesContainer.querySelector('#circle-2 circle');
+
+    page.appendChild(guidesContainer);
+    //
+
+    const thesisCanvas = canvas;
+
+    const thesis3D = canvas ? createThesisScene(thesisCanvas) : null;
+
+    // show page
+    page.removeAttribute('hidden');
+    page.setAttribute('style', 'position: absolute; inset: 0');
+
+    //creating scroller
+    const scroller = Object.assign(document.createElement('div'), {
+        className: 'dna-scroller scroller'
+    });
+
+    // ============================== TIMELINE
+
+    const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+
+    const connectors = [];
+    thesis3D.scene.traverse(o => {
+        if (o.isLine && o.userData?.thesisConnector) {
+            // optional: give each its own material so fades are independent
+            o.material = o.material.clone();
+            connectors.push(o);
+        }
+    });
+    const [coreLine, repeatLine, scientistLine] = connectors;
+    gsap.set(coreLine.material, { opacity: 0 });
+    gsap.set(repeatLine.material, { opacity: 0 });
+    gsap.set(scientistLine.material, { opacity: 0 });
+
+    // Set initial states
+    tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '6rem', translateY: '2rem', autoAlpha: 0, top: phonePortrait ? 'calc(100dvh - 8rem)' : 'calc(100dvh - 12rem)' });
+    tl.set('.section>*', { visibility: 'hidden' });
+
+    // Definition timeline
+    tl.from('main', {
+        autoAlpha: 0, duration: 1
+    }, 0);
+    tl.to(renderer.domElement, {
+        autoAlpha: 0, duration: 1, ease: 'power2.out'
+    }, 0);
+    tl.set('#thesis-section-1 *', { visibility: 'visible' })
+    tl.set('#line', { 'transform-origin': '0% 50%' })
+
+
+    tl.set(['#liminal-title', '#liminal-phonetic', '#liminal-def', '#liminal-desc', '.scroll-hint'], { autoAlpha: 0 }, 0);
+    tl.to('#liminal-title', {
+        autoAlpha: 1, duration: 0.5
+    }, '>');
+    tl.to('#liminal-phonetic', {
+        autoAlpha: 1, duration: 0.2
+    }, '-=0.2');
+    tl.to('#liminal-def', {
+        autoAlpha: 1, duration: 0.3
+    }, '-=0.2');
+    tl.fromTo('#line', {
+        scaleX: 0
+    }, { scaleX: 1, duration: 1 }, '<');
+    tl.to('#liminal-desc', {
+        autoAlpha: 1, duration: 0.5
+    }, '-=0.2');
+    tl.to('.scroll-hint', {
+        autoAlpha: 1, duration: 0.5
+    }, '-=0.2');
+
+
+    tl.add(() => { thesis3D?.start(); }, '>-2');
+    tl.from('canvas#thesis-canvas', {
+        autoAlpha: 0, duration: 2
+    }, '<');
+    tl.add(() => { // Append Scroller
+        document.body.appendChild(scroller);
+        appendSegments(6);
+
+        window.scrollTo(0, 0);
+        scroller.scrollTop = 0;
+        ScrollTrigger.refresh();
+    }, '>')
+
+    // ========== SCROLL TRIGGER
+
+    const cam = thesis3D?.camera;
+    const orbRepeat = thesis3D?.objects?.orbRepeat;
+    const orbScientist = thesis3D?.objects?.orbScientist;
+    const leftShell = thesis3D?.objects?.leftShell;
+    const rightShell = thesis3D?.objects?.rightShell;
+    const orangeLight = thesis3D?.objects?.orangeLight;
+    const cone = thesis3D?.objects?.cone;
+    const cylinder = thesis3D?.objects?.cylinder;
+    const coneOverlay = thesis3D?.objects?.coneOverlay;
+    const cylinderOverlay = thesis3D?.objects?.cylinderOverlay;
+
+    const labelCoreEl = document.getElementById('label-core');
+    const labelRepeatEl = document.getElementById('label-orbRepeat');
+    const labelScientistEl = document.getElementById('label-orbScientist');
+
+
+    tl.add(() => { // DNA Title timeline       
+
+        const segmentTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: '#segment-2',
+                scroller,
+                start: 'top bottom',
+                end: 'bottom bottom',
+                scrub: true,
+                invalidateOnRefresh: true,
+                snap: {
+                    snapTo: [0, 1],
+                    duration: { min: 0.2, max: 0.6 },
+                    ease: 'power1.inOut'
+                }
+            }
+        });
+
+        segmentTl.to('#liminal-title', {
+            translateY: '-10rem', autoAlpha: 0, duration: 0.2
+        }, 0);
+        segmentTl.to('#liminal-phonetic', {
+            translateY: '-10rem', autoAlpha: 0, duration: 0.2
+        }, '<+0.05');
+        segmentTl.to('#line', {
+            autoAlpha: 0, duration: 0.1, duration: 0.05
+        }, '<+0.05')
+        segmentTl.to('#liminal-def', {
+            translateY: '-10rem', autoAlpha: 0, duration: 0.2
+        }, '>');
+        segmentTl.to('#liminal-desc', {
+            translateY: '-20rem', autoAlpha: 0, duration: 0.2
+        }, '<+0.05');
+        segmentTl.to('#thesis-title', {
+            translateY: '0rem', autoAlpha: 1
+        }, '<+0.2');
+        if (cam && leftShell && rightShell) {
+            segmentTl.to(cam.rotation, {
+                z: THREE.MathUtils.degToRad(45),
+                ease: 'none',
+                onUpdate: () => cam.updateProjectionMatrix()
+            }, 0);
+            segmentTl.to(cam, {
+                fov: 10
+            }, '<');
+            segmentTl.to(cam.position, {
+                x: 2, y: 2, z: 70,
+                ease: 'none',
+                onUpdate: () => cam.updateProjectionMatrix()
+            }, '<');
+            segmentTl.to(leftShell.position, {
+                x: -13.5, z: 0,
+                ease: 'none'
+            }, '<');
+            segmentTl.to(rightShell.position, {
+                x: 13.5, z: 0,
+                ease: 'none'
+            }, '<');
+
+            const circleTargets = {
+                circle1: { cx: 0, cy: 0, r: 0 },
+                circle2: { cx: 0, cy: 0, r: 0 }
+            };
+            let circleSetup = false;
+            const tempCenter = new THREE.Vector3();
+            const tempEdge = new THREE.Vector3();
+            const tempClip = new THREE.Vector3();
+            const tempScale = new THREE.Vector3();
+            segmentTl.add(() => {
+                if (circleSetup) return;
+                const rect = thesisCanvas.getBoundingClientRect();
+                const viewWidth = window.innerWidth;
+                const viewHeight = window.innerHeight;
+                const pairs = [
+                    { mesh: rightShell, circle: circle2, key: 'circle2' },
+                    { mesh: leftShell, circle: circle1, key: 'circle1' }
+                ];
+
+                pairs.forEach(({ mesh, circle, key }) => {
+                    if (!mesh || !circle) return;
+                    mesh.updateWorldMatrix(true, false);
+
+                    if (!mesh.geometry.boundingSphere) {
+                        mesh.geometry.computeBoundingSphere();
+                    }
+                    const sphere = mesh.geometry.boundingSphere;
+                    tempCenter.copy(sphere.center);
+                    mesh.localToWorld(tempCenter);
+                    tempClip.copy(tempCenter).project(cam);
+                    const cx = (tempClip.x * 0.5 + 0.5) * viewWidth;
+                    const cy = (-tempClip.y * 0.5 + 0.5) * viewHeight;
+
+                    mesh.getWorldScale(tempScale);
+                    const scaledRadius = sphere.radius * Math.max(tempScale.x, tempScale.y, tempScale.z);
+                    tempEdge.set(scaledRadius, 0, 0).add(sphere.center);
+                    mesh.localToWorld(tempEdge);
+                    tempClip.copy(tempEdge).project(cam);
+                    const ex = (tempClip.x * 0.5 + 0.5) * viewWidth;
+                    const ey = (-tempClip.y * 0.5 + 0.5) * viewHeight;
+                    const screenRadius = Math.hypot(ex - cx, ey - cy);
+
+                    circleTargets[key].cx = cx;
+                    circleTargets[key].cy = cy;
+                    circleTargets[key].r = screenRadius;
+                    circle.setAttribute('cx', cx);
+                    circle.setAttribute('cy', cy);
+                });
+                circleSetup = true;
+            }, '>');
+
+            // segmentTl.fromTo(circle2, {
+            //     autoAlpha: 0,
+            //     attr: {
+            //         cx: () => circleTargets.circle2.cx,
+            //         cy: () => circleTargets.circle2.cy,
+            //         r: 0
+            //     }
+            // }, {
+            //     autoAlpha: 1,
+            //     attr: {
+            //         cx: () => circleTargets.circle2.cx,
+            //         cy: () => circleTargets.circle2.cy,
+            //         r: () => circleTargets.circle2.r
+            //     },
+            //     duration: 1,
+            //     ease: 'power2.out'
+            // }, '>');
+            // segmentTl.fromTo(circle1, {
+            //     autoAlpha: 0,
+            //     attr: {
+            //         cx: () => circleTargets.circle1.cx,
+            //         cy: () => circleTargets.circle1.cy,
+            //         r: 0
+            //     }
+            // }, {
+            //     autoAlpha: 1,
+            //     attr: {
+            //         cx: () => circleTargets.circle1.cx,
+            //         cy: () => circleTargets.circle1.cy,
+            //         r: () => circleTargets.circle1.r
+            //     },
+            //     duration: 1,
+            //     ease: 'power2.out'
+            // }, '<');
+        }
+    });
+
+    tl.add(() => { // Who > What timeline            
+        const segmentTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: '#segment-3',
+                scroller,
+                start: 'top bottom',
+                end: 'bottom bottom',
+                scrub: true,
+                invalidateOnRefresh: true,
+                snap: {
+                    snapTo: 1,
+                    delay: 0.1,
+                    duration: { min: 0.2, max: 0.6 },
+                    ease: 'power1.inOut'
+                }
+            }
+        });
+        segmentTl.to('#thesis-title', {
+            translateY: '-2em', autoAlpha: 0
+        }, 0);
+        segmentTl.set('#thesis-title', {
+            'font-family': 'Space Mono', top: '8rem', bottom: 'unset', fontSize: phonePortrait ? '1.25rem' : '2rem', translateY: 0
+        }, '>');
+        segmentTl.to('#thesis-title', {
+            autoAlpha: 1, top: '4rem', bottom: 'unset'
+        }, '>');
+        segmentTl.fromTo('#who-what', {
+            translateY: '5rem', autoAlpha: 0
+        }, {
+            translateY: 0, autoAlpha: 1, duration: 0.2
+        }, '<+0.3');
+        segmentTl.to('#who-what-content', {
+            autoAlpha: 1, duration: 0.2
+        }, '>');
+        const scaleFactor = phonePortrait ? 1 : window.innerWidth / window.innerHeight;
+        if (labelCoreEl) segmentTl.to(labelCoreEl, { opacity: 1, duration: 0.2 }, '>');
+        segmentTl.fromTo(coreLine.material, { opacity: 0 }, { opacity: 0.5, duration: 0.2, ease: 'power1.out' }, '<');
+        if (labelRepeatEl) segmentTl.to(labelRepeatEl, { opacity: 1, duration: 0.2 }, '<+0.1');
+        segmentTl.fromTo(repeatLine.material, { opacity: 0 }, { opacity: 0.5, duration: 0.2, ease: 'power1.out' }, '<');
+        if (labelScientistEl) segmentTl.to(labelScientistEl, { opacity: 1, duration: 0.2 }, '<+0.1');
+        segmentTl.fromTo(scientistLine.material, { opacity: 0 }, { opacity: 0.5, duration: 0.2, ease: 'power1.out' }, '<');
+        if (cam && leftShell && rightShell) {
+            segmentTl.to(cam.rotation, {
+                z: phonePortrait ? THREE.MathUtils.degToRad(270) : THREE.MathUtils.degToRad(135),
+                ease: 'power2.out',
+                onUpdate: () => cam.updateProjectionMatrix()
+            }, 0);
+            segmentTl.to(cam.position, {
+                x: phonePortrait ? 0 : -1.625 * scaleFactor,
+                y: phonePortrait ? -2.5 * scaleFactor : 0.15 * scaleFactor,
+                z: phonePortrait ? 50 : 30,
+                ease: 'power2.out',
+                onUpdate: () => cam.updateProjectionMatrix()
+            }, '<');
+            segmentTl.to(leftShell.position, {
+                x: 0, z: -60,
+                ease: 'power2.out'
+            }, '<');
+            segmentTl.to(rightShell.position, {
+                x: 0, z: -100,
+                ease: 'power2.out'
+            }, '<');
+            segmentTl.to([leftShell.material, rightShell.material], {
+                opacity: 0,
+                ease: 'power2.out'
+            }, '<');
+            segmentTl.to(orbRepeat.position, {
+                x: phonePortrait ? -1.75 * scaleFactor : -1.825 * scaleFactor,
+                y: phonePortrait ? -0.5 * scaleFactor : 1.1 * scaleFactor,
+                z: 0,
+                ease: 'power2.out'
+            }, '<');
+            segmentTl.to(orbScientist.position, {
+                x: phonePortrait ? -3.25 * scaleFactor : -3 * scaleFactor,
+                y: phonePortrait ? -1 * scaleFactor : 1.85 * scaleFactor,
+                z: 0,
+                ease: 'power2.out'
+            }, '<');
+            segmentTl.to(orangeLight.position, {
+                x: -20,
+                y: -20,
+                z: -50,
+                ease: 'power2.out'
+            }, '<');
+            segmentTl.to(orangeLight, {
+                intensity: 100000,
+                ease: 'power4.in'
+            }, '<');
+        }
+    });
+
+    tl.add(() => { // Ultimate Co-Founder timeline            
+        const segmentTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: '#segment-4',
+                scroller,
+                start: 'top bottom',
+                end: 'bottom bottom',
+                scrub: true,
+                invalidateOnRefresh: true,
+                snap: {
+                    snapTo: [0, 1],
+                    duration: { min: 0.2, max: 0.6 },
+                    ease: 'power1.inOut'
+                }
+            }
+        });
+        segmentTl.to([labelCoreEl, labelRepeatEl, labelScientistEl], { opacity: 0, duration: 0.1 }, 0);
+        segmentTl.to(coreLine.material, { opacity: 0, duration: 0.1 }, 0);
+        segmentTl.to(repeatLine.material, { opacity: 0, duration: 0.1 }, 0);
+        segmentTl.to(scientistLine.material, { opacity: 0, duration: 0.1 }, 0);
+        segmentTl.to('#thesis-title', {
+            translateY: '-1em', autoAlpha: 0
+        }, 0);
+        segmentTl.to('#who-what', {
+            translateY: '-2rem', autoAlpha: 0
+        }, '>');
+        segmentTl.to('#who-what-content', {
+            translateY: '-2rem', autoAlpha: 0
+        }, 0.1);
+        segmentTl.fromTo('#unlock-potential', {
+            translateY: '2rem', autoAlpha: 0
+        }, {
+            translateY: 0, autoAlpha: 1
+        }, 0);
+        segmentTl.fromTo('#unlock-potential-content', {
+            translateY: '2rem', autoAlpha: 0
+        }, {
+            translateY: 0, autoAlpha: 1
+        }, '<+0.2');
+        if (cam && leftShell && rightShell) {
+            segmentTl.to(cam.rotation, {
+                z: phonePortrait ? THREE.MathUtils.degToRad(450) : THREE.MathUtils.degToRad(415),
+                ease: 'power2.out',
+                onUpdate: () => cam.updateProjectionMatrix()
+            }, 0);
+            segmentTl.to(cam.position, {
+                x: phonePortrait ? -0.2 : -0.4,
+                y: phonePortrait ? 0.2 : 1,
+                z: phonePortrait ? 8 : 10,
+                ease: 'power2.out',
+                onUpdate: () => cam.updateProjectionMatrix()
+            }, '<');
+            segmentTl.to(orbRepeat.position, {
+                z: -50,
+                ease: 'power2.out'
+            }, '<');
+            segmentTl.to(orbScientist.position, {
+                x: 0, y: 0, z: 30,
+                ease: 'power2.out'
+            }, '<');
+            segmentTl.to(leftShell.position, {
+                x: 0, z: -200,
+                ease: 'power2.out'
+            }, '<');
+            segmentTl.to(rightShell.position, {
+                x: 0, z: -200,
+                ease: 'power2.out'
+            }, '<');
+            segmentTl.to(orangeLight, {
+                intensity: 0,
+                ease: 'power2.out'
+            }, '<');
+            segmentTl.to(orbScientist.material, { opacity: 0, duration: 0.1 }, '>');
+            segmentTl.to(orbRepeat.material, { opacity: 0, duration: 0.1 }, '<');
+        }
+    });
+
+    tl.add(() => { // Back the Founder timeline 
+        const computeCamXForWhitespace = () => {
+            const content = document.querySelector('#whitespaces-content');
+            const viewportH = window.innerHeight || document.documentElement.clientHeight || 1;
+            if (!content) return -10;
+            const rect = content.getBoundingClientRect();
+            const bottom = rect.top + rect.height;
+            const available = Math.max(0, viewportH - bottom - (4 * 16));
+            const center = rect.top + rect.height + available / 2;
+            const ratio = Math.min(Math.max(center / viewportH, 0), 1);
+            return 10 - 20 * ratio; // 10 => top, -10 => bottom
+        };
+
+        const segmentTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: '#segment-5',
+                scroller,
+                start: 'top bottom',
+                end: 'bottom bottom',
+                scrub: true,
+                invalidateOnRefresh: true,
+                snap: {
+                    snapTo: [0, 1],
+                    duration: { min: 0.2, max: 0.6 },
+                    ease: 'power1.inOut'
+                }
+            }
+        });
+        segmentTl.to('.scroll-hint', {
+            autoAlpha: 0, translateY: '-2em'
+        });
+        segmentTl.to('#unlock-potential', {
+            translateY: '-2rem', autoAlpha: 0
+        }, '<');
+        segmentTl.to('#unlock-potential-content', {
+            translateY: '-2rem', autoAlpha: 0
+        }, '<+0.1');
+        segmentTl.fromTo('#whitespaces', {
+            translateY: '5rem', autoAlpha: 0
+        }, {
+            translateY: '0', autoAlpha: 1
+        }, 0);
+        segmentTl.fromTo('#whitespaces-content', {
+            translateY: '5rem', autoAlpha: 0
+        }, {
+            translateY: '0', autoAlpha: 1
+        }, '<+0.1');
+        segmentTl.fromTo('.backBtn-thesis', {
+            translateY: '2rem', autoAlpha: 0
+        }, {
+            translateY: 0, autoAlpha: 1
+        }, 0)
+
+        segmentTl.to(cam.rotation, {
+            z: THREE.MathUtils.degToRad(450),
+            ease: 'power4.out',
+            onUpdate: () => cam.updateProjectionMatrix()
+        }, 0);
+        segmentTl.to(cam.position, {
+            x: () => computeCamXForWhitespace(), y: phonePortrait ? 4 : 8, z: 110,
+            ease: 'power4.out',
+            onUpdate: () => cam.updateProjectionMatrix()
+        }, '<');
+
+        tl.add(() => {
+            document.querySelector('.backBtn-thesis').addEventListener('click', (e) => back(1, e, thesis3D), { once: true });
+        });
+    });
+
+    tl.add(() => { // Back the Founder objects timeline
+        const nestedTl = gsap.timeline({ paused: true });
+        nestedTl.add(() => {
+            console.log(coneOverlay.material.opacity);
+        }, 0)
+        nestedTl.set(coneOverlay.material, { opacity: 0 }, 0);
+        nestedTl.set(cylinderOverlay.material, { opacity: 0 }, 0);
+        nestedTl.to(cone.rotation, {
+            y: THREE.MathUtils.degToRad(270), ease: 'power4.inOut', duration: 1.2
+        }, '>');
+        nestedTl.to(cone.position, {
+            z: -2,
+            ease: 'power4.inOut', duration: 1.2
+        }, '<');
+        nestedTl.to(cylinder.rotation, {
+            y: THREE.MathUtils.degToRad(270), ease: 'power4.inOut', duration: 1.2
+        }, '<+0.1');
+        nestedTl.to(cylinder.position, {
+            x: 0,
+            z: -2, ease: 'power4.inOut', duration: 1.2
+        }, '<');
+        nestedTl.to(coneOverlay.material, {
+            opacity: 1, duration: 0.5
+        }, '>+0.1');
+        nestedTl.to(cylinderOverlay.material, {
+            opacity: 1, duration: 0.5
+        }, '<');
+        nestedTl.to(cone.material, {
+            opacity: 0, duration: 0.5
+        }, '<');
+        nestedTl.to(cylinder.material, {
+            opacity: 0, duration: 0.5
+        }, '<');
+
+        const objectsTlForward = gsap.timeline({ paused: true });
+        objectsTlForward.to(cone.position, { z: -2, duration: 0.1 }, 0);
+        objectsTlForward.to(cone.material, { opacity: 1, duration: 0.1 }, '<');
+        objectsTlForward.fromTo(cone.rotation, { y: THREE.MathUtils.degToRad(-60) }, {
+            y: THREE.MathUtils.degToRad(0), ease: 'power4.inOut', duration: 0.1
+        }, '<');
+        objectsTlForward.to(cylinder.position, { z: -2, duration: 0.1 }, 0.05);
+        objectsTlForward.to(cylinder.material, { opacity: 1, duration: 0.1 }, '<');
+        objectsTlForward.fromTo(cylinder.rotation, { y: THREE.MathUtils.degToRad(-60) }, {
+            y: THREE.MathUtils.degToRad(0), ease: 'power4.inOut', duration: 0.1
+        }, '<');
+        const objectsTlBackward = gsap.timeline({ paused: true });
+        objectsTlBackward.to(coneOverlay.material, { opacity: 0, duration: 0.1 }, '<');
+        objectsTlBackward.to(cylinderOverlay.material, { opacity: 0, duration: 0.1 }, '<');
+
+        let usingBackward = false;
+        objectsTlForward.eventCallback('onStart', () => {
+            nestedTl.pause(0).progress(0);
+        });
+        objectsTlForward.eventCallback('onComplete', () => {
+            nestedTl.play(0);
+        });
+
+        ScrollTrigger.create({
+            trigger: '#segment-5',
+            scroller,
+            start: 'top bottom',
+            end: 'bottom bottom',
+            scrub: true,
+            invalidateOnRefresh: true,
+            snap: {
+                snapTo: [0, 1],
+                duration: { min: 0.2, max: 0.6 },
+                ease: 'power1.inOut'
+            },
+            onUpdate: (self) => {
+                const fProg = Math.min(1, Math.max(0, self.progress));
+                const bProg = 1 - fProg;
+                if (!usingBackward) {
+                    objectsTlForward.progress(fProg);
+                    if (self.direction > 0 && objectsTlForward.progress() >= 1) {
+                        usingBackward = true;
+                        objectsTlForward.progress(1); // keep forward timeline pinned once completed
+                        objectsTlBackward.progress(bProg);
+                    }
+                } else {
+                    objectsTlBackward.progress(bProg);
+                    objectsTlForward.progress(1); // prevent forward timeline from rewinding while backward is active
+                    // if (self.direction < 0 && objectsTlBackward.progress() >= 1) {
+                    //     usingBackward = false;
+                    //     objectsTlForward.progress(fProg);
+                    // }
+                }
+            }
+        });
+
+    });
+
+    tl.add(() => { // Exit timeline
+        let backCalled = false;
+        const triggerBack = () => {
+            if (backCalled) return;
+            backCalled = true;
+            barba.go('/new-l1');
+            const dnaPage = document.querySelector('#page-dna');
+            dnaPage?.querySelectorAll('canvas').forEach((el) => el.remove());
+            document.querySelectorAll('canvas#thesis-canvas').forEach((el) => el.remove());
+            document.querySelectorAll('.scroller').forEach((el) => el.remove());            
+        };
+        const segmentTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: '#segment-6',
+                scroller,
+                start: 'top bottom',
+                end: 'bottom bottom',
+                scrub: true,
+                invalidateOnRefresh: true,
+                snap: {
+                    snapTo: [0, 1],
+                    duration: { min: 0.2, max: 0.6 },
+                    ease: 'power1.inOut'
+                },
+                onLeave: triggerBack
+            }
+        });
+        segmentTl.to('.backBtn-thesis i', {
+            width: '100%', background: '#fff8', duration: 1
+        }, 0);
+        segmentTl.to('main', {
+            scale: 0, autoAlpha: 0, ease: 'power4.in', duration: 0.8
+        }, '<');
+        segmentTl.to('canvas#thesis-canvas', {
+            scale: 0.5, autoAlpha: 0, ease: 'power4.in', duration: 0.8
+        }, '<');
+    });
+
+
+    // ========== HELPERS
+
+    // Appending Scroll Segment
+    function appendSegments(number) {
+        const scroller = document.querySelector('.scroller');
+        if (!scroller) return;
+        const target = scroller.querySelector('.smoother-content') || scroller;
+        for (let i = 0; i < number; i++) {
+            target.appendChild(Object.assign(document.createElement('div'), {
+                className: 'segment', id: `segment-${i + 1}`
+            }));
+        }
+        initLenisForScroller(scroller);
+
+        // Forward wheel/touch to the scroller so it can sit “behind” interactables
+        if (scroller && !scroller.dataset.forwardingSetup) {
+            scroller.dataset.forwardingSetup = '1';
+            let lastTouchY = null;
+            const forward = (dy) => {
+                const next = scroller.scrollTop + dy;
+                if (lenis) {
+                    lenis.scrollTo(next, { immediate: false });
+                } else {
+                    scroller.scrollTop = next;
+                }
+                ScrollTrigger.update();
+            };
+            const onWheel = (e) => {
+                if (!document.body.contains(scroller)) { window.removeEventListener('wheel', onWheel, wheelOpts); return; }
+                const dy = e.deltaY;
+                const isMouseWheel = (e.deltaMode === 1) || (Math.abs(dy % 120) < 0.01);
+                if (scroller.dataset.segmentSnapWheel === '1' && isMouseWheel) {
+                    e.preventDefault();
+                    return; // Observer-driven snapping will handle mouse wheels
+                }
+                forward(e.deltaY);
+                e.preventDefault();
+            };
+            const onTouchMove = (e) => {
+                if (!document.body.contains(scroller)) { window.removeEventListener('touchmove', onTouchMove, touchOpts); return; }
+                const t = e.touches?.[0];
+                if (!t) return;
+                if (lastTouchY != null) forward(lastTouchY - t.clientY);
+                lastTouchY = t.clientY;
+                e.preventDefault();
+            };
+            const onTouchEnd = () => { lastTouchY = null; };
+            const wheelOpts = { passive: false };
+            const touchOpts = { passive: false };
+            window.addEventListener('wheel', onWheel, wheelOpts);
+            window.addEventListener('touchmove', onTouchMove, touchOpts);
+            window.addEventListener('touchend', onTouchEnd);
+        }
+    }
+
+    // Lenis helper for the hidden scroller
+    function initLenisForScroller(wrapper) {
+        if (!wrapper) return null;
+        if (phonePortrait) {
+            lenis?.destroy?.();
+            lenis = null;
+            return null;
+        }
+        if (!wrapper.querySelector('.smoother-content')) {
+            const content = document.createElement('div');
+            content.className = 'smoother-content';
+            while (wrapper.firstChild) {
+                content.appendChild(wrapper.firstChild);
+            }
+            wrapper.appendChild(content);
+        }
+        lenis?.destroy?.();
+        lenis = new Lenis({
+            wrapper,
+            content: wrapper.querySelector('.smoother-content'),
+            // duration: 1.1,                   // higher = longer glide (default 1)
+            smoothTouch: true,               // smooth on touch
+            smoothWheel: true,               // smooth on wheel
+            wheelMultiplier: 1.5   // boost wheel delta
+        });
+        lenis.on('scroll', ScrollTrigger.update);
+        window.lenis = lenis;
+        return lenis;
+    }
+
+    document.documentElement.style.visibility = 'visible';
+}
 
 
 // ================================================================
@@ -1585,6 +2844,7 @@ function space() {
     // Render passes
     const renderScene = new RenderPass(scene, camera);
 
+
     // Half-res bloom composer
     const bloomComposer = new EffectComposer(renderer);
     const halfW = Math.max(256, size.width >> 1);
@@ -2326,7 +3586,8 @@ function space() {
                 roughness: 0.95,
                 metalness: 1,
                 normalMap: normalMap,
-                roughnessMap: roughnessMap
+                roughnessMap: roughnessMap,
+                transparent: true
             });
             const leftShell = new THREE.Mesh(shellGeometry.clone(), shellMaterial.clone());
             leftShell.position.set(-30, 0, -4);
@@ -2967,6 +4228,10 @@ function space() {
                     x: 0, z: -100,
                     ease: 'power2.out'
                 }, '<');
+                segmentTl.to([leftShell.material, rightShell.material], {
+                    opacity: 0,
+                    ease: 'power2.out'
+                }, '<');
                 segmentTl.to(orbRepeat.position, {
                     x: phonePortrait ? -1.75 * scaleFactor : -1.825 * scaleFactor,
                     y: phonePortrait ? -0.5 * scaleFactor : 1.1 * scaleFactor,
@@ -3038,8 +4303,8 @@ function space() {
                     onUpdate: () => cam.updateProjectionMatrix()
                 }, 0);
                 segmentTl.to(cam.position, {
-                    x: phonePortrait ? -0.2 : -0.4, 
-                    y: phonePortrait ? 0.2 : 1, 
+                    x: phonePortrait ? -0.2 : -0.4,
+                    y: phonePortrait ? 0.2 : 1,
                     z: phonePortrait ? 8 : 10,
                     ease: 'power2.out',
                     onUpdate: () => cam.updateProjectionMatrix()
@@ -3128,7 +4393,7 @@ function space() {
                 onUpdate: () => cam.updateProjectionMatrix()
             }, 0);
             segmentTl.to(cam.position, {
-                x: () => computeCamXForWhitespace(), y: phonePortrait? 4 : 8, z: 110,
+                x: () => computeCamXForWhitespace(), y: phonePortrait ? 4 : 8, z: 110,
                 ease: 'power4.out',
                 onUpdate: () => cam.updateProjectionMatrix()
             }, '<');
@@ -3149,7 +4414,7 @@ function space() {
                 y: THREE.MathUtils.degToRad(270), ease: 'power4.inOut', duration: 1.2
             }, '>');
             nestedTl.to(cone.position, {
-                z: -2, 
+                z: -2,
                 ease: 'power4.inOut', duration: 1.2
             }, '<');
             nestedTl.to(cylinder.rotation, {
@@ -3538,7 +4803,7 @@ function space() {
             const geometries = new Set();
             const materials = new Set();
             const mixers = Array.from({ length: groupCount }, () => null);
-            const perElementAnimators = Array.from({ length: groupCount }, () => () => {});
+            const perElementAnimators = Array.from({ length: groupCount }, () => () => { });
             perElementAnimators[0] = ({ model, delta }) => {
                 if (model) model.rotation.y += 0.6 * delta;
             };
@@ -5545,6 +6810,14 @@ const Page = {
         leave: ({ current }) => {
             landingNewParallaxCleanup?.();
             landingNewParallaxCleanup = null;
+        }
+    },
+
+    dna: { // NEW LANDING PAGE --------------------------------
+        build: () => { dna(); },
+        enter: ({ next }) => {
+        },
+        leave: ({ current }) => {
         }
     }
 };
