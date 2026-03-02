@@ -264,13 +264,22 @@ function landingNew() {
         gridGlow = Object.assign(document.createElement('div'), { className: 'grid-glow' });
         bound.insertBefore(gridGlow, gridBackground);
     }
+    let gridInnerGlow = gridBackground.querySelector('.grid-inner-glow');
+    if (!gridInnerGlow) {
+        gridInnerGlow = Object.assign(document.createElement('div'), { className: 'grid-inner-glow' });
+        gridBackground.appendChild(gridInnerGlow);
+    }
 
     //============================ THREEJS ============================
-    const renderHost = bound?.querySelector('.centerpiece') || bound || document.body;
-    const threeCanvas = renderHost.querySelector('#landing-new-canvas') || Object.assign(document.createElement('canvas'), {
+    const centerpiece = bound?.querySelector('.centerpiece') || document.querySelector('.centerpiece');
+    if (!centerpiece) {
+        document.documentElement.style.visibility = 'visible';
+        return;
+    }
+    const threeCanvas = document.querySelector('#landing-new-canvas') || Object.assign(document.createElement('canvas'), {
         id: 'landing-new-canvas'
     });
-    if (!threeCanvas.parentElement) renderHost.appendChild(threeCanvas);
+    centerpiece.appendChild(threeCanvas);
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(phonePortrait ? 34 : 30, 1, 0.1, 4000);
@@ -437,6 +446,10 @@ function landingNew() {
             gridGlow.style.setProperty('--glow-x', `${(progressX * 100).toFixed(2)}%`);
             gridGlow.style.setProperty('--glow-y', `${(progressY * 100).toFixed(2)}%`);
         }
+        if (gridInnerGlow) {
+            gridInnerGlow.style.setProperty('--inner-glow-x', `${(progressX * 100).toFixed(2)}%`);
+            gridInnerGlow.style.setProperty('--inner-glow-y', `${(progressY * 100).toFixed(2)}%`);
+        }
     };
 
     const resetParallax = () => {
@@ -452,6 +465,10 @@ function landingNew() {
         if (gridGlow) {
             gridGlow.style.setProperty('--glow-x', '50%');
             gridGlow.style.setProperty('--glow-y', '50%');
+        }
+        if (gridInnerGlow) {
+            gridInnerGlow.style.setProperty('--inner-glow-x', '50%');
+            gridInnerGlow.style.setProperty('--inner-glow-y', '50%');
         }
     };
 
@@ -488,7 +505,7 @@ function landingNew() {
 // ===========================================================
 
 function dna() {
-    if (!location.pathname.endsWith('/new-dna')) return;
+    if (!location.pathname.endsWith('/about')) return;
 
 
     // ============================= THREEJS ==============================
@@ -1108,7 +1125,7 @@ function dna() {
     }, '<');
     tl.add(() => { // Append Scroller
         document.body.appendChild(scroller);
-        appendSegments(6);
+        appendSegments(5);
 
         window.scrollTo(0, 0);
         scroller.scrollTop = 0;
@@ -1143,11 +1160,11 @@ function dna() {
                 end: 'bottom bottom',
                 scrub: true,
                 invalidateOnRefresh: true,
-                snap: {
-                    snapTo: [0, 1],
-                    duration: { min: 0.2, max: 0.6 },
-                    ease: 'power1.inOut'
-                }
+                // snap: {
+                //     snapTo: [0, 1],
+                //     duration: { min: 0.2, max: 0.6 },
+                //     ease: 'power1.inOut'
+                // }
             }
         });
 
@@ -1242,41 +1259,6 @@ function dna() {
                 });
                 circleSetup = true;
             }, '>');
-
-            // segmentTl.fromTo(circle2, {
-            //     autoAlpha: 0,
-            //     attr: {
-            //         cx: () => circleTargets.circle2.cx,
-            //         cy: () => circleTargets.circle2.cy,
-            //         r: 0
-            //     }
-            // }, {
-            //     autoAlpha: 1,
-            //     attr: {
-            //         cx: () => circleTargets.circle2.cx,
-            //         cy: () => circleTargets.circle2.cy,
-            //         r: () => circleTargets.circle2.r
-            //     },
-            //     duration: 1,
-            //     ease: 'power2.out'
-            // }, '>');
-            // segmentTl.fromTo(circle1, {
-            //     autoAlpha: 0,
-            //     attr: {
-            //         cx: () => circleTargets.circle1.cx,
-            //         cy: () => circleTargets.circle1.cy,
-            //         r: 0
-            //     }
-            // }, {
-            //     autoAlpha: 1,
-            //     attr: {
-            //         cx: () => circleTargets.circle1.cx,
-            //         cy: () => circleTargets.circle1.cy,
-            //         r: () => circleTargets.circle1.r
-            //     },
-            //     duration: 1,
-            //     ease: 'power2.out'
-            // }, '<');
         }
     });
 
@@ -1289,22 +1271,22 @@ function dna() {
                 end: 'bottom bottom',
                 scrub: true,
                 invalidateOnRefresh: true,
-                snap: {
-                    snapTo: 1,
-                    delay: 0.1,
-                    duration: { min: 0.2, max: 0.6 },
-                    ease: 'power1.inOut'
-                }
+                // snap: {
+                //     snapTo: 1,
+                //     delay: 0.1,
+                //     duration: { min: 0.2, max: 0.6 },
+                //     ease: 'power1.inOut'
+                // }
             }
         });
         segmentTl.to('#thesis-title', {
             translateY: '-2em', autoAlpha: 0
         }, 0);
         segmentTl.set('#thesis-title', {
-            'font-family': 'Space Mono', top: '8rem', bottom: 'unset', fontSize: phonePortrait ? '1.25rem' : '2rem', translateY: 0
+            'font-family': 'Space Mono', top: '10rem', bottom: 'unset', fontSize: phonePortrait ? '1.25rem' : '2rem', translateY: 0
         }, '>');
         segmentTl.to('#thesis-title', {
-            autoAlpha: 1, top: '4rem', bottom: 'unset'
+            autoAlpha: 1, top: '8rem', bottom: 'unset'
         }, '>');
         segmentTl.fromTo('#who-what', {
             translateY: '5rem', autoAlpha: 0
@@ -1380,11 +1362,11 @@ function dna() {
                 end: 'bottom bottom',
                 scrub: true,
                 invalidateOnRefresh: true,
-                snap: {
-                    snapTo: [0, 1],
-                    duration: { min: 0.2, max: 0.6 },
-                    ease: 'power1.inOut'
-                }
+                // snap: {
+                //     snapTo: [0, 1],
+                //     duration: { min: 0.2, max: 0.6 },
+                //     ease: 'power1.inOut'
+                // }
             }
         });
         segmentTl.to([labelCoreEl, labelRepeatEl, labelScientistEl], { opacity: 0, duration: 0.1 }, 0);
@@ -1469,12 +1451,15 @@ function dna() {
                 end: 'bottom bottom',
                 scrub: true,
                 invalidateOnRefresh: true,
-                snap: {
-                    snapTo: [0, 1],
-                    duration: { min: 0.2, max: 0.6 },
-                    ease: 'power1.inOut'
-                }
+                // snap: {
+                //     snapTo: [0, 1],
+                //     duration: { min: 0.2, max: 0.6 },
+                //     ease: 'power1.inOut'
+                // }
             }
+        });
+        segmentTl.to('#page-dna .backBtn', {
+            autoAlpha: 0, duration: 0.5, ease: 'power2.out'
         });
         segmentTl.to('.scroll-hint', {
             autoAlpha: 0, translateY: '-2em'
@@ -1495,11 +1480,9 @@ function dna() {
         }, {
             translateY: '0', autoAlpha: 1
         }, '<+0.1');
-        segmentTl.fromTo('.backBtn-thesis', {
-            translateY: '2rem', autoAlpha: 0
-        }, {
-            translateY: 0, autoAlpha: 1
-        }, 0)
+        segmentTl.to('#page-dna .backBtn-container', {
+            autoAlpha: 1, duration: 0.5, ease: 'power2.out'
+        })
 
         segmentTl.to(cam.rotation, {
             z: THREE.MathUtils.degToRad(450),
@@ -1511,10 +1494,7 @@ function dna() {
             ease: 'power4.out',
             onUpdate: () => cam.updateProjectionMatrix()
         }, '<');
-
-        tl.add(() => {
-            document.querySelector('.backBtn-thesis').addEventListener('click', (e) => back(1, e, thesis3D), { once: true });
-        });
+        
     });
 
     tl.add(() => { // Back the Founder objects timeline
@@ -1609,43 +1589,47 @@ function dna() {
 
     });
 
-    tl.add(() => { // Exit timeline
-        let backCalled = false;
-        const triggerBack = () => {
-            if (backCalled) return;
-            backCalled = true;
-            barba.go('/new-l1');
-            const dnaPage = document.querySelector('#page-dna');
-            dnaPage?.querySelectorAll('canvas').forEach((el) => el.remove());
-            document.querySelectorAll('canvas#thesis-canvas').forEach((el) => el.remove());
-            document.querySelectorAll('.scroller').forEach((el) => el.remove());            
-        };
-        const segmentTl = gsap.timeline({
-            scrollTrigger: {
-                trigger: '#segment-6',
-                scroller,
-                start: 'top bottom',
-                end: 'bottom bottom',
-                scrub: true,
-                invalidateOnRefresh: true,
-                snap: {
-                    snapTo: [0, 1],
-                    duration: { min: 0.2, max: 0.6 },
-                    ease: 'power1.inOut'
-                },
-                onLeave: triggerBack
-            }
-        });
-        segmentTl.to('.backBtn-thesis i', {
-            width: '100%', background: '#fff8', duration: 1
-        }, 0);
-        segmentTl.to('main', {
-            scale: 0, autoAlpha: 0, ease: 'power4.in', duration: 0.8
-        }, '<');
-        segmentTl.to('canvas#thesis-canvas', {
-            scale: 0.5, autoAlpha: 0, ease: 'power4.in', duration: 0.8
-        }, '<');
+    tl.add(() => {
+        document.querySelector('.backBtn').addEventListener('click', (e) => back(1, e, thesis3D), { once: true });
     });
+
+    // tl.add(() => { // Exit timeline
+    //     let backCalled = false;
+    //     const triggerBack = () => {
+    //         if (backCalled) return;
+    //         backCalled = true;
+    //         barba.go('/new-l1');
+    //         const dnaPage = document.querySelector('#page-dna');
+    //         dnaPage?.querySelectorAll('canvas').forEach((el) => el.remove());
+    //         document.querySelectorAll('canvas#thesis-canvas').forEach((el) => el.remove());
+    //         document.querySelectorAll('.scroller').forEach((el) => el.remove());            
+    //     };
+    //     const segmentTl = gsap.timeline({
+    //         scrollTrigger: {
+    //             trigger: '#segment-6',
+    //             scroller,
+    //             start: 'top bottom',
+    //             end: 'bottom bottom',
+    //             scrub: true,
+    //             invalidateOnRefresh: true,
+    //             snap: {
+    //                 snapTo: [0, 1],
+    //                 duration: { min: 0.2, max: 0.6 },
+    //                 ease: 'power1.inOut'
+    //             },
+    //             onLeave: triggerBack
+    //         }
+    //     });
+    //     segmentTl.to('.backBtn-thesis i', {
+    //         width: '100%', background: '#fff8', duration: 1
+    //     }, 0);
+    //     segmentTl.to('main', {
+    //         scale: 0, autoAlpha: 0, ease: 'power4.in', duration: 0.8
+    //     }, '<');
+    //     segmentTl.to('canvas#thesis-canvas', {
+    //         scale: 0.5, autoAlpha: 0, ease: 'power4.in', duration: 0.8
+    //     }, '<');
+    // });
 
 
     // ========== HELPERS
@@ -1734,6 +1718,214 @@ function dna() {
     }
 
     document.documentElement.style.visibility = 'visible';
+}
+
+// ================================================================
+// ====================== TEAM PAGE LAYOUT =====================
+// ================================================================
+
+function team() {
+    if (!location.pathname.endsWith('/team')) return;
+    teamCleanup?.();
+
+    const page = document.querySelector('#page-team');
+    const teamList = document.querySelector('#page-team .team-list');
+    const teamListInner = document.querySelector('#page-team .team-list-inner');
+    const teamItems = Array.from(document.querySelectorAll('#page-team .team-item'));
+    if (!page || !teamList || !teamListInner || !teamItems.length) {
+        document.documentElement.style.visibility = 'visible';
+        return;
+    }
+
+    // Class-based model map (expand later with distinct assets per class)
+    const modelByClass = {
+        'member-chief': './04.glb',
+        'member-eng': './06.glb',
+        'member-design': './05.glb',
+        'member-prod': './03.glb',
+        'member-healthcare': './08.glb',
+        'member-prog': './07.glb',
+        'member-finop': './14.glb',
+        'member-rainmaking': './09.glb',
+        'member-legal': './04.glb',
+        'member-ta': './04.glb'
+        
+    };
+    const resolveModelPath = (item) => {
+        const roleClass = Array.from(item.classList).find((cls) => cls !== 'team-item');
+        return (roleClass && modelByClass[roleClass]) || modelByClass.default;
+    };
+
+    const loader = new GLTFLoader();
+    loader.setDRACOLoader?.(dracoLoader);
+    const entries = [];
+    let rafId = null;
+    let disposed = false;
+    const sharedTeamMaterial = new THREE.MeshStandardMaterial({
+        color: 0x858486,
+        metalness: 0.95,
+        roughness: 0.2
+    });
+
+    const getTightMeshBounds = (root) => {
+        const bounds = new THREE.Box3();
+        let hasMeshBounds = false;
+        root.updateWorldMatrix(true, true);
+        root.traverse((node) => {
+            if (!node.isMesh || !node.geometry) return;
+            if (!node.geometry.boundingBox) node.geometry.computeBoundingBox();
+            const meshBounds = node.geometry.boundingBox.clone().applyMatrix4(node.matrixWorld);
+            if (!hasMeshBounds) {
+                bounds.copy(meshBounds);
+                hasMeshBounds = true;
+            } else {
+                bounds.union(meshBounds);
+            }
+        });
+        return hasMeshBounds ? bounds : new THREE.Box3().setFromObject(root);
+    };
+
+    const centerAndScaleModel = (model, targetMaxDim = 2) => {
+        let bounds = getTightMeshBounds(model);
+        const center = bounds.getCenter(new THREE.Vector3());
+        model.position.sub(center);
+
+        model.updateWorldMatrix(true, true);
+        bounds = getTightMeshBounds(model);
+        const size = bounds.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+        const scaleRatio = targetMaxDim / maxDim;
+        model.scale.multiplyScalar(scaleRatio);
+
+        model.updateWorldMatrix(true, true);
+        bounds = getTightMeshBounds(model);
+        const centeredAgain = bounds.getCenter(new THREE.Vector3());
+        model.position.sub(centeredAgain);
+    };
+
+    const createEntry = (item) => {
+        const canvas = Object.assign(document.createElement('canvas'), {
+            className: 'team-item-canvas'
+        });
+        Object.assign(canvas.style, {
+            width: '100%',
+            aspectRatio: '3 / 1',
+            display: 'block',
+            zIndex: '0',
+            pointerEvents: 'none'
+        });
+        item.style.position = item.style.position || 'relative';
+        item.prepend(canvas);
+
+        Array.from(item.children).forEach((child) => {
+            if (child !== canvas && child instanceof HTMLElement) {
+                if (!child.style.position) child.style.position = 'relative';
+                if (!child.style.zIndex) child.style.zIndex = '1';
+            }
+        });
+
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.setClearColor(0x000000, 0);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+        camera.position.set(0, 0, 5);
+        scene.add(camera);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        const frontPoint = new THREE.PointLight(0xffffff, 50, 0, 2);
+        frontPoint.position.set(0.35, 0.2, 4.2);
+        scene.add(frontPoint);
+
+        const entry = { item, canvas, renderer, scene, camera, model: null };
+        entries.push(entry);
+
+        loader.load(
+            new URL(resolveModelPath(item), import.meta.url).href,
+            (gltf) => {
+                if (disposed) return;
+                const model = gltf.scene;
+                const pivot = new THREE.Group();
+                model.traverse((node) => {
+                    if (!node.isMesh) return;
+                    node.material = sharedTeamMaterial;
+                });
+                pivot.add(model);
+                centerAndScaleModel(model, 2);
+                scene.add(pivot);
+                entry.model = pivot;
+            },
+            undefined,
+            (err) => console.error('[team] model load failed', err)
+        );
+    };
+
+    teamItems.forEach(createEntry);
+
+    const updateTeamOffsets = () => {
+        const listRect = teamList.getBoundingClientRect();
+        teamList.style.setProperty('--top-offset', `${listRect.top}px`);
+        teamList.style.setProperty('--left-offset', `${listRect.left}px`);
+
+        const innerRect = teamListInner.getBoundingClientRect();
+        teamListInner.style.setProperty('--top-offset', `${innerRect.top}px`);
+        teamListInner.style.setProperty('--left-offset', `${innerRect.left}px`);
+    };
+
+    const resize = () => {
+        updateTeamOffsets();
+        entries.forEach((entry) => {
+            const rect = entry.canvas.getBoundingClientRect();
+            const w = Math.max(1, Math.round(rect.width));
+            const h = Math.max(1, Math.round(rect.height));
+            entry.renderer.setSize(w, h, false);
+            entry.camera.aspect = w / h;
+            entry.camera.lookAt(0, 0, 0);
+            entry.camera.updateProjectionMatrix();
+        });
+    };
+    resize();
+    window.addEventListener('resize', resize, { passive: true });
+
+    const render = () => {
+        if (disposed) return;
+        entries.forEach((entry) => {
+            if (entry.model) {
+                entry.model.rotation.y += 0.006;
+            }
+            entry.renderer.render(entry.scene, entry.camera);
+        });
+        rafId = requestAnimationFrame(render);
+    };
+    render();
+
+    teamCleanup = () => {
+        disposed = true;
+        if (rafId) cancelAnimationFrame(rafId);
+        window.removeEventListener('resize', resize);
+        entries.forEach(({ renderer, scene, canvas }) => {
+            scene.traverse((node) => {
+                if (!node.isMesh) return;
+                node.geometry?.dispose?.();
+            });
+            renderer.dispose();
+            canvas.remove();
+        });
+        sharedTeamMaterial.dispose();
+    };
+
+
+    document.documentElement.style.visibility = 'visible';
+}
+
+// ================================================================
+// ====================== FOUNDERS PAGE LAYOUT =====================
+// ================================================================
+
+function founders() {
+
 }
 
 
@@ -2108,10 +2300,15 @@ function unlock() {
     window.addEventListener('resize', setVhVar);
 
     // ---- ELEMENTS
-    const t = document.querySelector('#unlock-title');
     const unlockModule = document.querySelector('#unlock-module');
     const inner = document.querySelector('#unlock-module-inner');
     const container = unlockModule?.parentNode;
+    const unlockTypeEl = document.querySelector('#unlock-title') || document.querySelector('.tagline');
+
+    if (!unlockModule || !inner || !container) {
+        console.warn('[unlock] missing required DOM nodes (#unlock-module / #unlock-module-inner / parent container)');
+        return;
+    }
 
 
     // ----- GRID SETUP
@@ -2120,9 +2317,9 @@ function unlock() {
     unlockModule.style.gap = '0';
 
     // ---- TYPOGRAPHY / GRID SIZING
-    if (t?.style.lineHeight) t.style.removeProperty('line-height');
-
-    const mincellSize = Math.max(24, 0.5 * parseFloat(getComputedStyle(t).fontSize));
+    if (unlockTypeEl?.style?.lineHeight) unlockTypeEl.style.removeProperty('line-height');
+    const unlockFontSize = parseFloat(getComputedStyle(unlockTypeEl || document.documentElement).fontSize) || 16;
+    const mincellSize = Math.max(24, 0.5 * unlockFontSize);
     const baseViewportH = getViewportHeight();
     let dimensionH, dimensionW, cellSize, innerH, innerW, cells, total, codeOffsetX, codeOffsetY, moduleOffsetX, moduleOffsetY;
     let centersX, centersY, jitter, lastChar;
@@ -2136,7 +2333,7 @@ function unlock() {
         cellSize = viewportH / dimensionH;
 
         inner?.style.setProperty('--cell-size', `${cellSize}px`);
-        t.style.lineHeight = (cellSize * 2) + 'px';
+        if (unlockTypeEl) unlockTypeEl.style.lineHeight = (cellSize * 2) + 'px';
 
         const deducted = phonePortrait ? 4 : 8;
         innerH = dimensionH - deducted + extraRows;
@@ -2183,9 +2380,7 @@ function unlock() {
             container.querySelectorAll('.line-solid, .line-dashed').forEach(n => n.remove());
 
 
-            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX - 8}px;` }));
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX}px;` }));
-            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX}px;` }));
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX - 8}px;` }));
 
             // verticals
@@ -6381,6 +6576,7 @@ function space() {
 // -----------------------------------------------------
 let landingInit = false, unlockInit = false, spaceInit = false;
 let landingNewParallaxCleanup = null;
+let teamCleanup = null;
 let textMatrixControl = null;
 const nextFrame = () => new Promise(r => requestAnimationFrame(r));
 const pin = el => gsap.set(el, { position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'hidden' });
@@ -6663,6 +6859,7 @@ const Page = {
         // -------------------------------------------------
         enter: ({ next }) => {
             const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+            tl.set(next.container.querySelectorAll('#bg-video'), {autoAlpha: 0});
             tl.from(next.container.querySelectorAll('.line-vertical'), {
                 autoAlpha: 0, left: '50%', duration: 0.4
             }, 0);
@@ -6672,6 +6869,9 @@ const Page = {
             tl.from(next.container.querySelector('.code'), {
                 autoAlpha: 0, duration: 0.3
             }, 0.5);
+            tl.to(next.container.querySelectorAll('#bg-video'), {
+                autoAlpha: 1, duration: 0.5
+            }, '<');
             tl.from(next.container.querySelector('.button-wrapper'), {
                 autoAlpha: 0, duration: 0.3
             }, '>');
@@ -6681,14 +6881,12 @@ const Page = {
             tl.from(next.container.querySelectorAll('.text-line'), {
                 opacity: 0, duration: 0.5
             }, '>');
-            tl.add(() => { textMatrixControl?.start(); }, '>');
             return tl;
         },
         // -------------------------------------------------
         leave: ({ current }) => {
             unlockInit = false;
             const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
-            tl.add(() => { textMatrixControl?.stop(); }, 0);
             tl.to(current.container, {
                 autoAlpha: 0, duration: 0.5
             }, 0);
@@ -6806,20 +7004,160 @@ const Page = {
     home: { // NEW LANDING PAGE --------------------------------
         build: () => { landingNew(); },
         enter: ({ next }) => {
+            const tl = gsap.timeline();
+
+            tl.from('#page-landing>i:nth-of-type(1)', {
+                top: '50%', autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '0');
+            tl.from('#page-landing>i:nth-of-type(2)', {
+                bottom: '50%', autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '0');
+            tl.from('#page-landing>i:nth-of-type(3)', {
+                left: '50%', autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '0');
+            tl.from('#page-landing>i:nth-of-type(4)', {
+                right: '50%', autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '0');
+            tl.fromTo('#page-landing .grid-background', {
+                scale: 0.5, autoAlpha: 0
+            }, {
+                scale: 1, autoAlpha: 1, duration: 0.2, ease: 'power2.Out'
+            }, '>');            
+            tl.from('#page-landing .slogan', {
+                autoAlpha: 0, duration: 0.5, ease: 'bounce.in'
+            }, '<+0.1');
+            tl.from('#page-landing .explainer', {
+                autoAlpha: 0, duration: 0.2, ease: 'power2.Out'
+            }, '<+0.2');
+            tl.from('#page-landing .centerpiece', {
+                autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '<+0.1');
+            tl.from('#page-landing .top-link a', {
+                autoAlpha: 0, duration: 0.5, ease: 'bounce.in', stagger: 0.1
+            }, '<+0.1');
+            tl.from('#page-landing .bottom-link a', {
+                autoAlpha: 0, duration: 0.5, ease: 'bounce.in', stagger: 0.1
+            }, '<+0.1');
+
+            return tl;
         },
         leave: ({ current }) => {
+            const tl = gsap.timeline();            
+            tl.to('.bound', {
+                scale: 0.5, autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '0');
+            tl.to('.grid-background', {
+                autoAlpha: 0, duration: 0.2, ease: 'power2.Out'
+            }, '0');
+            tl.to('#page-landing>i', {
+                autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '>');
+            tl.to('#page-landing>i:nth-of-type(1)', {
+                top: '50%', duration: 1, ease: 'power2.Out'
+            }, '<');
+            tl.to('#page-landing>i:nth-of-type(2)', {
+                bottom: '50%', duration: 1, ease: 'power2.Out'
+            }, '<');
+            tl.to('#page-landing>i:nth-of-type(3)', {
+                left: '50%', duration: 1, ease: 'power2.Out'
+            }, '<');
+            tl.to('#page-landing>i:nth-of-type(4)', {
+                right: '50%', duration: 1, ease: 'power2.Out'
+            }, '<');          
+
             landingNewParallaxCleanup?.();
             landingNewParallaxCleanup = null;
+            return tl;
         }
     },
 
-    dna: { // NEW LANDING PAGE --------------------------------
+    dna: { // NEW DNA PAGE --------------------------------
         build: () => { dna(); },
         enter: ({ next }) => {
+            const tl = gsap.timeline();
+            tl.from('canvas', {
+                autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '0')
+            tl.from('.dna-content', {
+                autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '+1');
+            tl.from('.scroll-hint', {
+                autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '<');
+            tl.from('.dna-scroller', {
+                autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '0');
+            tl.from('#page-dna .backBtn', {
+                autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '>+2');
         },
         leave: ({ current }) => {
+            const tl = gsap.timeline();
+            tl.to('.dna-content', {
+                autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '0');
+            tl.to('canvas', {
+                autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '<+0.2')
+            tl.add(() => {
+                document.querySelector('.scroller')?.remove();
+                document.querySelector('#thesis-label-container')?.remove();
+            }, '>');
+            return tl;
         }
-    }
+    },
+
+    team: { // NEW TEAM PAGE --------------------------------
+        build: () => { team(); },
+        enter: ({ next }) => {
+            const tl = gsap.timeline();
+
+            tl.from('.team-list>i:nth-of-type(1)', {
+                top: '50%', autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '0');
+            tl.from('.team-list>i:nth-of-type(2)', {
+                bottom: '50%', autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '0');
+            tl.from('.team-list>i:nth-of-type(3)', {
+                left: '50%', autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '0');
+            tl.from('.team-list>i:nth-of-type(4)', {
+                right: '50%', autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '0');
+            tl.from('.team-list-inner', {
+                scale: 0, autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '<+0.2');
+            tl.from('#page-team .backBtn', {
+                autoAlpha: 0, duration: 0.2, ease: 'power2.Out'
+            }, '>');
+
+            return tl;
+        },
+        leave: ({ current }) => { 
+            const tl = gsap.timeline();
+
+            tl.to('.team-list-inner', {
+                scale: 0, autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '0');
+            tl.to('#page-team .backBtn', {
+                autoAlpha: 0, duration: 0.2, ease: 'power2.Out'
+            }, '0');
+            tl.to('.team-list>i:nth-of-type(1)', {
+                top: '50%', autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '<+0.1');
+            tl.to('.team-list>i:nth-of-type(2)', {
+                bottom: '50%', autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '<');
+            tl.to('.team-list>i:nth-of-type(3)', {
+                left: '50%', autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '<');
+            tl.to('.team-list>i:nth-of-type(4)', {
+                right: '50%', autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
+            }, '<');
+
+            return tl;
+        }
+    },
 };
 
 // -----------------------------------------------------
