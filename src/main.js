@@ -2378,10 +2378,8 @@ function unlock() {
             if (code) code.style.position = 'absolute';
             // ---- LINES: clear previous then place fresh
             container.querySelectorAll('.line-solid, .line-dashed').forEach(n => n.remove());
-
-
-            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:${moduleOffsetX}px;` }));
-            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:${moduleOffsetX - 8}px;` }));
+            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:4rem` }));
+            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:4rem` }));
 
             // verticals
             if (code && !phonePortrait) {
