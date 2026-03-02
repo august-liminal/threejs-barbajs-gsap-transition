@@ -231,6 +231,7 @@ body.is-transitioning {
     font-size: var(--font-size-lg);
     margin-top: 2em;
     line-height: 1.3;
+    max-width: 75%;
 }
 
 .top-link,
@@ -652,6 +653,10 @@ body.is-transitioning {
     width: 100vw;
     height: 100dvh;
     overflow: hidden;
+}
+
+#page-worlds .link-container {
+    display: none;
 }
 
 #page-worlds .backBtn {

@@ -1747,12 +1747,16 @@ function team() {
         'member-prog': './07.glb',
         'member-finop': './14.glb',
         'member-rainmaking': './09.glb',
-        'member-legal': './04.glb',
-        'member-ta': './04.glb'
-        
+        'member-legal': './08.glb',
+        'member-ta': './06.glb'        
     };
+    const rotByClass = {
+        'member-legal': { x: 90 },
+        'member-prog': { x: 10 }
+    };
+    const resolveRoleClass = (item) => Array.from(item.classList).find((cls) => cls !== 'team-item');
     const resolveModelPath = (item) => {
-        const roleClass = Array.from(item.classList).find((cls) => cls !== 'team-item');
+        const roleClass = resolveRoleClass(item);
         return (roleClass && modelByClass[roleClass]) || modelByClass.default;
     };
 
@@ -1847,15 +1851,26 @@ function team() {
             (gltf) => {
                 if (disposed) return;
                 const model = gltf.scene;
-                const pivot = new THREE.Group();
+                const spinGroup = new THREE.Group();
+                const orientGroup = new THREE.Group();
                 model.traverse((node) => {
                     if (!node.isMesh) return;
                     node.material = sharedTeamMaterial;
                 });
-                pivot.add(model);
+                orientGroup.add(model);
                 centerAndScaleModel(model, 2);
-                scene.add(pivot);
-                entry.model = pivot;
+                const roleClass = resolveRoleClass(item);
+                const rot = rotByClass[roleClass];
+                if (rot) {
+                    orientGroup.rotation.set(
+                        THREE.MathUtils.degToRad(rot.x || 0),
+                        THREE.MathUtils.degToRad(rot.y || 0),
+                        THREE.MathUtils.degToRad(rot.z || 0)
+                    );
+                }
+                spinGroup.add(orientGroup);
+                scene.add(spinGroup);
+                entry.model = spinGroup;
             },
             undefined,
             (err) => console.error('[team] model load failed', err)
@@ -2443,7 +2458,6 @@ function unlock() {
 
     const inputs = document.querySelectorAll('.digit');
     const submitBtn = document.getElementById('submit-btn');
-    const message = document.getElementById('message');
     const clearInvalidState = () => {
         if (!submitBtn) return;
         if (submitBtn.classList.contains('invalid')) {
@@ -2502,15 +2516,14 @@ function unlock() {
         const button = submitBtn;
 
         if (!code || code.length !== inputs.length) {
-            message.innerHTML = '<span class="warning-message">Please enter a 4-digit code</span>';
             updateSubmitState();
             return;
         }
 
         clearInvalidState();
+        if (!button) return;
         button.textContent = 'Validating';
         button.disabled = true;
-        message.innerHTML = '';
 
         // fetch with timeout
         const controller = new AbortController();
@@ -2559,7 +2572,6 @@ function unlock() {
 
                 document.querySelectorAll('.text-line').forEach(el => { el.style.opacity = '0'; });
                 document.querySelector('#bg-video').style.opacity = '0';
-                message.innerHTML = `<span class="transition">Crossing the chasm...</span>`;
 
                 //Set state management. Only uncomment after states are done
                 //if(!localStorage.getItem(code)) {
@@ -2623,7 +2635,6 @@ function unlock() {
 
         } catch (err) {
             clearTimeout(timeoutId);
-            message.innerHTML = '<span style="color:red;">Connection error. Try again.</span>';
         } finally {
             if (button && !button.classList.contains('invalid')) {
                 button.textContent = 'Enter';
