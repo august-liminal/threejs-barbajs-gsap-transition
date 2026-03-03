@@ -1944,9 +1944,10 @@ function founders() {
     foundersCleanup?.();
 
     const founderInner = document.querySelector('.page-founder-inner');
+    const founderPage = document.querySelector('#page-founder');
     const founderToggle = founderInner?.querySelector('#founder-toggle');
     const founderBio = founderInner?.querySelector('#founder-bio');
-    if (!founderInner) {
+    if (!founderInner || !founderPage) {
         document.documentElement.style.visibility = 'visible';
         return;
     }
@@ -1963,8 +1964,57 @@ function founders() {
     const toggleLinks = Array.from(founderToggle?.querySelectorAll('a[data-user]') || []);
     const bioPanels = Array.from(founderBio?.querySelectorAll('[data-user]') || []);
     let activeFounder = null;
+    const gridOverlay = founderPage.querySelector('.founder-grid-overlay') || founderPage.appendChild(Object.assign(document.createElement('div'), { className: 'founder-grid-overlay' }));
+    const gradientOverlay = founderPage.querySelector('.founder-gradient-overlay') || founderPage.appendChild(Object.assign(document.createElement('div'), { className: 'founder-gradient-overlay' }));
+    if (gridOverlay.nextElementSibling !== gradientOverlay) {
+        founderPage.insertBefore(gridOverlay, gradientOverlay);
+    }
 
-    const showFounder = (userId) => {
+    const founderGradientFromKey = (key) => {
+        const seed = key || 'founder';
+        let hash = 2166136261;
+        for (let i = 0; i < seed.length; i++) {
+            hash ^= seed.charCodeAt(i);
+            hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+        }
+        const angle = Math.abs(hash) % 360;
+        const splitA = 25 + (Math.abs(hash >> 3) % 30);
+        const splitB = 60 + (Math.abs(hash >> 7) % 25);
+        return `linear-gradient(${angle}deg,
+            rgb(255 255 255 / 0.24) 0%,
+            rgb(255 255 255 / 0.04) ${splitA}%,
+            rgb(0 0 0 / 0.22) ${splitB}%,
+            rgb(0 0 0 / 0.46) 100%)`;
+    };
+
+    const applyFounderGradient = (userId, animate = false) => {
+        const nextGradient = founderGradientFromKey(userId);
+        if (!animate) {
+            founderPage.style.setProperty('--founder-gradient', nextGradient);
+            return;
+        }
+        gsap.killTweensOf(gradientOverlay);
+        gsap.set(gradientOverlay, {
+            backgroundImage: 'none',
+            backgroundColor: '#000'
+        });
+        gsap.timeline()
+            .to(gradientOverlay, {
+                autoAlpha: 1,
+                duration: 0.18,
+                ease: 'power1.out'
+            })
+            .add(() => {
+                founderPage.style.setProperty('--founder-gradient', nextGradient);
+            })
+            .to(gradientOverlay, {
+                autoAlpha: 0,
+                duration: 0.26,
+                ease: 'power1.out'
+            });
+    };
+
+    const showFounder = (userId, animateGradient = false) => {
         if (!userId) return;
         toggleLinks.forEach((link) => {
             const active = link.dataset.user === userId;
@@ -1974,6 +2024,7 @@ function founders() {
         bioPanels.forEach((panel) => {
             panel.hidden = panel.dataset.user !== userId;
         });
+        applyFounderGradient(userId, animateGradient);
         activeFounder = userId;
     };
 
@@ -1982,7 +2033,7 @@ function founders() {
         const currentPanel = bioPanels.find((panel) => panel.dataset.user === activeFounder);
 
         if (!currentPanel) {
-            showFounder(nextUser);
+            showFounder(nextUser, true);
             const nextPanelNoCurrent = bioPanels.find((panel) => panel.dataset.user === nextUser);
             if (nextPanelNoCurrent) {
                 gsap.fromTo(nextPanelNoCurrent, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25, ease: 'power2.out' });
@@ -1995,7 +2046,7 @@ function founders() {
             duration: 0.2,
             ease: 'power2.out',
             onComplete: () => {
-                showFounder(nextUser);
+                showFounder(nextUser, true);
                 const nextPanel = bioPanels.find((panel) => panel.dataset.user === nextUser);
                 if (!nextPanel) return;
                 gsap.fromTo(nextPanel, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25, ease: 'power2.out' });

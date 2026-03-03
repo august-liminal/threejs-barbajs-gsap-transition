@@ -481,12 +481,44 @@ body.is-transitioning {
 /*------------------ FOUNDER ------------------*/
 
 #page-founder {
+    position: relative;
+    overflow: hidden;
     width: 100vw;
     height: 100vh;
     padding: 8rem 4rem;
+    --grid-color: #fff2;
+    --grid-size: 2rem;
+    --grid-thickness: 1px;
+    --founder-gradient: linear-gradient(135deg, rgb(255 255 255 / 8%), rgb(255 255 255 / 2%));
+
+    background-image: var(--founder-gradient);
+    background-size: 100% 100%;
+    background-position: center;
+}
+
+.founder-gradient-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.founder-grid-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+        linear-gradient(var(--grid-color) var(--grid-thickness), transparent var(--grid-thickness)),
+        linear-gradient(90deg, var(--grid-color) var(--grid-thickness), transparent var(--grid-thickness));
+    background-size: var(--grid-size) var(--grid-size), var(--grid-size) var(--grid-size);
+    background-position: -1px -1px, -1px -1px;
 }
 
 .page-founder-inner {
+    position: relative;
+    z-index: 2;
     display: flex;
     width: 100%;
     height: 100%;
@@ -498,7 +530,7 @@ body.is-transitioning {
     position: absolute;
     width: 100vw;
     height: 1px;
-    left: 0;
+    left: calc(var(--left-offset) * -1);
     background: repeating-linear-gradient(to right, #fff5 0 8px, transparent 8px 16px);
 }
 
@@ -508,16 +540,16 @@ body.is-transitioning {
     position: absolute;
     height: 100vh;
     width: 1px;
-    top: 0;
+    top: calc(var(--top-offset) * -1);
     background: repeating-linear-gradient(to bottom, #fff5 0 8px, transparent 8px 16px);
 }
 
 .page-founder-inner>i:nth-of-type(2) {
-    bottom: var(--top-offset)
+    bottom: 0
 }
 
 .page-founder-inner>i:nth-of-type(4) {
-    right: var(--left-offset)
+    right: 0
 }
 
 #founder-toggle {
