@@ -643,7 +643,7 @@ body.is-transitioning {
     text-decoration: none;
     font-size: 1.25rem;
     line-height: 1.5;
-    margin-left: 2em;
+    margin-left: -1em;
     margin-top: -5rem;
 }
 
