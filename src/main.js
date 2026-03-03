@@ -248,8 +248,8 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
 // ====================== NEW LANDING PAGE LAYOUT =====================
 // ====================================================================
 
-function landingNew() {
-    if (!location.pathname.endsWith('/new-l1')) return;
+function landing() {
+    if (!location.pathname.endsWith('/')) return;
 
     landingNewParallaxCleanup?.();
 
@@ -1940,356 +1940,436 @@ function team() {
 // ================================================================
 
 function founders() {
+    if (!location.pathname.endsWith('/founders')) return;
+    foundersCleanup?.();
 
-}
-
-
-// ================================================================
-// ====================== LANDING PAGE LAYOUT =====================
-// ================================================================
-
-
-let gridDimension, gridSize, cellSize, x, y, deltaW, deltaH;
-
-async function landing() {
-    if (!location.pathname.endsWith('/') || landingInit) return;
-    Object.assign(document.documentElement.style, {
-        width: '100vw',
-        height: '100dvh',
-        overflow: 'hidden'
-    });
-    const fontReady = document.fonts?.ready ?? Promise.resolve();
-
-    function landingLayout() {
-        //===== DECLARATIONS
-        // Grid dimension in pixel
-        gridDimension = Math.max(window.innerHeight, window.innerWidth) - (phonePortrait ? 50 : 0)
-        document.documentElement.style.setProperty('--grid-dimension', `${gridDimension}px`)
-        // Calculate difference between viewport and grid dimension
-        deltaW = Math.abs(window.innerWidth - gridDimension);
-        deltaH = Math.abs(window.innerHeight - gridDimension);
-        // Calculate tagline-dependent variables
-        let taglineFontsize, copyrightFontsize, taglineWidth;
-        if (document.querySelector('.tagline')) {
-            const t = document.querySelector('.tagline');
-            // Measure zize of tagline
-            taglineWidth = t.getBoundingClientRect().width;
-            // remove line-height inline style if exist
-            t?.style.lineHeight && t.style.removeProperty('line-height');
-            //Set minCellSize to be half of font size
-            const minCellSize = 0.5 * parseFloat(getComputedStyle(t).fontSize);
-            // Largest number of cells in grid, minimum 20
-            gridSize = Math.max(Math.floor(gridDimension / minCellSize / 4) * 4, 12)
-            //Calculate actual possible cell size
-            cellSize = gridDimension / gridSize
-            document.documentElement.style.setProperty('--cell-size', `${cellSize}px`)
-            //Set tagline actual line height as 2x cell size
-            t.style.setProperty('line-height', `${cellSize * 2}px`);
-            //===== SHAPE
-            // X being tagline width starting from viewport edge or 25% side whichever greater, round up to nearest cell
-            x = Math.ceil(Math.max(gridDimension * 0.25, deltaW / 2 + taglineWidth) / cellSize) * cellSize;
-            // Y at least 3 cells away from viewport edge and never project diagonally into the vertical edge of screen, round up to nearest cell
-            y = Math.ceil(Math.min(deltaH / 2 + 2 * cellSize, gridDimension - x) / cellSize) * cellSize;
-            //===== Text Layout
-            taglineFontsize = parseFloat(getComputedStyle(document.querySelector('.tagline')).fontSize)
-            copyrightFontsize = parseFloat(getComputedStyle(document.querySelector('.copyright-text')).fontSize)
-            const textHorizontalOffset = window.innerWidth < gridDimension ? deltaW / 2 : 0
-            const taglineOffset = y - cellSize * 0.26;
-            const copyrightOffset = y - cellSize * 0.8;
-            document.querySelector('.tagline').style.right = textHorizontalOffset + 'px';
-            document.querySelector('.tagline').style.bottom = taglineOffset + 'px';
-            document.querySelector('.copyright-text').style.left = textHorizontalOffset + 'px';
-            document.querySelector('.copyright-text').style.top = copyrightOffset + 'px';
-        }
-
-
-
-        //===== Injecting point values into CSS
-        document.querySelector('#grid-bg').style.setProperty('--x', `${x}px`);
-        document.querySelector('#grid-bg').style.setProperty('--y', `${y}px`);
-
-        // Loader
-        const glow = document.querySelector('.loader-glow') || Object.assign(document.createElement('div'), { className: 'loader-glow' });
-        const loaderEl = Object.assign(document.createElement('div'), { className: 'loader' });
-        if (!glow.parentElement) document.querySelector('.grid-container')?.appendChild(glow);
-        document.querySelector('.grid-bg')?.appendChild(loaderEl);
-        requestAnimationFrame(() => {
-            glow.classList.add('is-active');
-            loaderEl.classList.add('is-active');
-        });
-
-        //===== Creating outline as SVG
-        // Declaring points
-        const pts = [
-            { x: 0, y: y },
-            { x: x, y: y },
-            { x: x + y, y: 0 },
-            { x: gridDimension, y: 0 },
-            { x: gridDimension, y: gridDimension - y },
-            { x: gridDimension - x, y: gridDimension - y },
-            { x: gridDimension - x - y, y: gridDimension },
-            { x: 0, y: gridDimension },
-        ];
-
-        // Creating SVG
-        const NS = 'http://www.w3.org/2000/svg';
-        let svg = document.getElementById('outline');
-        let poly;
-
-        if (!svg) {
-            svg = document.createElementNS(NS, 'svg');
-            svg.id = 'outline';
-
-            poly = document.createElementNS(NS, 'polyline');
-            poly.setAttribute('fill', 'none');
-            poly.setAttribute('stroke', 'currentColor');
-            poly.setAttribute('stroke-width', '1');
-            poly.setAttribute('vector-effect', 'non-scaling-stroke');
-            svg.appendChild(poly);
-
-            document.querySelector('.grid-viewport')?.appendChild(svg);
-        } else {
-            poly = svg.querySelector('polyline');
-        }
-
-        svg.setAttribute('width', gridDimension);
-        svg.setAttribute('height', gridDimension);
-        svg.setAttribute('viewBox', `0 0 ${gridDimension} ${gridDimension}`);
-        svg.setAttribute('preserveAspectRatio', 'none');
-
-        poly.setAttribute('points', pts.map(p => `${p.x},${p.y}`).join(' '));
+    const founderInner = document.querySelector('.page-founder-inner');
+    const founderToggle = founderInner?.querySelector('#founder-toggle');
+    const founderBio = founderInner?.querySelector('#founder-bio');
+    if (!founderInner) {
+        document.documentElement.style.visibility = 'visible';
+        return;
     }
 
-    await fontReady;
-    landingLayout();
-    const entranceEl = document.querySelector('#entrance') || document.querySelector('.grid-container')?.appendChild(Object.assign(document.createElement('a'), { id: 'entrance' }));
-    entranceEl?.style.setProperty('--entrance-w', 4);
-    entranceEl?.style.setProperty('--entrance-h', 4);
-    if (phonePortrait) {
-        const maxEntranceW = gridSize;
-        const maxEntranceH = Math.max(2, Math.floor(gridSize - 2 * (y / cellSize)));
-        entranceEl?.style.setProperty('--entrance-w', maxEntranceW);
-        entranceEl?.style.setProperty('--entrance-h', maxEntranceH);
-        const windowBox = document.querySelector('.window');
-        if (windowBox) {
-            windowBox.style.inset = (window.innerHeight < gridDimension ? deltaH / 2 + 'px' : '0') + ' ' + (window.innerWidth < gridDimension ? deltaW / 2 + 'px' : '0');
-            windowBox.style.setProperty('--w', maxEntranceW);
-            windowBox.style.setProperty('--h', maxEntranceH);
-        }
-    }
-
-
-
-
-    //=============== THREEJS
-    // Canvas
-    const canvas = document.querySelector('.webgl');
-
-    // Scene
-    const scene = new THREE.Scene()
-    let object;
-    const cubeGeometry = new THREE.BoxGeometry(10, 10, 10);
-    const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const originCube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-    const cubeEdges = new THREE.EdgesGeometry(cubeGeometry);
-    const cubeEdgeLines = new THREE.LineSegments(
-        cubeEdges,
-        new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 })
-    );
-    originCube.add(cubeEdgeLines);
-
-    // scene.add(new THREE.AxesHelper(10));
-
-    //Keep track of the mouse position to animate the scene
-    let mouseX = window.innerWidth / 2;
-    let mouseY = window.innerHeight / 2;
-
-    // Size
-    const size = {
-        width: window.innerWidth,
-        height: window.innerHeight
-    }
-
-    // Camera
-    const startFov = 75;
-    const camera = new THREE.PerspectiveCamera(startFov, size.width / size.height, 0.1, 2000);
-    camera.position.set(0, 0, 0);
-    scene.add(camera);
-
-    // GLTF Loader + preload
-    const loader = new GLTFLoader();
-    loader.setDRACOLoader(dracoLoader);
-    const modelURL = new URL('./cloud.glb', import.meta.url);
-    let cloudScene = null;
-    try {
-        const [, gltfScene] = await Promise.all([
-            fontReady,
-            new Promise((resolve, reject) => {
-                loader.load(modelURL.href, gltf => resolve(gltf.scene), undefined, reject);
-            })
-        ]);
-        cloudScene = gltfScene;
-    } catch (err) {
-        console.error('Landing preload failed', err);
-    }
-
-    if (cloudScene) {
-        object = cloudScene;
-        const boundingBox = new THREE.Box3().setFromObject(object);
-        const center = new THREE.Vector3();
-        boundingBox.getCenter(center);
-        object.position.sub(center);
-        object.position.z = 1;
-        originCube.position.set(phonePortrait ? -180 : -160, phonePortrait ? 180 : 160, -1000);
-        object.add(originCube);
-        scene.add(object);
-    }
-
-    //Instantiate a new renderer and set its size
-    const renderer = new THREE.WebGLRenderer({
-        canvas: canvas,
-        antialias: true,
-        alpha: true
-    })
-    renderer.setSize(size.width, size.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-
-    const targetFov = 25;
-    const fovSpeed = 0.0001;
-    const startCubeScale = 1;
-    const targetCubeScale = 2;
-    const cubeScaleSpeed = 0.15;
-    const clock = new THREE.Clock();
-    originCube.scale.setScalar(startCubeScale);
-
-    //Render the scene
-    function animate() {
-        requestAnimationFrame(animate);
-        //Here we could add some code to update the scene, adding some automatic movement
-        //Make the scene move
-        if (object) {
-            object.rotation.y = ((mouseX / window.innerWidth) * 20 - 20) * Math.PI / 180;
-            object.rotation.x = ((mouseY / window.innerHeight) * 20 - 20) * Math.PI / 180;
-            originCube.rotation.y += 0.01;
-        }
-        const cubeScaleDelta = targetCubeScale - originCube.scale.x;
-        if (Math.abs(cubeScaleDelta) > 0.000001) {
-            const dt = clock.getDelta();
-            const step = 1 - Math.exp(-cubeScaleSpeed * dt);
-            originCube.scale.setScalar(originCube.scale.x + cubeScaleDelta * step);
-        }
-        if (Math.abs(camera.fov - targetFov) > 0.01) {
-            camera.fov += (targetFov - camera.fov) * fovSpeed;
-            camera.updateProjectionMatrix();
-        }
-        renderer.render(scene, camera);
-    }
-
-    //Start the 3D rendering
-    animate();
-
-    //Resize event listener to resize the window and the camera
-    window.addEventListener("resize", function () {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    //Mouse position listener
-    let lastMouseUpdate = 0;
-    const MOUSE_UPDATE_INTERVAL = 16; // ~60fps, adjust as needed
-
-    const updatePointer = (e) => {
-        const p = e.touches?.[0] || e;
-        if (!p) return;
-        const now = Date.now();
-        if (now - lastMouseUpdate > MOUSE_UPDATE_INTERVAL) {
-            mouseX = p.clientX;
-            mouseY = p.clientY;
-            lastMouseUpdate = now;
-        }
+    const updateFounderOffsets = () => {
+        const rect = founderInner.getBoundingClientRect();
+        founderInner.style.setProperty('--left-offset', `${rect.left}px`);
+        founderInner.style.setProperty('--top-offset', `${rect.top}px`);
     };
 
-    document.addEventListener('mousemove', updatePointer, { passive: true });
-    document.addEventListener('touchstart', updatePointer, { passive: true });
-    document.addEventListener('touchmove', updatePointer, { passive: true });
+    updateFounderOffsets();
+    window.addEventListener('resize', updateFounderOffsets, { passive: true });
 
-    // Resize Event Listener
-    window.addEventListener('resize', () => {
-        // Update Size
-        size.width = window.innerWidth,
-            size.height = window.innerHeight,
+    const toggleLinks = Array.from(founderToggle?.querySelectorAll('a[data-user]') || []);
+    const bioPanels = Array.from(founderBio?.querySelectorAll('[data-user]') || []);
+    let activeFounder = null;
 
-            // Update camera
-            camera.aspect = size.width / size.height,
-            camera.updateProjectionMatrix(),
+    const showFounder = (userId) => {
+        if (!userId) return;
+        toggleLinks.forEach((link) => {
+            const active = link.dataset.user === userId;
+            link.hidden = false;
+            link.toggleAttribute('current', active);
+        });
+        bioPanels.forEach((panel) => {
+            panel.hidden = panel.dataset.user !== userId;
+        });
+        activeFounder = userId;
+    };
 
-            // Update renderer
-            renderer.setSize(size.width, size.height),
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
-    })
+    const animateFounderSwap = (nextUser) => {
+        if (!nextUser || nextUser === activeFounder) return;
+        const currentPanel = bioPanels.find((panel) => panel.dataset.user === activeFounder);
+
+        if (!currentPanel) {
+            showFounder(nextUser);
+            const nextPanelNoCurrent = bioPanels.find((panel) => panel.dataset.user === nextUser);
+            if (nextPanelNoCurrent) {
+                gsap.fromTo(nextPanelNoCurrent, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25, ease: 'power2.out' });
+            }
+            return;
+        }
+
+        gsap.to(currentPanel, {
+            autoAlpha: 0,
+            duration: 0.2,
+            ease: 'power2.out',
+            onComplete: () => {
+                showFounder(nextUser);
+                const nextPanel = bioPanels.find((panel) => panel.dataset.user === nextUser);
+                if (!nextPanel) return;
+                gsap.fromTo(nextPanel, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25, ease: 'power2.out' });
+            }
+        });
+    };
+
+    const onFounderToggleClick = (evt) => {
+        const link = evt.target.closest('#founder-toggle [data-user]');
+        if (!link) return;
+        evt.preventDefault();
+        animateFounderSwap(link.dataset.user);
+    };
+
+    founderToggle?.addEventListener('click', onFounderToggleClick);
+
+    const initialFounder = toggleLinks[0]?.dataset.user || bioPanels[0]?.dataset.user;
+    showFounder(initialFounder);
+
+    foundersCleanup = () => {
+        window.removeEventListener('resize', updateFounderOffsets);
+        founderToggle?.removeEventListener('click', onFounderToggleClick);
+    };
 
     document.documentElement.style.visibility = 'visible';
-
-    landingInit = true;
-
-    window.addEventListener('load', updateLanding);
-    window.addEventListener('mousemove', updateLanding, { passive: true });
-    window.addEventListener('touchstart', updateLanding, { passive: true });
-    window.addEventListener('touchmove', updateLanding, { passive: true });
-
-    window.addEventListener('resize', () => { landingLayout(); });
 }
 
-//===== Landing page window resizing & flickering effect
 
-function updateLanding(e) {
-    if (!location.pathname.endsWith('/')) return;
-    const windowBox = document.querySelector('.window');
-
-    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-
-    // --- Get mouse/touch pos relative to viewport center ---
-    const p = e?.touches?.[0] || e || { clientX: innerWidth, clientY: 0 };
-    const pos = { x: p.clientX - innerWidth / 2, y: p.clientY - innerHeight / 2 };
-
-    // --- Multiplier for effect (safe & bounded 0..1) ---
-    const EPS = 0.0001;
-    const ax = Math.abs(pos.x), ay = Math.abs(pos.y);
-    const ratio = (ax < ay) ? ax / Math.max(ay, EPS) : ay / Math.max(ax, EPS);
-    const multiplier = Math.min(1, ratio);
-    document.documentElement.style.setProperty('--e', String(multiplier));
+// // ================================================================
+// // ====================== LANDING PAGE LAYOUT =====================
+// // ================================================================
 
 
-    // --- Size in cells ---
-    let windowW, windowH;
-    const rawW = Math.round(Math.abs(pos.x) / cellSize) * 2;
-    const rawH = Math.round(Math.abs(pos.y) / cellSize) * 2;
-    windowW = clamp(Math.max(2, rawW), 2, gridSize - 2) + 2;
-    windowH = clamp(Math.max(2, rawH), 2, gridSize - 2 * (y / cellSize) - 2) + 2;
+// let gridDimension, gridSize, cellSize, x, y, deltaW, deltaH;
 
-    if (!Number.isFinite(windowW)) windowW = Math.floor(Math.min(window.innerHeight, window.innerWidth) / cellSize / 2) * 2;
-    if (!Number.isFinite(windowH)) windowH = Math.floor(Math.min(window.innerHeight, window.innerWidth) / cellSize / 2) * 2;
+// async function landing() {
+//     if (!location.pathname.endsWith('/') || landingInit) return;
+//     Object.assign(document.documentElement.style, {
+//         width: '100vw',
+//         height: '100dvh',
+//         overflow: 'hidden'
+//     });
+//     const fontReady = document.fonts?.ready ?? Promise.resolve();
 
-    // Drawing Entrance
-    const entrance = document.querySelector('#entrance') || document.querySelector('.grid-container').appendChild(Object.assign(document.createElement('a'), { id: 'entrance' }));
-    entrance.style.setProperty('--entrance-w', windowW);
-    entrance.style.setProperty('--entrance-h', windowH);
-    const glowMultiplier = 4 / Math.pow((windowW / 4 + windowH / 4), 2);
-    if (windowH == 4 && windowW == 4) {
-        Object.assign(entrance.style, { background: '#fff', boxShadow: `0 0 ${4 * glowMultiplier}rem #fff` });
-        entrance.setAttribute('href', '/unlock');
-        document.documentElement.style.setProperty('--e', '1');
-    } else {
-        Object.assign(entrance.style, { background: 'transparent', boxShadow: `0 0 ${4 * glowMultiplier}rem #fffa` });
-        entrance.removeAttribute('href');
-    }
+//     function landingLayout() {
+//         //===== DECLARATIONS
+//         // Grid dimension in pixel
+//         gridDimension = Math.max(window.innerHeight, window.innerWidth) - (phonePortrait ? 50 : 0)
+//         document.documentElement.style.setProperty('--grid-dimension', `${gridDimension}px`)
+//         // Calculate difference between viewport and grid dimension
+//         deltaW = Math.abs(window.innerWidth - gridDimension);
+//         deltaH = Math.abs(window.innerHeight - gridDimension);
+//         // Calculate tagline-dependent variables
+//         let taglineFontsize, copyrightFontsize, taglineWidth;
+//         if (document.querySelector('.tagline')) {
+//             const t = document.querySelector('.tagline');
+//             // Measure zize of tagline
+//             taglineWidth = t.getBoundingClientRect().width;
+//             // remove line-height inline style if exist
+//             t?.style.lineHeight && t.style.removeProperty('line-height');
+//             //Set minCellSize to be half of font size
+//             const minCellSize = 0.5 * parseFloat(getComputedStyle(t).fontSize);
+//             // Largest number of cells in grid, minimum 20
+//             gridSize = Math.max(Math.floor(gridDimension / minCellSize / 4) * 4, 12)
+//             //Calculate actual possible cell size
+//             cellSize = gridDimension / gridSize
+//             document.documentElement.style.setProperty('--cell-size', `${cellSize}px`)
+//             //Set tagline actual line height as 2x cell size
+//             t.style.setProperty('line-height', `${cellSize * 2}px`);
+//             //===== SHAPE
+//             // X being tagline width starting from viewport edge or 25% side whichever greater, round up to nearest cell
+//             x = Math.ceil(Math.max(gridDimension * 0.25, deltaW / 2 + taglineWidth) / cellSize) * cellSize;
+//             // Y at least 3 cells away from viewport edge and never project diagonally into the vertical edge of screen, round up to nearest cell
+//             y = Math.ceil(Math.min(deltaH / 2 + 2 * cellSize, gridDimension - x) / cellSize) * cellSize;
+//             //===== Text Layout
+//             taglineFontsize = parseFloat(getComputedStyle(document.querySelector('.tagline')).fontSize)
+//             copyrightFontsize = parseFloat(getComputedStyle(document.querySelector('.copyright-text')).fontSize)
+//             const textHorizontalOffset = window.innerWidth < gridDimension ? deltaW / 2 : 0
+//             const taglineOffset = y - cellSize * 0.26;
+//             const copyrightOffset = y - cellSize * 0.8;
+//             document.querySelector('.tagline').style.right = textHorizontalOffset + 'px';
+//             document.querySelector('.tagline').style.bottom = taglineOffset + 'px';
+//             document.querySelector('.copyright-text').style.left = textHorizontalOffset + 'px';
+//             document.querySelector('.copyright-text').style.top = copyrightOffset + 'px';
+//         }
 
-    // Drawing Entrance Inner
-    windowBox.style.inset = (window.innerHeight < gridDimension ? deltaH / 2 + 'px' : '0') + ' ' + (window.innerWidth < gridDimension ? deltaW / 2 + 'px' : '0');
-    if (windowW) windowBox.style.setProperty('--w', windowW);
-    if (windowH) windowBox.style.setProperty('--h', windowH);
-}
+
+
+//         //===== Injecting point values into CSS
+//         document.querySelector('#grid-bg').style.setProperty('--x', `${x}px`);
+//         document.querySelector('#grid-bg').style.setProperty('--y', `${y}px`);
+
+//         // Loader
+//         const glow = document.querySelector('.loader-glow') || Object.assign(document.createElement('div'), { className: 'loader-glow' });
+//         const loaderEl = Object.assign(document.createElement('div'), { className: 'loader' });
+//         if (!glow.parentElement) document.querySelector('.grid-container')?.appendChild(glow);
+//         document.querySelector('.grid-bg')?.appendChild(loaderEl);
+//         requestAnimationFrame(() => {
+//             glow.classList.add('is-active');
+//             loaderEl.classList.add('is-active');
+//         });
+
+//         //===== Creating outline as SVG
+//         // Declaring points
+//         const pts = [
+//             { x: 0, y: y },
+//             { x: x, y: y },
+//             { x: x + y, y: 0 },
+//             { x: gridDimension, y: 0 },
+//             { x: gridDimension, y: gridDimension - y },
+//             { x: gridDimension - x, y: gridDimension - y },
+//             { x: gridDimension - x - y, y: gridDimension },
+//             { x: 0, y: gridDimension },
+//         ];
+
+//         // Creating SVG
+//         const NS = 'http://www.w3.org/2000/svg';
+//         let svg = document.getElementById('outline');
+//         let poly;
+
+//         if (!svg) {
+//             svg = document.createElementNS(NS, 'svg');
+//             svg.id = 'outline';
+
+//             poly = document.createElementNS(NS, 'polyline');
+//             poly.setAttribute('fill', 'none');
+//             poly.setAttribute('stroke', 'currentColor');
+//             poly.setAttribute('stroke-width', '1');
+//             poly.setAttribute('vector-effect', 'non-scaling-stroke');
+//             svg.appendChild(poly);
+
+//             document.querySelector('.grid-viewport')?.appendChild(svg);
+//         } else {
+//             poly = svg.querySelector('polyline');
+//         }
+
+//         svg.setAttribute('width', gridDimension);
+//         svg.setAttribute('height', gridDimension);
+//         svg.setAttribute('viewBox', `0 0 ${gridDimension} ${gridDimension}`);
+//         svg.setAttribute('preserveAspectRatio', 'none');
+
+//         poly.setAttribute('points', pts.map(p => `${p.x},${p.y}`).join(' '));
+//     }
+
+//     await fontReady;
+//     landingLayout();
+//     const entranceEl = document.querySelector('#entrance') || document.querySelector('.grid-container')?.appendChild(Object.assign(document.createElement('a'), { id: 'entrance' }));
+//     entranceEl?.style.setProperty('--entrance-w', 4);
+//     entranceEl?.style.setProperty('--entrance-h', 4);
+//     if (phonePortrait) {
+//         const maxEntranceW = gridSize;
+//         const maxEntranceH = Math.max(2, Math.floor(gridSize - 2 * (y / cellSize)));
+//         entranceEl?.style.setProperty('--entrance-w', maxEntranceW);
+//         entranceEl?.style.setProperty('--entrance-h', maxEntranceH);
+//         const windowBox = document.querySelector('.window');
+//         if (windowBox) {
+//             windowBox.style.inset = (window.innerHeight < gridDimension ? deltaH / 2 + 'px' : '0') + ' ' + (window.innerWidth < gridDimension ? deltaW / 2 + 'px' : '0');
+//             windowBox.style.setProperty('--w', maxEntranceW);
+//             windowBox.style.setProperty('--h', maxEntranceH);
+//         }
+//     }
+
+
+
+
+//     //=============== THREEJS
+//     // Canvas
+//     const canvas = document.querySelector('.webgl');
+
+//     // Scene
+//     const scene = new THREE.Scene()
+//     let object;
+//     const cubeGeometry = new THREE.BoxGeometry(10, 10, 10);
+//     const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+//     const originCube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+//     const cubeEdges = new THREE.EdgesGeometry(cubeGeometry);
+//     const cubeEdgeLines = new THREE.LineSegments(
+//         cubeEdges,
+//         new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 })
+//     );
+//     originCube.add(cubeEdgeLines);
+
+//     // scene.add(new THREE.AxesHelper(10));
+
+//     //Keep track of the mouse position to animate the scene
+//     let mouseX = window.innerWidth / 2;
+//     let mouseY = window.innerHeight / 2;
+
+//     // Size
+//     const size = {
+//         width: window.innerWidth,
+//         height: window.innerHeight
+//     }
+
+//     // Camera
+//     const startFov = 75;
+//     const camera = new THREE.PerspectiveCamera(startFov, size.width / size.height, 0.1, 2000);
+//     camera.position.set(0, 0, 0);
+//     scene.add(camera);
+
+//     // GLTF Loader + preload
+//     const loader = new GLTFLoader();
+//     loader.setDRACOLoader(dracoLoader);
+//     const modelURL = new URL('./cloud.glb', import.meta.url);
+//     let cloudScene = null;
+//     try {
+//         const [, gltfScene] = await Promise.all([
+//             fontReady,
+//             new Promise((resolve, reject) => {
+//                 loader.load(modelURL.href, gltf => resolve(gltf.scene), undefined, reject);
+//             })
+//         ]);
+//         cloudScene = gltfScene;
+//     } catch (err) {
+//         console.error('Landing preload failed', err);
+//     }
+
+//     if (cloudScene) {
+//         object = cloudScene;
+//         const boundingBox = new THREE.Box3().setFromObject(object);
+//         const center = new THREE.Vector3();
+//         boundingBox.getCenter(center);
+//         object.position.sub(center);
+//         object.position.z = 1;
+//         originCube.position.set(phonePortrait ? -180 : -160, phonePortrait ? 180 : 160, -1000);
+//         object.add(originCube);
+//         scene.add(object);
+//     }
+
+//     //Instantiate a new renderer and set its size
+//     const renderer = new THREE.WebGLRenderer({
+//         canvas: canvas,
+//         antialias: true,
+//         alpha: true
+//     })
+//     renderer.setSize(size.width, size.height)
+//     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+
+//     const targetFov = 25;
+//     const fovSpeed = 0.0001;
+//     const startCubeScale = 1;
+//     const targetCubeScale = 2;
+//     const cubeScaleSpeed = 0.15;
+//     const clock = new THREE.Clock();
+//     originCube.scale.setScalar(startCubeScale);
+
+//     //Render the scene
+//     function animate() {
+//         requestAnimationFrame(animate);
+//         //Here we could add some code to update the scene, adding some automatic movement
+//         //Make the scene move
+//         if (object) {
+//             object.rotation.y = ((mouseX / window.innerWidth) * 20 - 20) * Math.PI / 180;
+//             object.rotation.x = ((mouseY / window.innerHeight) * 20 - 20) * Math.PI / 180;
+//             originCube.rotation.y += 0.01;
+//         }
+//         const cubeScaleDelta = targetCubeScale - originCube.scale.x;
+//         if (Math.abs(cubeScaleDelta) > 0.000001) {
+//             const dt = clock.getDelta();
+//             const step = 1 - Math.exp(-cubeScaleSpeed * dt);
+//             originCube.scale.setScalar(originCube.scale.x + cubeScaleDelta * step);
+//         }
+//         if (Math.abs(camera.fov - targetFov) > 0.01) {
+//             camera.fov += (targetFov - camera.fov) * fovSpeed;
+//             camera.updateProjectionMatrix();
+//         }
+//         renderer.render(scene, camera);
+//     }
+
+//     //Start the 3D rendering
+//     animate();
+
+//     //Resize event listener to resize the window and the camera
+//     window.addEventListener("resize", function () {
+//         camera.aspect = window.innerWidth / window.innerHeight;
+//         camera.updateProjectionMatrix();
+//         renderer.setSize(window.innerWidth, window.innerHeight);
+//     });
+
+//     //Mouse position listener
+//     let lastMouseUpdate = 0;
+//     const MOUSE_UPDATE_INTERVAL = 16; // ~60fps, adjust as needed
+
+//     const updatePointer = (e) => {
+//         const p = e.touches?.[0] || e;
+//         if (!p) return;
+//         const now = Date.now();
+//         if (now - lastMouseUpdate > MOUSE_UPDATE_INTERVAL) {
+//             mouseX = p.clientX;
+//             mouseY = p.clientY;
+//             lastMouseUpdate = now;
+//         }
+//     };
+
+//     document.addEventListener('mousemove', updatePointer, { passive: true });
+//     document.addEventListener('touchstart', updatePointer, { passive: true });
+//     document.addEventListener('touchmove', updatePointer, { passive: true });
+
+//     // Resize Event Listener
+//     window.addEventListener('resize', () => {
+//         // Update Size
+//         size.width = window.innerWidth,
+//             size.height = window.innerHeight,
+
+//             // Update camera
+//             camera.aspect = size.width / size.height,
+//             camera.updateProjectionMatrix(),
+
+//             // Update renderer
+//             renderer.setSize(size.width, size.height),
+//             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
+//     })
+
+//     document.documentElement.style.visibility = 'visible';
+
+//     landingInit = true;
+
+//     window.addEventListener('load', updateLanding);
+//     window.addEventListener('mousemove', updateLanding, { passive: true });
+//     window.addEventListener('touchstart', updateLanding, { passive: true });
+//     window.addEventListener('touchmove', updateLanding, { passive: true });
+
+//     window.addEventListener('resize', () => { landingLayout(); });
+// }
+
+// //===== Landing page window resizing & flickering effect
+
+// function updateLanding(e) {
+//     if (!location.pathname.endsWith('/')) return;
+//     const windowBox = document.querySelector('.window');
+
+//     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+//     // --- Get mouse/touch pos relative to viewport center ---
+//     const p = e?.touches?.[0] || e || { clientX: innerWidth, clientY: 0 };
+//     const pos = { x: p.clientX - innerWidth / 2, y: p.clientY - innerHeight / 2 };
+
+//     // --- Multiplier for effect (safe & bounded 0..1) ---
+//     const EPS = 0.0001;
+//     const ax = Math.abs(pos.x), ay = Math.abs(pos.y);
+//     const ratio = (ax < ay) ? ax / Math.max(ay, EPS) : ay / Math.max(ax, EPS);
+//     const multiplier = Math.min(1, ratio);
+//     document.documentElement.style.setProperty('--e', String(multiplier));
+
+
+//     // --- Size in cells ---
+//     let windowW, windowH;
+//     const rawW = Math.round(Math.abs(pos.x) / cellSize) * 2;
+//     const rawH = Math.round(Math.abs(pos.y) / cellSize) * 2;
+//     windowW = clamp(Math.max(2, rawW), 2, gridSize - 2) + 2;
+//     windowH = clamp(Math.max(2, rawH), 2, gridSize - 2 * (y / cellSize) - 2) + 2;
+
+//     if (!Number.isFinite(windowW)) windowW = Math.floor(Math.min(window.innerHeight, window.innerWidth) / cellSize / 2) * 2;
+//     if (!Number.isFinite(windowH)) windowH = Math.floor(Math.min(window.innerHeight, window.innerWidth) / cellSize / 2) * 2;
+
+//     // Drawing Entrance
+//     const entrance = document.querySelector('#entrance') || document.querySelector('.grid-container').appendChild(Object.assign(document.createElement('a'), { id: 'entrance' }));
+//     entrance.style.setProperty('--entrance-w', windowW);
+//     entrance.style.setProperty('--entrance-h', windowH);
+//     const glowMultiplier = 4 / Math.pow((windowW / 4 + windowH / 4), 2);
+//     if (windowH == 4 && windowW == 4) {
+//         Object.assign(entrance.style, { background: '#fff', boxShadow: `0 0 ${4 * glowMultiplier}rem #fff` });
+//         entrance.setAttribute('href', '/unlock');
+//         document.documentElement.style.setProperty('--e', '1');
+//     } else {
+//         Object.assign(entrance.style, { background: 'transparent', boxShadow: `0 0 ${4 * glowMultiplier}rem #fffa` });
+//         entrance.removeAttribute('href');
+//     }
+
+//     // Drawing Entrance Inner
+//     windowBox.style.inset = (window.innerHeight < gridDimension ? deltaH / 2 + 'px' : '0') + ' ' + (window.innerWidth < gridDimension ? deltaW / 2 + 'px' : '0');
+//     if (windowW) windowBox.style.setProperty('--w', windowW);
+//     if (windowH) windowBox.style.setProperty('--h', windowH);
+// }
 
 // ================================================================
 // ========================== UNLOCK PAGE =========================
@@ -6586,6 +6666,7 @@ function space() {
 let landingInit = false, unlockInit = false, spaceInit = false;
 let landingNewParallaxCleanup = null;
 let teamCleanup = null;
+let foundersCleanup = null;
 let textMatrixControl = null;
 const nextFrame = () => new Promise(r => requestAnimationFrame(r));
 const pin = el => gsap.set(el, { position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'hidden' });
@@ -7011,7 +7092,7 @@ const Page = {
     },
 
     home: { // NEW LANDING PAGE --------------------------------
-        build: () => { landingNew(); },
+        build: () => { landing(); },
         enter: ({ next }) => {
             const tl = gsap.timeline();
 
@@ -7165,8 +7246,25 @@ const Page = {
             }, '<');
 
             return tl;
-        }
+        },        
     },
+    founders: { // FOUNDERS PAGE --------------------------------
+        build: () => { founders(); },
+        enter: ({ next }) => {
+            const tl = gsap.timeline();
+
+
+
+            return tl;
+        },
+        leave: ({ current }) => {
+            const tl = gsap.timeline();
+            foundersCleanup?.();
+            foundersCleanup = null;
+
+            return tl;
+        }
+    }
 };
 
 // -----------------------------------------------------

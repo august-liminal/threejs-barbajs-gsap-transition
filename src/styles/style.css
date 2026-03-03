@@ -231,7 +231,7 @@ body.is-transitioning {
     font-size: var(--font-size-lg);
     margin-top: 2em;
     line-height: 1.3;
-    max-width: 75%;
+    max-width: 60ch;
 }
 
 .top-link,
@@ -475,6 +475,165 @@ body.is-transitioning {
     font-family: 'Space Grotesk';
     font-size: 1.6rem;
     margin: 0.25em auto 0.25em;
+}
+
+
+/*------------------ FOUNDER ------------------*/
+
+#page-founder {
+    width: 100vw;
+    height: 100vh;
+    padding: 8rem 4rem;
+}
+
+.page-founder-inner {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+.page-founder-inner>i:nth-of-type(1),
+.page-founder-inner>i:nth-of-type(2) {
+    display: block;
+    position: absolute;
+    width: 100vw;
+    height: 1px;
+    left: 0;
+    background: repeating-linear-gradient(to right, #fff5 0 8px, transparent 8px 16px);
+}
+
+.page-founder-inner>i:nth-of-type(3),
+.page-founder-inner>i:nth-of-type(4) {
+    display: block;
+    position: absolute;
+    height: 100vh;
+    width: 1px;
+    top: 0;
+    background: repeating-linear-gradient(to bottom, #fff5 0 8px, transparent 8px 16px);
+}
+
+.page-founder-inner>i:nth-of-type(2) {
+    bottom: var(--top-offset)
+}
+
+.page-founder-inner>i:nth-of-type(4) {
+    right: var(--left-offset)
+}
+
+#founder-toggle {
+    display: flex;
+    flex-direction: column;
+    font-size: 1.25rem;
+    line-height: 1;
+    position: relative;
+    padding: 1em 0;
+}
+
+#founder-toggle::after {
+    content: '';
+    display: block;
+    position: absolute;
+    height: 100%;
+    width: 1px;
+    right: 0;
+    top: 0;
+    background: repeating-linear-gradient(to bottom, #fff5 0 8px, transparent 8px 16px);
+}
+
+#founder-toggle a {
+    position: relative;
+    color: #fffa;
+    text-decoration: none;
+    text-transform: uppercase;
+    padding: 1em 2em;
+    cursor: pointer;
+}
+
+#founder-toggle a:hover,
+#founder-toggle a[current] {
+    color: #fff;
+    text-shadow: 0 0 0.2em #fff, 0 0 1em #fff;
+}
+
+#founder-toggle a[current]::before {
+    content: '';
+    display: block;
+    position: absolute;
+    height: 50%;
+    width: 0.25em;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #fff;
+    box-shadow: 0 0 0.2em #fff, 0 0 1em #fff;
+}
+
+#founder-bio {
+    padding: 4rem;
+    max-width: none;
+    flex: 1 1 0;
+    color: #fffa;
+}
+
+#founder-bio>div {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    height: 100%;
+}
+
+.founder-name {
+    font-family: 'Space Grotesk';
+    font-size: 6rem;
+    line-height: 1.2;
+    color: #fff;
+}
+
+.founder-summary {
+    flex: 1 1 0;
+}
+
+.venture-summary {
+    display: flex;
+    flex-direction: column;
+}
+
+.venture-summary::before {
+    content: 'Venture Opportunity';
+    text-transform: uppercase;
+    color: #fff;
+    font-size: 1.25rem;
+    line-height: 1.5;
+}
+
+#page-founder .backBtn {
+    border: none;
+    text-decoration: none;
+    font-size: 1.25rem;
+    line-height: 1.5;
+    margin-left: 2em;
+    margin-top: -5rem;
+}
+
+#page-founder .backBtn::before {
+    content: '';
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.15em;
+    height: 0.75em;
+    flex: 0 0 auto;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 14' fill='none'%3E%3Cpath d='M27 7H2' stroke='%23ffffff' stroke-opacity='0.92' stroke-width='1.5'/%3E%3Cpath d='M8 13L2 7L8 1' stroke='%23ffffff' stroke-opacity='0.92' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+#page-founder .backBtn:hover {
+    color: currentColor;
+    text-shadow: 0 0 2px #fff, 0 0 12px #fff4;
 }
 
 /*------------------ LANDING ------------------*/
