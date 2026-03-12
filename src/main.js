@@ -606,20 +606,8 @@ function dna() {
 
         const materials = {};
         const darkMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-
-        function darkenNonBloomed(obj) {
-            if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
-                materials[obj.uuid] = obj.material;
-                obj.material = darkMaterial;
-            }
-        }
-
-        function restoreMaterial(obj) {
-            if (materials[obj.uuid]) {
-                obj.material = materials[obj.uuid];
-                delete materials[obj.uuid];
-            }
-        }
+        const nonBloomMeshes = [];
+        const bloomExcludedLines = [];
         const scaleFactor = phonePortrait ? 0.8 : window.innerWidth / window.innerHeight;
 
         const coreSize = 1 * scaleFactor;
@@ -813,6 +801,11 @@ function dna() {
         rightShell.position.set(30, 0, -4);
         scene.add(rightShell);
 
+        scene.traverse((obj) => {
+            if (obj.isMesh && bloomLayer.test(obj.layers) === false) nonBloomMeshes.push(obj);
+            if (obj.isLine && obj.userData?.excludeBloom) bloomExcludedLines.push(obj);
+        });
+
         const renderScene = new RenderPass(scene, camera);
         renderScene.clear = true;
         renderScene.clearAlpha = 0;
@@ -917,7 +910,11 @@ function dna() {
         window.addEventListener('resize', resize);
         resize();
 
-        const getSurfaceOffset = (target, endWorld) => {
+        const tempSurface = new THREE.Vector3();
+        const tempSurfacePoint = new THREE.Vector3();
+        const tempStartLocal = new THREE.Vector3();
+        const tempEndLocal = new THREE.Vector3();
+        const getSurfaceOffset = (target, endWorld, out = tempSurface) => {
             target.getWorldPosition(tempWorld);
             tempDir.copy(endWorld).sub(tempWorld);
             const len = tempDir.length() || 1;
@@ -935,18 +932,11 @@ function dna() {
             const maxScale = Math.max(tempScale.x, tempScale.y, tempScale.z, 1);
             const surface = (radius || 1) * maxScale;
             tempDir.multiplyScalar(surface / len);
-            return tempWorld.clone().add(tempDir);
+            return out.copy(tempWorld).add(tempDir);
         };
 
-        const tempHiddenLines = [];
         function renderFrame() {
-            tempHiddenLines.length = 0;
-            scene.traverse(obj => {
-                if (obj.isLine && obj.userData?.excludeBloom) {
-                    obj.visible = false;
-                    tempHiddenLines.push(obj);
-                }
-            });
+            bloomExcludedLines.forEach((line) => { line.visible = false; });
             orbLabels.forEach(({ target, label, line, positions, offset }) => {
                 // position label relative to target
                 target.getWorldPosition(tempWorld);
@@ -957,22 +947,31 @@ function dna() {
                 label.getWorldPosition(tempLabel);
 
                 // end on orb surface along line toward orb center
-                const radius = getSurfaceOffset(target, tempLabel).distanceTo(tempWorld);
+                const radius = getSurfaceOffset(target, tempLabel, tempSurface).distanceTo(tempWorld);
                 tempDir.copy(tempLabel).sub(tempWorld);
                 const len = tempDir.length() || 1;
-                const surfacePoint = tempWorld.clone().add(tempDir.multiplyScalar(radius / len));
+                tempSurfacePoint.copy(tempWorld).add(tempDir.multiplyScalar(radius / len));
 
-                const startLocal = target.worldToLocal(tempLabel.clone());
-                const endLocal = target.worldToLocal(surfacePoint.clone());
-                positions.setXYZ(0, startLocal.x, startLocal.y, startLocal.z);
-                positions.setXYZ(1, endLocal.x, endLocal.y, endLocal.z);
+                target.worldToLocal(tempStartLocal.copy(tempLabel));
+                target.worldToLocal(tempEndLocal.copy(tempSurfacePoint));
+                positions.setXYZ(0, tempStartLocal.x, tempStartLocal.y, tempStartLocal.z);
+                positions.setXYZ(1, tempEndLocal.x, tempEndLocal.y, tempEndLocal.z);
                 positions.needsUpdate = true;
                 line.computeLineDistances();
             });
-            scene.traverse(darkenNonBloomed);
+            for (let i = 0; i < nonBloomMeshes.length; i++) {
+                const mesh = nonBloomMeshes[i];
+                materials[mesh.uuid] = mesh.material;
+                mesh.material = darkMaterial;
+            }
             bloomComposer.render();
-            scene.traverse(restoreMaterial);
-            tempHiddenLines.forEach(l => { l.visible = true; });
+            for (let i = 0; i < nonBloomMeshes.length; i++) {
+                const mesh = nonBloomMeshes[i];
+                if (!materials[mesh.uuid]) continue;
+                mesh.material = materials[mesh.uuid];
+                delete materials[mesh.uuid];
+            }
+            bloomExcludedLines.forEach((line) => { line.visible = true; });
             finalComposer.render();
             thesisLabelRenderer.render(scene, camera);
         }
@@ -1199,16 +1198,15 @@ function dna() {
         if (cam && leftShell && rightShell) {
             segmentTl.to(cam.rotation, {
                 z: THREE.MathUtils.degToRad(45),
-                ease: 'none',
-                onUpdate: () => cam.updateProjectionMatrix()
+                ease: 'none'
             }, 0);
             segmentTl.to(cam, {
-                fov: 10
+                fov: 10,
+                onUpdate: () => cam.updateProjectionMatrix()
             }, '<');
             segmentTl.to(cam.position, {
                 x: 2, y: 2, z: 70,
-                ease: 'none',
-                onUpdate: () => cam.updateProjectionMatrix()
+                ease: 'none'
             }, '<');
             segmentTl.to(leftShell.position, {
                 x: -13.5, z: 0,
@@ -1316,15 +1314,13 @@ function dna() {
         if (cam && leftShell && rightShell) {
             segmentTl.to(cam.rotation, {
                 z: phonePortrait ? THREE.MathUtils.degToRad(270) : THREE.MathUtils.degToRad(135),
-                ease: 'power2.out',
-                onUpdate: () => cam.updateProjectionMatrix()
+                ease: 'power2.out'
             }, 0);
             segmentTl.to(cam.position, {
                 x: phonePortrait ? 0 : -1.625 * scaleFactor,
                 y: phonePortrait ? -2.5 * scaleFactor : 0.15 * scaleFactor,
                 z: phonePortrait ? 50 : 30,
-                ease: 'power2.out',
-                onUpdate: () => cam.updateProjectionMatrix()
+                ease: 'power2.out'
             }, '<');
             segmentTl.to(leftShell.position, {
                 x: 0, z: -60,
@@ -1405,15 +1401,13 @@ function dna() {
         if (cam && leftShell && rightShell) {
             segmentTl.to(cam.rotation, {
                 z: phonePortrait ? THREE.MathUtils.degToRad(450) : THREE.MathUtils.degToRad(415),
-                ease: 'power2.out',
-                onUpdate: () => cam.updateProjectionMatrix()
+                ease: 'power2.out'
             }, 0);
             segmentTl.to(cam.position, {
                 x: phonePortrait ? -0.2 : -0.4,
                 y: phonePortrait ? 0.2 : 1,
                 z: phonePortrait ? 8 : 10,
-                ease: 'power2.out',
-                onUpdate: () => cam.updateProjectionMatrix()
+                ease: 'power2.out'
             }, '<');
             segmentTl.to(orbRepeat.position, {
                 z: -50,
@@ -1496,13 +1490,11 @@ function dna() {
 
         segmentTl.to(cam.rotation, {
             z: THREE.MathUtils.degToRad(450),
-            ease: 'power4.out',
-            onUpdate: () => cam.updateProjectionMatrix()
+            ease: 'power4.out'
         }, 0);
         segmentTl.to(cam.position, {
             x: () => computeCamXForWhitespace(), y: phonePortrait ? 4 : 8, z: 110,
-            ease: 'power4.out',
-            onUpdate: () => cam.updateProjectionMatrix()
+            ease: 'power4.out'
         }, '<');
         
     });
