@@ -150,6 +150,16 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             .scroller { z-index: 1; scroll-snap-type: y mandatory;}
             .thesis-scroller .segment {height: 100dvh !important; scroll-snap-align: end !important; scroll-snap-stop: always !important; }
             
+            #page-landing { --landing-inset: 1.5rem; padding: var(--landing-inset); }
+            #page-landing>i:nth-of-type(2) { bottom: var(--landing-inset); }
+            #page-landing>i:nth-of-type(4) { right: var(--landing-inset); }
+            .grid-background::before, .grid-background::after { display: none }
+            .bound { flex-direction: row; align-items: end; }
+
+            .slogan { flex: none; max-width: none; font-size: 8vmin; }
+            .explainer { max-width: none; margin-top: 1em; }
+            .slogan span, .explainer span { white-space: normal!important; }
+            .top-link { flex-direction: row; flex: 1 1 0; }
 
             .text-line { font-size: 1rem; text-align: left; left: 1.5rem; }
             .text-portfolio { top: 2rem; }
@@ -1943,6 +1953,42 @@ function founders() {
     if (!location.pathname.endsWith('/founders')) return;
     foundersCleanup?.();
 
+    // TEMP FEATURE: founders query gate
+    // Remove this block when founders page should be publicly browsable again.
+    const applyTemporaryFounderQueryGate = () => {
+        const params = new URLSearchParams(window.location.search);
+        const requested = (params.get('name') || '').trim().toLowerCase();
+        if (!requested) {
+            barba.go('/');
+            return null;
+        }
+
+        const toggleScope = document.querySelector('#founder-toggle');
+        const bioScope = document.querySelector('#founder-bio');
+        if (!toggleScope || !bioScope) {
+            barba.go('/');
+            return null;
+        }
+
+        const matchingToggle = toggleScope.querySelector(`[data-user="${requested}"]`);
+        const matchingBio = bioScope.querySelector(`[data-user="${requested}"]`);
+        if (!matchingToggle || !matchingBio) {
+            barba.go('/');
+            return null;
+        }
+
+        toggleScope.querySelectorAll('[data-user]').forEach((el) => {
+            if (el.dataset.user !== requested) el.remove();
+        });
+        bioScope.querySelectorAll('[data-user]').forEach((el) => {
+            if (el.dataset.user !== requested) el.remove();
+        });
+        return requested;
+    };
+
+    const gatedFounder = applyTemporaryFounderQueryGate();
+    if (!gatedFounder) return;
+
     const founderInner = document.querySelector('.page-founder-inner');
     const founderPage = document.querySelector('#page-founder');
     const founderToggle = founderInner?.querySelector('#founder-toggle');
@@ -2063,7 +2109,7 @@ function founders() {
 
     founderToggle?.addEventListener('click', onFounderToggleClick);
 
-    const initialFounder = toggleLinks[0]?.dataset.user || bioPanels[0]?.dataset.user;
+    const initialFounder = gatedFounder || toggleLinks[0]?.dataset.user || bioPanels[0]?.dataset.user;
     showFounder(initialFounder);
 
     foundersCleanup = () => {

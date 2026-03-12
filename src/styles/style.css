@@ -559,17 +559,7 @@ body.is-transitioning {
     line-height: 1;
     position: relative;
     padding: 1em 0;
-}
-
-#founder-toggle::after {
-    content: '';
-    display: block;
-    position: absolute;
-    height: 100%;
-    width: 1px;
-    right: 0;
-    top: 0;
-    background: repeating-linear-gradient(to bottom, #fff5 0 8px, transparent 8px 16px);
+    overflow: scroll;
 }
 
 #founder-toggle a {
@@ -605,6 +595,18 @@ body.is-transitioning {
     max-width: none;
     flex: 1 1 0;
     color: #fffa;
+    position: relative;
+}
+
+#founder-bio::before {
+    content: '';
+    display: block;
+    position: absolute;
+    height: 100%;
+    width: 1px;
+    left: 0;
+    top: 0;
+    background: repeating-linear-gradient(to bottom, #fff5 0 8px, transparent 8px 16px);
 }
 
 #founder-bio>div {
