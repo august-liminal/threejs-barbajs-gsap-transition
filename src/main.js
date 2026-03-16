@@ -553,6 +553,13 @@ function landing() {
 function dna() {
     if (!location.pathname.endsWith('/about')) return;
 
+    // Defensive cleanup if a previous DNA instance leaked
+    document.querySelector('#thesis-label-container')?.remove();
+    document.querySelector('.guides-container')?.remove();
+    document.querySelector('.dna-scroller.scroller')?.remove();
+    document.querySelector('#thesis-canvas')?.remove();
+    lenis?.destroy?.();
+    lenis = null;
 
     // ============================= THREEJS ==============================
 
@@ -1101,6 +1108,7 @@ function dna() {
     const thesisCanvas = canvas;
 
     const thesis3D = canvas ? createThesisScene(thesisCanvas) : null;
+    page.__dnaThree = thesis3D;
 
     // show page
     page.removeAttribute('hidden');
@@ -1110,6 +1118,7 @@ function dna() {
     const scroller = Object.assign(document.createElement('div'), {
         className: 'dna-scroller scroller'
     });
+    page.__dnaScroller = scroller;
     const prevBtn = page?.querySelector?.('.prevBtn');
     const nextBtn = page?.querySelector?.('.nextBtn');
 
@@ -1252,6 +1261,7 @@ function dna() {
         document.body.appendChild(scroller);
         appendSegments(5);
         scroller.addEventListener('scroll', updateSegmentNavButtons, { passive: true });
+        scroller.__segmentNavListener = updateSegmentNavButtons;
 
         window.scrollTo(0, 0);
         scroller.scrollTop = 0;
@@ -1804,6 +1814,7 @@ function dna() {
             window.addEventListener('wheel', onWheel, wheelOpts);
             window.addEventListener('touchmove', onTouchMove, touchOpts);
             window.addEventListener('touchend', onTouchEnd);
+            scroller.__forwardHandlers = { onWheel, onTouchMove, onTouchEnd, wheelOpts, touchOpts };
         }
     }
 
@@ -6792,6 +6803,19 @@ function space() {
                 gsap.to('#logout-btn', { autoAlpha: 0.5, zIndex: 2, duration: 1 }, 0);
                 gsap.set('.scroll-hint', { autoAlpha: 0 }, 0);
 
+                const fwd = scroller?.__forwardHandlers;
+                if (fwd) {
+                    window.removeEventListener('wheel', fwd.onWheel, fwd.wheelOpts);
+                    window.removeEventListener('touchmove', fwd.onTouchMove, fwd.touchOpts);
+                    window.removeEventListener('touchend', fwd.onTouchEnd);
+                    delete scroller.__forwardHandlers;
+                }
+                if (scroller?.__segmentNavListener) {
+                    scroller.removeEventListener('scroll', scroller.__segmentNavListener);
+                    delete scroller.__segmentNavListener;
+                }
+                lenis?.destroy?.();
+                lenis = null;
                 scroller?.remove();
                 window.scrollTo(0, 0);
                 threeInstance?.stop?.();
@@ -7392,8 +7416,35 @@ const Page = {
                 autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
             }, '<+0.2')
             tl.add(() => {
-                document.querySelector('.scroller')?.remove();
+                const dnaPage = current?.container?.querySelector?.('#page-dna') || document.querySelector('#page-dna');
+                const dnaScroller = dnaPage?.__dnaScroller || dnaPage?.querySelector?.('.dna-scroller.scroller') || document.querySelector('.dna-scroller.scroller');
+                const fwd = dnaScroller?.__forwardHandlers;
+                if (fwd) {
+                    window.removeEventListener('wheel', fwd.onWheel, fwd.wheelOpts);
+                    window.removeEventListener('touchmove', fwd.onTouchMove, fwd.touchOpts);
+                    window.removeEventListener('touchend', fwd.onTouchEnd);
+                    delete dnaScroller.__forwardHandlers;
+                }
+                if (dnaScroller?.__segmentNavListener) {
+                    dnaScroller.removeEventListener('scroll', dnaScroller.__segmentNavListener);
+                    delete dnaScroller.__segmentNavListener;
+                }
+                ScrollTrigger.getAll().forEach(st => {
+                    const scrollEl = st.scroller || st.vars?.scroller || ScrollTrigger.defaultScroller || window;
+                    if (scrollEl === dnaScroller || dnaScroller?.contains?.(st.trigger)) st.kill();
+                });
+                lenis?.destroy?.();
+                lenis = null;
+                dnaPage?.__dnaThree?.stop?.();
+                dnaPage?.__dnaThree?.dispose?.();
+                if (dnaPage) {
+                    delete dnaPage.__dnaThree;
+                    delete dnaPage.__dnaScroller;
+                }
+                dnaScroller?.remove();
+                document.querySelector('#thesis-canvas')?.remove();
                 document.querySelector('#thesis-label-container')?.remove();
+                document.querySelector('.guides-container')?.remove();
             }, '>');
             return tl;
         }
