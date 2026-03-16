@@ -511,7 +511,7 @@ function landing() {
 
 
 // ===========================================================
-// ====================== NEW DNA LAYOUT =====================
+// =========================== DNA ==========================
 // ===========================================================
 
 function dna() {
@@ -1074,6 +1074,86 @@ function dna() {
     const scroller = Object.assign(document.createElement('div'), {
         className: 'dna-scroller scroller'
     });
+    const prevBtn = page?.querySelector?.('.prevBtn');
+    const nextBtn = page?.querySelector?.('.nextBtn');
+
+    // Button navigation tuning
+    const SEGMENT_NAV_DURATION = 1; // seconds
+    const SEGMENT_NAV_EASE = 'power2.inOut';
+
+    const updateSegmentNavButtons = () => {
+        const scrollEl = document.querySelector('.dna-scroller.scroller') || scroller;
+        if (!scrollEl) return;
+        const segments = Array.from(scrollEl.querySelectorAll('.segment'));
+        if (!segments.length) {
+            prevBtn?.classList.add('hiddenBtn');
+            nextBtn?.classList.add('hiddenBtn');
+            return;
+        }
+
+        const tops = segments.map((seg) => seg.offsetTop);
+        const current = scrollEl.scrollTop;
+        let nearest = 0;
+        let minDist = Infinity;
+        for (let i = 0; i < tops.length; i++) {
+            const d = Math.abs(tops[i] - current);
+            if (d < minDist) {
+                minDist = d;
+                nearest = i;
+            }
+        }
+        prevBtn?.classList.toggle('hiddenBtn', nearest <= 0);
+        nextBtn?.classList.toggle('hiddenBtn', nearest >= tops.length - 1);
+    };
+
+    const scrollBySegment = (step) => {
+        const scrollEl = document.querySelector('.dna-scroller.scroller') || scroller;
+        if (!scrollEl || !document.body.contains(scrollEl)) return;
+        const segments = Array.from(scrollEl.querySelectorAll('.segment'));
+        if (!segments.length) return;
+
+        const tops = segments.map((seg) => seg.offsetTop);
+        const current = scrollEl.scrollTop;
+
+        let nearest = 0;
+        let minDist = Infinity;
+        for (let i = 0; i < tops.length; i++) {
+            const d = Math.abs(tops[i] - current);
+            if (d < minDist) {
+                minDist = d;
+                nearest = i;
+            }
+        }
+
+        const targetIndex = Math.max(0, Math.min(tops.length - 1, nearest + step));
+        const targetTop = tops[targetIndex];
+        gsap.killTweensOf(scrollEl);
+        gsap.to(scrollEl, {
+            scrollTop: targetTop,
+            duration: SEGMENT_NAV_DURATION,
+            ease: SEGMENT_NAV_EASE,
+            overwrite: true,
+            onUpdate: () => {
+                ScrollTrigger.update();
+                updateSegmentNavButtons();
+            },
+            onComplete: updateSegmentNavButtons
+        });
+    };
+
+    if (prevBtn) {
+        prevBtn.classList.add('hiddenBtn');
+        prevBtn.onclick = (e) => {
+            e.preventDefault?.();
+            scrollBySegment(-1);
+        };
+    }
+    if (nextBtn) {
+        nextBtn.onclick = (e) => {
+            e.preventDefault?.();
+            scrollBySegment(1);
+        };
+    }
 
     // ============================== TIMELINE
 
@@ -1093,7 +1173,7 @@ function dna() {
     gsap.set(scientistLine.material, { opacity: 0 });
 
     // Set initial states
-    tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '6rem', translateY: '2rem', autoAlpha: 0, top: phonePortrait ? 'calc(100dvh - 8rem)' : 'calc(100dvh - 12rem)' });
+    tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '6rem', translateY: '2rem', autoAlpha: 0, top: phonePortrait ? 'calc(100dvh - 8rem)' : 'calc(100dvh - 16rem)' });
     tl.set('.section>*', { visibility: 'hidden' });
 
     // Definition timeline
@@ -1123,8 +1203,8 @@ function dna() {
     tl.to('#liminal-desc', {
         autoAlpha: 1, duration: 0.5
     }, '-=0.2');
-    tl.to('.scroll-hint', {
-        autoAlpha: 1, duration: 0.5
+    tl.from('.btn-container', {
+        autoAlpha: 0, duration: 0.5
     }, '-=0.2');
 
 
@@ -1135,9 +1215,11 @@ function dna() {
     tl.add(() => { // Append Scroller
         document.body.appendChild(scroller);
         appendSegments(5);
+        scroller.addEventListener('scroll', updateSegmentNavButtons, { passive: true });
 
         window.scrollTo(0, 0);
         scroller.scrollTop = 0;
+        updateSegmentNavButtons();
         ScrollTrigger.refresh();
     }, '>')
 
