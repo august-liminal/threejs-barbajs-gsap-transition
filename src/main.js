@@ -166,7 +166,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             .top-link { flex-direction: row; flex: 1 1 0; }
 
             #page-team { padding: 2rem; }
-            #page-team .team-list { display: flex; flex-direction: column; justify-content: center; gap: 4rem; }
+            #page-team .team-list { display: flex; flex-direction: column; justify-content: center; gap: 2rem; }
             #page-team .team-list-inner { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); width: 100%; margin: 0 auto; }
             #page-team .team-list-inner i { display: none; }
             #page-team .team-item { padding: 1rem; }
