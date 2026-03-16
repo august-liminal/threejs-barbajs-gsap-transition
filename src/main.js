@@ -1826,7 +1826,10 @@ function dna() {
             // duration: 1.1,                   // higher = longer glide (default 1)
             smoothTouch: true,               // smooth on touch
             smoothWheel: true,               // smooth on wheel
-            wheelMultiplier: 1.5   // boost wheel delta
+            wheelMultiplier: 1.5,   // boost wheel delta
+            syncTouch: true,      // tracks finger more directly
+            touchMultiplier: 2.0, // bigger = faster touch scroll
+            duration: 0.6         // lower = less laggy
         });
         lenis.on('scroll', ScrollTrigger.update);
         window.lenis = lenis;
