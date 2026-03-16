@@ -271,12 +271,12 @@ body.is-transitioning {
 /*------------------ DNA ------------------*/
 
 #page-dna .section {
-    height: 100vh;
+    height: 100dvh;
 }
 
 #page-dna .dna-content {
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     position: relative;
 }
 
@@ -445,7 +445,6 @@ body.is-transitioning {
     margin-bottom: 2rem;
 }
 
-/* DNA-scoped copy of "Our Thesis" styles */
 #page-dna .backBtn-thesis {
     bottom: 4rem;
     left: 2rem;
@@ -494,6 +493,7 @@ body.is-transitioning {
 
 #page-dna #thesis-title {
     position: fixed;
+    z-index: 99;
 }
 
 #page-dna #liminal-phonetic span {
@@ -503,6 +503,7 @@ body.is-transitioning {
 
 #page-dna #liminal-def {
     margin-top: 3rem;
+    margin-bottom: 3rem;
 }
 
 #page-dna #liminal-desc {

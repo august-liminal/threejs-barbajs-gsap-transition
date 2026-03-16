@@ -184,6 +184,15 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             .portfolio-list { padding: 1rem; }
             .portfolio-item { font-size: 1.5rem; }
 
+            #page-dna .guides-container { display: none; }
+            #page-dna .btn-container { left: 1.25rem; }
+            #page-dna .backBtn { top: 1.25rem; margin-left: -4.8em; }
+            #page-dna .backBtn { position: relative; }
+            #page-dna .backBtn::after { content: ''; position: absolute; left: 2rem; top: 100%; width: calc(100vw - 2rem); height: 1px; background: #fff4; pointer-events: none; }
+            #page-dna #liminal-def { margin-top: 1rem; }
+            #page-dna #thesis-title { left: 1.25rem; }
+            #page-dna #who-what { margin-top: 4rem; margin-bottom: 0; }
+
             main[data-barba-namespace="space"] {height: 0}
             #liminalspace section { padding: 4rem 1.25rem; }
             .section { padding: 4rem 1.25rem; }
@@ -1199,7 +1208,7 @@ function dna() {
     gsap.set(scientistLine.material, { opacity: 0 });
 
     // Set initial states
-    tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '6rem', translateY: '2rem', autoAlpha: 0, top: phonePortrait ? 'calc(100dvh - 8rem)' : 'calc(100dvh - 16rem)' });
+    tl.set('#thesis-title', { fontSize: phonePortrait ? '4rem' : '6rem', translateY: '2rem', autoAlpha: 0, top: phonePortrait ? 'calc(100dvh - 14rem)' : 'calc(100dvh - 16rem)' });
     tl.set('.section>*', { visibility: 'hidden' });
 
     // Definition timeline
@@ -1402,7 +1411,7 @@ function dna() {
             'font-family': 'Space Mono', top: '10rem', bottom: 'unset', fontSize: phonePortrait ? '1.25rem' : '2rem', translateY: 0
         }, '>');
         segmentTl.to('#thesis-title', {
-            autoAlpha: 1, top: '8rem', bottom: 'unset'
+            autoAlpha: 1, top: phonePortrait ? '6rem' : '8rem', bottom: 'unset'
         }, '>');
         segmentTl.fromTo('#who-what', {
             translateY: '5rem', autoAlpha: 0
@@ -1443,14 +1452,14 @@ function dna() {
                 ease: 'power2.out'
             }, '<');
             segmentTl.to(orbRepeat.position, {
-                x: phonePortrait ? -1.75 * scaleFactor : -1.825 * scaleFactor,
-                y: phonePortrait ? -0.5 * scaleFactor : 1.1 * scaleFactor,
+                x: phonePortrait ? -1.2 * scaleFactor : -1.825 * scaleFactor,
+                y: phonePortrait ? -0.7 * scaleFactor : 1.1 * scaleFactor,
                 z: 0,
                 ease: 'power2.out'
             }, '<');
             segmentTl.to(orbScientist.position, {
-                x: phonePortrait ? -3.25 * scaleFactor : -3 * scaleFactor,
-                y: phonePortrait ? -1 * scaleFactor : 1.85 * scaleFactor,
+                x: phonePortrait ? -2.5 * scaleFactor : -3 * scaleFactor,
+                y: phonePortrait ? -1.2 * scaleFactor : 1.85 * scaleFactor,
                 z: 0,
                 ease: 'power2.out'
             }, '<');
