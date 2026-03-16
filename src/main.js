@@ -153,8 +153,12 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             #page-landing { --landing-inset: 1.5rem; padding: var(--landing-inset); }
             #page-landing>i:nth-of-type(2) { bottom: var(--landing-inset); }
             #page-landing>i:nth-of-type(4) { right: var(--landing-inset); }
+            #page-landing .link-container { height: unset; width: 100%; flex-direction: row; gap: 2em; }
+            #page-landing .top-link { flex-direction: row; }
+            #page-landing .hero-text { position: relative; inset: 0; }
+            #page-landing .centerpiece { position: relative; flex: 1 1 0; width: 100%; }
             .grid-background::before, .grid-background::after { display: none }
-            .bound { flex-direction: row; align-items: end; }
+            .bound { flex-direction: column; align-items: start; }
 
             .slogan { flex: none; max-width: none; font-size: 8vmin; }
             .explainer { max-width: none; margin-top: 1em; }
@@ -290,6 +294,9 @@ function landing() {
         id: 'landing-new-canvas'
     });
     centerpiece.appendChild(threeCanvas);
+    threeCanvas.style.width = '100%';
+    threeCanvas.style.height = '100%';
+    threeCanvas.style.display = 'block';
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(phonePortrait ? 34 : 30, 1, 0.1, 4000);
@@ -321,10 +328,12 @@ function landing() {
     let disposed = false;
     let hoverProgressX = 0;
     let hoverProgressY = 0.5;
+    const PHONE_AUTO_ROTATE_Y = 0.006;
 
     const fitModel = () => {
-        const width = window.innerWidth || 1;
-        const height = window.innerHeight || 1;
+        const rect = centerpiece.getBoundingClientRect();
+        const width = Math.max(1, Math.floor(rect.width || window.innerWidth || 1));
+        const height = Math.max(1, Math.floor(rect.height || window.innerHeight || 1));
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
         renderer.setSize(width, height, false);
@@ -349,10 +358,12 @@ function landing() {
         camera.position.set(0, scaledSize.y * 0.08, distance * 1.25 + scaledSize.z * 0.5);
         camera.lookAt(0, 0, 0);
 
-        // Place model at ~2/3 viewport width (one-third from right edge)
-        const targetNdcX = 1 / 3;
-        const visibleHalfWidthAtModelDepth = Math.tan(halfFov) * camera.position.z * camera.aspect;
-        rock.position.x += targetNdcX * visibleHalfWidthAtModelDepth;
+        if (!phonePortrait) {
+            // Place model at ~2/3 viewport width (one-third from right edge)
+            const targetNdcX = 1 / 3;
+            const visibleHalfWidthAtModelDepth = Math.tan(halfFov) * camera.position.z * camera.aspect;
+            rock.position.x += targetNdcX * visibleHalfWidthAtModelDepth;
+        }
     };
 
     const loader = new GLTFLoader();
@@ -389,8 +400,13 @@ function landing() {
     const tick = () => {
         if (disposed) return;
         if (rock) {
-            rock.rotation.y = THREE.MathUtils.degToRad(hoverProgressX * 180);
-            rock.rotation.x = THREE.MathUtils.degToRad(10 - hoverProgressY * 20);
+            if (phonePortrait) {
+                rock.rotation.y += PHONE_AUTO_ROTATE_Y;
+                rock.rotation.x = THREE.MathUtils.lerp(rock.rotation.x, 0, 0.08);
+            } else {
+                rock.rotation.y = THREE.MathUtils.degToRad(hoverProgressX * 180);
+                rock.rotation.x = THREE.MathUtils.degToRad(10 - hoverProgressY * 20);
+            }
         }
         renderer.render(scene, camera);
         rafId = requestAnimationFrame(tick);

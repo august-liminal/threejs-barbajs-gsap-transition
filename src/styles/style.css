@@ -229,17 +229,29 @@ body.is-transitioning {
 
 .explainer {
     font-size: var(--font-size-lg);
-    margin-top: 2em;
+    margin-bottom: -0.25em;
     line-height: 1.3;
     max-width: 60ch;
 }
 
-.top-link,
-.bottom-link {
+#page-landing .link-container {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: end;
+    position: relative;
+    gap: unset;
+    bottom: unset;
+}
+
+#page-landing .top-link,
+#page-landing .bottom-link {
     display: flex;
     flex-direction: column;
     gap: 2em;
     z-index: 100;
+    width: fit-content;
 }
 
 .top-link a,
