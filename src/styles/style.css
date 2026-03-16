@@ -676,14 +676,26 @@ body.is-transitioning {
     margin: auto;
 }
 
-.team-list .backBtn {
+#page-team .btnContainer {
     grid-row: 3;
     position: relative;
     align-self: end;
-    margin-bottom: 1rem;
     margin: auto;
     inset: 0;
     text-decoration: none;
+}
+
+#page-team .backBtn {
+    padding: 1em 2em;
+    border: 1px solid #fff8;
+    color: #fff;
+    background: #000a;
+    text-transform: uppercase;
+    inset: 0;
+    position: relative;
+    text-decoration: none;
+    cursor: pointer;
+    z-index: 999;
 }
 
 .team-list .backBtn:hover {

@@ -166,13 +166,14 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             .top-link { flex-direction: row; flex: 1 1 0; }
 
             #page-team { padding: 2rem; }
-            #page-team .team-list { display: flex; flex-direction: column; justify-content: center; gap: 2rem; }
-            #page-team .team-list-inner { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); width: 100%; margin: 0 auto; }
+            #page-team .team-list { display: flex; flex-direction: column; }
+            #page-team .team-list-inner { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); width: 100%; margin: 0 auto; padding-top: 2rem; padding-bottom: 8rem; overflow: scroll; }
             #page-team .team-list-inner i { display: none; }
             #page-team .team-item { padding: 1rem; }
             #page-team .member-name { font-size: 1.25rem; }
             #page-team .member-title { font-size: 0.875rem; line-height: 1.25em; }
-            #page-team .backBtn { margin: 0 auto; }
+            #page-team .btnContainer { position: absolute; width: 100%; margin: 0; text-align: center; padding: 2rem; background-image: linear-gradient(to bottom, transparent, #000); }
+            #page-team .backBtn { margin: 0 auto; width: 100%; display: block; }
 
             .text-line { font-size: 1rem; text-align: left; left: 1.5rem; }
             .text-portfolio { top: 2rem; }
