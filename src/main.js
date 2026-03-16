@@ -165,6 +165,15 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             .slogan span, .explainer span { white-space: normal!important; }
             .top-link { flex-direction: row; flex: 1 1 0; }
 
+            #page-team { padding: 2rem; }
+            #page-team .team-list { display: flex; flex-direction: column; justify-content: center; gap: 4rem; }
+            #page-team .team-list-inner { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); width: 100%; margin: 0 auto; }
+            #page-team .team-list-inner i { display: none; }
+            #page-team .team-item { padding: 1rem; }
+            #page-team .member-name { font-size: 1.25rem; }
+            #page-team .member-title { font-size: 0.875rem; line-height: 1.25em; }
+            #page-team .backBtn { margin: 0 auto; }
+
             .text-line { font-size: 1rem; text-align: left; left: 1.5rem; }
             .text-portfolio { top: 2rem; }
             .text-thesis { top: 4rem; }
