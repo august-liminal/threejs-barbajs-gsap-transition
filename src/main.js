@@ -147,8 +147,9 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             :root { font-size: 14px; --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); }
             body { height: 100dvh; box-sizing: border-box; }
 
-            .scroller { z-index: 1; scroll-snap-type: y mandatory;}
-            .thesis-scroller .segment {height: 100dvh !important; scroll-snap-align: end !important; scroll-snap-stop: always !important; }
+            /* Mobile: disable CSS snap; use Lenis smoothing instead */
+            .scroller { z-index: 1; scroll-snap-type: none !important; }
+            .thesis-scroller .segment { height: 100dvh !important; scroll-snap-align: none !important; scroll-snap-stop: normal !important; }
             
             #page-landing { --landing-inset: 1.5rem; padding: var(--landing-inset); }
             #page-landing>i:nth-of-type(2) { bottom: var(--landing-inset); }
@@ -222,7 +223,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             #we-are-liminal-content { margin-top: 2rem; }
             #what-section-4 .backBtn { bottom: 4.25rem; }
             .what-scroller #segment-5 { height: 100dvh }
-            .what-scroller #segment-5, .what-scroller #segment-6 { scroll-snap-align: end; scroll-snap-stop: always; }
+            .what-scroller #segment-5, .what-scroller #segment-6 { scroll-snap-align: none !important; scroll-snap-stop: normal !important; }
 
             .page#page-profile { grid-template-columns: 1.25rem minmax(0, 1fr) minmax(0, 7fr) 1.25rem; 
                 grid-template-rows: 4rem minmax(0, 5fr) minmax(0, 1fr) minmax(0, 6fr) 4rem; }
@@ -1521,7 +1522,7 @@ function dna() {
                 ease: 'power2.out'
             }, 0);
             segmentTl.to(cam.position, {
-                x: phonePortrait ? -0.2 : -0.4,
+                x: phonePortrait ? -0.4 : -0.4,
                 y: phonePortrait ? 0.2 : 1,
                 z: phonePortrait ? 8 : 10,
                 ease: 'power2.out'
@@ -1809,11 +1810,7 @@ function dna() {
     // Lenis helper for the hidden scroller
     function initLenisForScroller(wrapper) {
         if (!wrapper) return null;
-        if (phonePortrait) {
-            lenis?.destroy?.();
-            lenis = null;
-            return null;
-        }
+        // Keep Lenis enabled on phonePortrait as well.
         if (!wrapper.querySelector('.smoother-content')) {
             const content = document.createElement('div');
             content.className = 'smoother-content';
@@ -6709,11 +6706,7 @@ function space() {
     // Lenis helper for the hidden scroller
     function initLenisForScroller(wrapper) {
         if (!wrapper) return null;
-        if (phonePortrait) {
-            lenis?.destroy?.();
-            lenis = null;
-            return null;
-        }
+        // Keep Lenis enabled on phonePortrait as well.
         if (!wrapper.querySelector('.smoother-content')) {
             const content = document.createElement('div');
             content.className = 'smoother-content';

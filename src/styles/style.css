@@ -270,6 +270,13 @@ body.is-transitioning {
 
 /*------------------ DNA ------------------*/
 
+
+body:has(#page-dna) .dna-scroller {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+}
+
 #page-dna .section {
     height: 100dvh;
 }
@@ -545,7 +552,7 @@ body.is-transitioning {
 }
 
 #page-dna #unlock-potential-content {
-    margin-bottom: 4rem;
+    margin-bottom: 6rem;
 }
 
 #page-dna #whitespaces {
