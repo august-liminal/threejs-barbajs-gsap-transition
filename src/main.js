@@ -176,6 +176,9 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             #page-team .btnContainer { position: absolute; width: 100%; margin: 0; text-align: center; padding: 2rem; background-image: linear-gradient(to bottom, transparent, #0008 15%, #000c);; }
             #page-team .backBtn { margin: 0 auto; width: 100%; display: block; }
 
+            #page-worlds .line-dashed.line-vertical { display: none; }
+            #page-worlds .backBtn { margin-left: -4.8em; }
+
             .text-line { font-size: 1rem; text-align: left; left: 1.5rem; }
             .text-portfolio { top: 2rem; }
             .text-thesis { top: 4rem; }
@@ -1624,7 +1627,7 @@ function dna() {
             x: () => computeCamXForWhitespace(), y: phonePortrait ? 4 : 8, z: 110,
             ease: 'power4.out'
         }, '<');
-        
+
     });
 
     tl.add(() => { // Back the Founder objects timeline
@@ -1878,7 +1881,7 @@ function team() {
         'member-finop': './14.glb',
         'member-rainmaking': './09.glb',
         'member-legal': './08.glb',
-        'member-ta': './06.glb'        
+        'member-ta': './06.glb'
     };
     const rotByClass = {
         'member-legal': { x: 90 },
@@ -2690,22 +2693,38 @@ function unlock() {
             if (code) code.style.position = 'absolute';
             // ---- LINES: clear previous then place fresh
             container.querySelectorAll('.line-solid, .line-dashed').forEach(n => n.remove());
-            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `left:4rem` }));
-            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-vertical', style: `right:4rem` }));
+
+            container.append(
+                Object.assign(document.createElement('div'), {
+                    className: 'line-solid line-vertical',
+                    style: `left:${phonePortrait ? '1.25rem' : '4rem'}`
+                })
+            );
+            container.append(
+                Object.assign(document.createElement('div'), {
+                    className: 'line-solid line-vertical',
+                    style: `right:${phonePortrait ? '1.25rem' : '4rem'}`
+                })
+            );
+
+
 
             // verticals
-            if (code && !phonePortrait) {
-                code.append(Object.assign(document.createElement('div'), {
-                    className: 'line-dashed line-vertical',
-                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;left:0;`
-                }));
-                code.append(Object.assign(document.createElement('div'), {
-                    className: 'line-dashed line-vertical',
-                    style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;right:0;`
-                }));
-            }
+
+            code.append(Object.assign(document.createElement('div'), {
+                className: 'line-dashed line-vertical',
+                style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;left:0;`
+            }));
+            code.append(Object.assign(document.createElement('div'), {
+                className: 'line-dashed line-vertical',
+                style: `position:absolute;height:100dvh;top:${-codeOffsetY}px;right:0;`
+            }));
+
             // horizontals
+
             container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `top:${moduleOffsetY}px;` }));
+            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `bottom:${paddingY}px;` }));
+
             if (code) {
                 code.append(Object.assign(document.createElement('div'), {
                     className: 'line-dashed line-horizontal',
@@ -2716,7 +2735,6 @@ function unlock() {
                     style: `position:absolute;width:100vw;left:${-codeOffsetX}px;bottom:0;`
                 }));
             }
-            container.append(Object.assign(document.createElement('div'), { className: 'line-solid line-horizontal', style: `bottom:${paddingY}px;` }));
         }
 
         //initMatrixBuffers();
@@ -7175,7 +7193,7 @@ const Page = {
         // -------------------------------------------------
         enter: ({ next }) => {
             const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
-            tl.set(next.container.querySelectorAll('#bg-video'), {autoAlpha: 0});
+            tl.set(next.container.querySelectorAll('#bg-video'), { autoAlpha: 0 });
             tl.from(next.container.querySelectorAll('.line-vertical'), {
                 autoAlpha: 0, left: '50%', duration: 0.4
             }, 0);
@@ -7338,7 +7356,7 @@ const Page = {
                 scale: 0.5, autoAlpha: 0
             }, {
                 scale: 1, autoAlpha: 1, duration: 0.2, ease: 'power2.Out'
-            }, '>');            
+            }, '>');
             tl.from('#page-landing .slogan', {
                 autoAlpha: 0, duration: 0.5, ease: 'bounce.in'
             }, '<+0.1');
@@ -7358,7 +7376,7 @@ const Page = {
             return tl;
         },
         leave: ({ current }) => {
-            const tl = gsap.timeline();            
+            const tl = gsap.timeline();
             tl.to('.bound', {
                 scale: 0.5, autoAlpha: 0, duration: 0.5, ease: 'power2.Out'
             }, '0');
@@ -7379,7 +7397,7 @@ const Page = {
             }, '<');
             tl.to('#page-landing>i:nth-of-type(4)', {
                 right: '50%', duration: 1, ease: 'power2.Out'
-            }, '<');          
+            }, '<');
 
             landingNewParallaxCleanup?.();
             landingNewParallaxCleanup = null;
@@ -7476,7 +7494,7 @@ const Page = {
 
             return tl;
         },
-        leave: ({ current }) => { 
+        leave: ({ current }) => {
             const tl = gsap.timeline();
 
             tl.to('.team-list-inner', {
@@ -7499,7 +7517,7 @@ const Page = {
             }, '<');
 
             return tl;
-        },        
+        },
     },
     founders: { // FOUNDERS PAGE --------------------------------
         build: () => { founders(); },
