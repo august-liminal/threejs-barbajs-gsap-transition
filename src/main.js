@@ -172,7 +172,7 @@ if (phonePortrait && !document.getElementById('phone-portrait-styles')) {
             #page-team .team-item { padding: 1rem; }
             #page-team .member-name { font-size: 1.25rem; }
             #page-team .member-title { font-size: 0.875rem; line-height: 1.25em; }
-            #page-team .btnContainer { position: absolute; width: 100%; margin: 0; text-align: center; padding: 2rem; background-image: linear-gradient(to bottom, transparent, #000); }
+            #page-team .btnContainer { position: absolute; width: 100%; margin: 0; text-align: center; padding: 2rem; background-image: linear-gradient(to bottom, transparent, #0008 15%, #000c);; }
             #page-team .backBtn { margin: 0 auto; width: 100%; display: block; }
 
             .text-line { font-size: 1rem; text-align: left; left: 1.5rem; }
